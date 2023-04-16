@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Library/BurstCache/JIT
+/Library/GridBrush
+/Library/PackageCache
+/Library/Search
+/Library/ShaderCache
+/Library/StateCache
+/Library/Bee
+/Temp
