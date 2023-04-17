@@ -177,6 +177,7 @@ public class MidiHandler : MonoBehaviour
 
     private void OnApplicationQuit()
     {
+        // Cleanup.
         print("Releasing resources.");
         if (PlaybackEngine != null)
         {
@@ -184,6 +185,14 @@ public class MidiHandler : MonoBehaviour
             PlaybackEngine.Dispose();
             PlaybackEngine = null;
             print("Disposed playback engine.");
+        }
+        if (OutputMidi != null)
+        {
+            OutputMidi.Dispose();
+        }
+        if (InputMidi != null)
+        {
+            InputMidi.Dispose();
         }
     }
 }
