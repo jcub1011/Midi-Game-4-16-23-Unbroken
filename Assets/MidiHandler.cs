@@ -7,6 +7,8 @@ using UnityEngine;
 using System.IO;
 using UnityEngine.XR;
 using Melanchall.DryWetMidi.Multimedia;
+using System.Threading;
+using Mono.Cecil.Cil;
 
 public class MidiHandler : MonoBehaviour
 {
@@ -23,6 +25,15 @@ public class MidiHandler : MonoBehaviour
     /// <returns>If successfully opened midi.</returns>
     bool LoadMidi(string FileName)
     {
+        // Clear PlaybackEngine.
+        if (PlaybackEngine != null)
+        {
+            print("Clearing playback engine.");
+            PlaybackEngine.Stop();
+            PlaybackEngine.Dispose();
+            PlaybackEngine = null;
+        }
+
         print($"Loading midi file: {FileName}");
         CurrentMidi = MidiFile.Read($"{MidiBaseDirectory}\\{FileName}.mid");
         print("Successfully loaded midi file.");
@@ -53,7 +64,6 @@ public class MidiHandler : MonoBehaviour
         {
             PlaybackEngine = CurrentMidi.GetPlayback(settings);
         }
-        PlaybackEngine.Start();
 
         return true;
     }
@@ -94,15 +104,76 @@ public class MidiHandler : MonoBehaviour
         }
     }
 
+    short[] GetNoteRange()
+    {
+        // Keep track of min and max note.
+        short MinNote = short.MaxValue;
+        short MaxNote = short.MinValue;
+
+        // Find min and max note.
+        foreach (var note in CurrentMidi.GetNotes())
+        {
+            if (note.NoteNumber < MinNote)
+            {
+                MinNote = note.NoteNumber;
+            }
+            if (note.NoteNumber > MaxNote)
+            {
+                MaxNote = note.NoteNumber;
+            }
+        }
+
+        return new short[2] { MinNote, MaxNote };
+    }
+
+    bool FitsInRange(short[] Range, short[] RangeToFit)
+    {
+        if (Range[0] <= RangeToFit[0] && Range[1] >= RangeToFit[1])
+        {
+            return true;
+        } else
+        {
+            return false;
+        }
+    }
+
+    void GetMidiInformationForDisplay()
+    {
+        short KeyboardSize = 0; // Number of notes.
+        short[] SmallKeyboardRange = new short[2] {36, 96}; // 61 Key
+        short[] MediumKeyboardRange = new short[2] {28, 103}; // 76 Key
+        short[] LargeKeyboardRange = new short[2] {21, 108}; // 88 Key
+        short[] NoteRange = GetNoteRange();
+
+        // Check ranges.
+        if (FitsInRange(SmallKeyboardRange, NoteRange))
+        {
+            KeyboardSize = 61;
+        } else if (FitsInRange(MediumKeyboardRange, NoteRange))
+        {
+            KeyboardSize = 76;
+        } else if (FitsInRange(LargeKeyboardRange, NoteRange))
+        {
+            KeyboardSize = 88;
+        } else
+        {
+            KeyboardSize = (short)(NoteRange[1] - NoteRange[0] + 1);
+        }
+
+        print($"Fits {KeyboardSize} key keyboard.");
+    }
+
     void Start()
     {
         LoadMidi("TomOdelAnotherLove");
+        GetMidiInformationForDisplay();
+        PlaybackEngine.Start();
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        
     }
 
     private void OnApplicationQuit()
@@ -112,6 +183,7 @@ public class MidiHandler : MonoBehaviour
         {
             PlaybackEngine.Stop();
             PlaybackEngine.Dispose();
+            PlaybackEngine = null;
             print("Disposed playback engine.");
         }
     }

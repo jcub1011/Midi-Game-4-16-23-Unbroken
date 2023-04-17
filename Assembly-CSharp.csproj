@@ -56,6 +56,7 @@
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\DisplayManager.cs" />
     <Compile Include="Assets\MidiHandler.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -315,6 +316,9 @@
     <Reference Include="Unity.Burst.Cecil.Mdb">
       <HintPath>Library\PackageCache\com.unity.burst@1.8.2\Unity.Burst.CodeGen\Unity.Burst.Cecil.Mdb.dll</HintPath>
     </Reference>
+    <Reference Include="Melanchall.DryWetMidi">
+      <HintPath>Assets\Melanchall\DryWetMIDI\Melanchall.DryWetMidi.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Burst.Cecil.Pdb">
       <HintPath>Library\PackageCache\com.unity.burst@1.8.2\Unity.Burst.CodeGen\Unity.Burst.Cecil.Pdb.dll</HintPath>
     </Reference>
@@ -329,9 +333,6 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Library\PackageCache\com.unity.nuget.newtonsoft-json@3.0.2\Runtime\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="Melanchall.DryWetMidi">
-      <HintPath>Assets\Melanchall\DryWetMIDI\Melanchall.DryWetMidi.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.17f1\Editor\Data\NetStandard\ref\2.1.0\netstandard.dll</HintPath>
