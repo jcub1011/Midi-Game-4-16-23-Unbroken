@@ -11,6 +11,10 @@ using System.Threading;
 
 public class MidiHandler : MonoBehaviour
 {
+    // TODO: Implement way of spawning notes a set amount of bars ahead of playback
+    // and keep synchronization so notes hit input bar at the same time playback sends the note on event.
+    // Stay synchronized regardless of framerate.
+
     private MIDI.Playback PlaybackEngine = null;
     private MIDI.InputDevice InputMidi = null;
     private MIDI.OutputDevice OutputMidi = null;
