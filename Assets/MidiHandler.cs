@@ -8,7 +8,6 @@ using System.IO;
 using UnityEngine.XR;
 using Melanchall.DryWetMidi.Multimedia;
 using System.Threading;
-using Mono.Cecil.Cil;
 
 public class MidiHandler : MonoBehaviour
 {
