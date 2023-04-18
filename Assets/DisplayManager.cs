@@ -22,7 +22,6 @@ public class DisplayManager : MonoBehaviour
     {
         print("Initalizing runway.");
 
-        for () 
     }
 
 
