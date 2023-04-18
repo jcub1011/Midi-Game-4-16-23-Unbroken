@@ -5,9 +5,11 @@ using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Core;
 using UnityEngine;
 using System.IO;
-using UnityEngine.XR;
 using Melanchall.DryWetMidi.Multimedia;
 using System.Threading;
+
+[System.Serializable]
+public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }
 
 public class MidiHandler : MonoBehaviour
 {
@@ -20,6 +22,7 @@ public class MidiHandler : MonoBehaviour
     private MIDI.OutputDevice OutputMidi = null;
     private MidiFile CurrentMidi = null;
     private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
+    public InitializeDisplayManager InitDisplayManager = new();
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -164,6 +167,8 @@ public class MidiHandler : MonoBehaviour
         }
 
         print($"Fits {KeyboardSize} key keyboard.");
+
+        InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
 
     void Start()

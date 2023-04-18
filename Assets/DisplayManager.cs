@@ -1,17 +1,28 @@
+using Melanchall.DryWetMidi.Interaction;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
+
 public class DisplayManager : MonoBehaviour
 {
     private float AspectRatio;
     private float Height;
+    private LinkedList<GameObject>[] Notes;
+    public GameObject NoteFab;
 
-    void UpdateDisplayInfo ()
+    void UpdateDisplayInfo()
     {
         AspectRatio = Camera.main.aspect;
         Height = Camera.main.orthographicSize;
+    }
+
+    public void InitalizeRunway(short[] NoteRange, TempoMap Tempo)
+    {
+        print("Initalizing runway.");
+
+        for () 
     }
 
 
