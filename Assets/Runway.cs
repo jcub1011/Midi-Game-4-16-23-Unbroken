@@ -18,7 +18,8 @@ public class Runway : MonoBehaviour
     /// Creates a new runway.
     /// </summary>
     /// <param name="Range">Range of note numbers to display.</param>
-    /// <param name="NoteSpeed">Coefficent of speed for notes.</param>
+    /// <param name="NoteSpeed">Distance notes should travel every milisecond in unity units.</param>
+    /// <param name="Dimensions">Width and height of runway in unity units.</param>
     public Runway(short[] Range, float NoteSpeed, float[] Dimensions)
     {
         print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
@@ -29,7 +30,7 @@ public class Runway : MonoBehaviour
         StrikeBarHeight = 1; // Height above the floor.
 
         // Init lanes for managed notes.
-        Lanes = new LinkedList<GameObject>[NoteRange[1] - NoteRange[0] + 1]; // Length = Number of notes to represent.
+        Lanes = new LinkedList<GameObject>[NoteRange[1] - NoteRange[0] + 1]; // Length = Range of notes to represent.
         
         for (int i = 0; i < Lanes.Length; i++) 
         {
@@ -39,15 +40,26 @@ public class Runway : MonoBehaviour
 
     void AddNoteToLane(short NoteNumber, long NoteLength)
     {
+        // Check if valid note.
         if (NoteNumber < NoteRange[0] || NoteNumber > NoteRange[1])
         {
             print($"Note {NoteNumber} outside range [{NoteRange[0]}, {NoteRange[1]}].");
             return;
         }
-        var NewNote = Instantiate(NotePrefab);
-        float NoteX = (float)(NoteWidth * NoteNumber + NoteWidth / 2.0); // Half width offset because anchor is in the middle.
+        // Create new note.
+        var NewNote = Instantiate(NotePrefab, this.transform);
+        float NoteX = (float)(NoteWidth * (NoteNumber - NoteRange[0]) + NoteWidth / 2.0); // Half width offset because anchor is in the middle.
         float NoteY = (float)(NoteLength * GetNoteSpeed() / 2.0); // Half height offset because anchor is in the middle.
         NewNote.transform.position = new Vector3(NoteX, NoteY);
+        /// Child 0 is skin.
+        /// Child 1 is perfect collider.
+        /// Child 2 is good collider.
+        /// Child 3 is ok collider.
+        var NoteDimensions = new Vector3(NoteWidth, NoteLength * GetNoteSpeed()); // Dimensions of note.
+        NewNote.transform.GetChild(0).localScale = NoteDimensions;
+        NewNote.transform.GetChild(1).localScale = NoteDimensions + new Vector3(0, (float)0.01, 0); // Additional perfect collider offset.
+        NewNote.transform.GetChild(2).localScale = NoteDimensions + new Vector3(0, (float)0.1, 0); // Additional good collider offset.
+        NewNote.transform.GetChild(3).localScale = NoteDimensions + new Vector3(0, (float)0.2, 0); // Additional ok collider offset.
     }
 
     float GetNoteSpeed()
@@ -55,7 +67,6 @@ public class Runway : MonoBehaviour
         return NoteSpeedCoeff * PlaybackSpeed;
     }
 
-    // Update is called once per frame
     void Update()
     {
 
