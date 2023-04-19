@@ -15,12 +15,12 @@ public class Runway : MonoBehaviour
     public GameObject NotePrefab;
     
     /// <summary>
-    /// Creates a new runway.
+    /// Inits a new runway.
     /// </summary>
     /// <param name="Range">Range of note numbers to display.</param>
     /// <param name="NoteSpeed">Distance notes should travel every milisecond in unity units.</param>
     /// <param name="Dimensions">Width and height of runway in unity units.</param>
-    public Runway(short[] Range, float NoteSpeed, float[] Dimensions)
+    public void Init(short[] Range, float NoteSpeed, float[] Dimensions)
     {
         print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
         NoteRange = Range;
@@ -38,7 +38,7 @@ public class Runway : MonoBehaviour
         }
     }
 
-    void AddNoteToLane(short NoteNumber, long NoteLength)
+    public void AddNoteToLane(short NoteNumber, long NoteLength)
     {
         // Check if valid note.
         if (NoteNumber < NoteRange[0] || NoteNumber > NoteRange[1])
@@ -69,7 +69,10 @@ public class Runway : MonoBehaviour
 
     void Update()
     {
-
+        if (Lanes == null) // If lanes has not been instantiated yet.
+        {
+            return;
+        }
         // Move notes down.
         foreach (var Lane in Lanes)
         {
