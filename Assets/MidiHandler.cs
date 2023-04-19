@@ -9,7 +9,7 @@ using Melanchall.DryWetMidi.Multimedia;
 using System.Threading;
 
 [System.Serializable]
-public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }
+public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap, float[]> { }
 
 public class MidiHandler : MonoBehaviour
 {
@@ -168,7 +168,8 @@ public class MidiHandler : MonoBehaviour
 
         print($"Fits {KeyboardSize} key keyboard.");
 
-        InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
+        InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap(), 
+            new float[2] { Camera.main.orthographicSize * Camera.main.aspect, Camera.main.orthographicSize * 2 });
     }
 
     void Start()

@@ -18,7 +18,7 @@ public class DisplayManager : MonoBehaviour
         Height = Camera.main.orthographicSize;
     }
 
-    public void InitalizeRunway(short[] NoteRange, TempoMap Tempo)
+    public void InitalizeRunway(short[] NoteRange, TempoMap Tempo, float[] Dimensions)
     {
         print("Initalizing runway.");
 
