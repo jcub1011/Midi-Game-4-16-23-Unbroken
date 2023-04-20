@@ -13,6 +13,7 @@ public class Runway : MonoBehaviour
     float Width; // In unity units.
     float StrikeBarHeight; // In unity units.
     public GameObject NotePrefab;
+    public GameObject StrikeBar;
     
     /// <summary>
     /// Inits a new runway.
@@ -27,6 +28,7 @@ public class Runway : MonoBehaviour
         NoteSpeedCoeff = NoteSpeed;
         Height = Dimensions[1];
         Width = Dimensions[0];
+        NoteWidth = Width / (float)(Range[1] - Range[0] + 1);
         StrikeBarHeight = 1; // Height above the floor.
 
         // Init lanes for managed notes.
@@ -36,6 +38,11 @@ public class Runway : MonoBehaviour
         {
             Lanes[i] = new LinkedList<GameObject>();
         }
+
+        // Create Strike bar
+        StrikeBar.transform.localPosition = new Vector3(Width / 2, StrikeBarHeight, 0);
+        StrikeBar.transform.localScale = new Vector3(Width, 1, 0);
+        StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
     }
 
     public void AddNoteToLane(short NoteNumber, long NoteLength)
@@ -60,6 +67,8 @@ public class Runway : MonoBehaviour
         NewNote.transform.GetChild(1).localScale = NoteDimensions + new Vector3(0, (float)0.01, 0); // Additional perfect collider offset.
         NewNote.transform.GetChild(2).localScale = NoteDimensions + new Vector3(0, (float)0.1, 0); // Additional good collider offset.
         NewNote.transform.GetChild(3).localScale = NoteDimensions + new Vector3(0, (float)0.2, 0); // Additional ok collider offset.
+
+        Lanes[NoteNumber - NoteRange[0]].AddFirst(NewNote); // Add to managed list.
     }
 
     float GetNoteSpeed()

@@ -19,8 +19,6 @@ public class DisplayManager : MonoBehaviour
         var NewRunway = Instantiate(RunwayFab, transform);
         NewRunway.GetComponent<Runway>().Init(NoteRange, (float)(0.0), new float[2] { Height * 2 * AspectRatio, Height * 2});
         Runways.AddFirst(NewRunway);
-
-
     }
 
     void UpdateDisplayInfo()
