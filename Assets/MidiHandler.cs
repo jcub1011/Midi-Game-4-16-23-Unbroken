@@ -9,7 +9,7 @@ using Melanchall.DryWetMidi.Multimedia;
 using System.Threading;
 
 [System.Serializable]
-public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap, float[]> { }
+public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }
 
 public class MidiHandler : MonoBehaviour
 {
@@ -22,7 +22,7 @@ public class MidiHandler : MonoBehaviour
     private MIDI.OutputDevice OutputMidi = null;
     private MidiFile CurrentMidi = null;
     private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
-    public InitializeDisplayManager InitDisplayManager = new();
+    public InitializeDisplayManager InitDisplayManager;
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -168,12 +168,12 @@ public class MidiHandler : MonoBehaviour
 
         print($"Fits {KeyboardSize} key keyboard.");
 
-        InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap(), 
-            new float[2] { Camera.main.orthographicSize * Camera.main.aspect, Camera.main.orthographicSize * 2 });
+        InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
 
     void Start()
     {
+        InitDisplayManager = new();
         LoadMidi("TomOdelAnotherLove");
         GetMidiInformationForDisplay();
         PlaybackEngine.Start();

@@ -16,6 +16,12 @@ public class DisplayManager : MonoBehaviour
 
     public void Init(short[] NoteRange, TempoMap Tempo)
     {
+        print("Initalizing runway.");
+        const short BarsToDisplay = 2;
+        var MiliPerQuarter = TimeConverter.ConvertTo<MetricTimeSpan>(new MusicalTimeSpan(4), Tempo).TotalMilliseconds; // Converts a quarter note to miliseconds.
+        print($"Miliseconds per quarter note: {MiliPerQuarter}");
+        UpdateDisplayInfo();
+        print($"Aspect ratio: {AspectRatio}\nHeight: {Height}");
         var NewRunway = Instantiate(RunwayFab, transform);
         NewRunway.GetComponent<Runway>().Init(NoteRange, (float)(0.0), new float[2] { Height * 2 * AspectRatio, Height * 2});
         Runways.AddFirst(NewRunway);
@@ -25,20 +31,6 @@ public class DisplayManager : MonoBehaviour
     {
         AspectRatio = Camera.main.aspect;
         Height = Camera.main.orthographicSize;
-    }
-
-    public void InitalizeRunway(short[] NoteRange, TempoMap Tempo, float[] Dimensions)
-    {
-        print("Initalizing runway.");
-
-    }
-
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        UpdateDisplayInfo();
-        print($"Aspect ratio: {AspectRatio}\nHeight: {Height}");
     }
 
     // Update is called once per frame
