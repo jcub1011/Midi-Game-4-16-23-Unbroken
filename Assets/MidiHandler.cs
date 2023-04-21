@@ -16,6 +16,10 @@ public class MidiHandler : MonoBehaviour
     // TODO: Implement way of spawning notes a set amount of bars ahead of playback
     // and keep synchronization so notes hit input bar at the same time playback sends the note on event.
     // Stay synchronized regardless of framerate.
+    // IDEA: Create function that looks at notes a set time ahead of playback so that when the note reaches the strike bar playback will have reached that note.
+    // Delay the start of playback.
+    // IDEA: Loop through notes and delay playback by set time. Have playback start immediately instead and create custom function to spawn upcomming notes
+    // a set amount ahead of time.
 
     private MIDI.Playback PlaybackEngine = null;
     private MIDI.InputDevice InputMidi = null;
