@@ -22,6 +22,8 @@ public class MidiHandler : MonoBehaviour
     private MIDI.OutputDevice OutputMidi = null;
     private MidiFile CurrentMidi = null;
     private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
+    public GameObject NoteDisplayManager;
+    private DisplayManager DisplayManagerScript;
     public InitializeDisplayManager InitDisplayManager;
 
     /// <summary>
@@ -64,6 +66,7 @@ public class MidiHandler : MonoBehaviour
         if (GetOutputMidi())
         {
             PlaybackEngine = CurrentMidi.GetPlayback(OutputMidi, settings);
+            PlaybackEngine.NoteCallback += PushNoteToRunway;
             print($"Using output device: {OutputMidi.Name}");
         }
         else
@@ -168,7 +171,19 @@ public class MidiHandler : MonoBehaviour
 
         print($"Fits {KeyboardSize} key keyboard.");
 
-        InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
+        DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
+        DisplayManagerScript.CreateRunway(NoteRange, CurrentMidi.GetTempoMap());
+        // InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
+    }
+
+    NotePlaybackData PushNoteToRunway(NotePlaybackData RawData, long RawTime, long RawLength, System.TimeSpan PlaybackTime)
+    {
+        print($"Time: {RawTime}, Length: {RawLength}, TimeSpan: {PlaybackTime}");
+        DisplayManagerScript.AddNoteToRunway(RawData.NoteNumber, (float)TimeConverter.ConvertTo<MetricTimeSpan>(RawLength, CurrentMidi.GetTempoMap()).TotalMilliseconds);
+
+        // TODO: Figure out how to delay playback of audio by the time it takes for the note to hit the strikebar.
+
+        return RawData;
     }
 
     void Start()
