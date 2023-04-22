@@ -15,9 +15,10 @@ public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], T
 
 public struct NoteData
 {
-    public short NoteNumber;
-    public float NoteLength;
-    public double NoteTime;
+    public short Number;
+    public float Length;
+    public double Time;
+    public short Channel;
 }
 
 public class MidiHandler : MonoBehaviour
@@ -69,10 +70,10 @@ public class MidiHandler : MonoBehaviour
         {
             var noteData = new NoteData();
 
-            noteData.NoteNumber = note.NoteNumber;
-            noteData.NoteLength = (float)TimeConverter.ConvertTo<MetricTimeSpan>(note.Length,
+            noteData.Number = note.NoteNumber;
+            noteData.Length = (float)TimeConverter.ConvertTo<MetricTimeSpan>(note.Length,
                 CurrentMidi.GetTempoMap()).TotalMilliseconds;
-            noteData.NoteTime = TimeConverter.ConvertTo<MetricTimeSpan>(note.Time,
+            noteData.Time = TimeConverter.ConvertTo<MetricTimeSpan>(note.Time,
                 CurrentMidi.GetTempoMap()).TotalMilliseconds;
 
             DisplayQueue.Enqueue(noteData);
@@ -117,6 +118,7 @@ public class MidiHandler : MonoBehaviour
         if (MIDI.OutputDevice.GetDevicesCount() > 0)
         {
             OutputMidi = MIDI.OutputDevice.GetByIndex(0);
+            OutputMidi.PrepareForEventsSending();
             return true;
         }
         else
@@ -215,7 +217,7 @@ public class MidiHandler : MonoBehaviour
         print($"Fits {KeyboardSize} key keyboard.");
 
         DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
-        PlaybackOffset = GetTimeToHitStrikebar(8);
+        PlaybackOffset = GetTimeToHitStrikebar(12);
         DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);
         // InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
@@ -229,12 +231,12 @@ public class MidiHandler : MonoBehaviour
         var CurrentTime = PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + PlaybackOffset;
         while (DisplayQueue.Count > 0)
         {
-            if (DisplayQueue.Peek().NoteTime < CurrentTime)
+            if (DisplayQueue.Peek().Time < CurrentTime)
             {
                 var note = DisplayQueue.Dequeue();
-                print($"Time: {note.NoteTime}, Length: {note.NoteLength}");
+                print($"Time: {note.Time}, Length: {note.Length}");
 
-                DisplayManagerScript.AddNoteToRunway(note.NoteNumber, note.NoteLength);
+                DisplayManagerScript.AddNoteToRunway(note.Number, note.Length);
             } else
             {
                 break;
@@ -261,7 +263,7 @@ public class MidiHandler : MonoBehaviour
             chord.Time = chord.Time + OffsetInTicks;
         };
 
-        //CurrentMidi.ProcessTimedEvents(shiftEvt);
+        CurrentMidi.ProcessTimedEvents(shiftEvt);
         CurrentMidi.ProcessChords(shiftChord);
     }
 
