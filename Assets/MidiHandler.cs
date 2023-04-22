@@ -7,9 +7,18 @@ using UnityEngine;
 using System.IO;
 using Melanchall.DryWetMidi.Multimedia;
 using System.Threading;
+using System;
+using UnityEditor;
 
 [System.Serializable]
 public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }
+
+public struct NoteData
+{
+    public short NoteNumber;
+    public float NoteLength;
+    public double NoteTime;
+}
 
 public class MidiHandler : MonoBehaviour
 {
@@ -28,6 +37,8 @@ public class MidiHandler : MonoBehaviour
     private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
     public GameObject NoteDisplayManager;
     private DisplayManager DisplayManagerScript;
+    private float PlaybackOffset = 0;
+    private Queue<NoteData> DisplayQueue = new();
     public InitializeDisplayManager InitDisplayManager;
 
     /// <summary>
@@ -50,6 +61,23 @@ public class MidiHandler : MonoBehaviour
         CurrentMidi = MidiFile.Read($"{MidiBaseDirectory}\\{FileName}.mid");
         print("Successfully loaded midi file.");
 
+        GetMidiInformationForDisplay();
+        OffsetNotesPlayback();
+
+        // Init display queue.
+        foreach (var note in CurrentMidi.GetNotes())
+        {
+            var noteData = new NoteData();
+
+            noteData.NoteNumber = note.NoteNumber;
+            noteData.NoteLength = (float)TimeConverter.ConvertTo<MetricTimeSpan>(note.Length,
+                CurrentMidi.GetTempoMap()).TotalMilliseconds;
+            noteData.NoteTime = TimeConverter.ConvertTo<MetricTimeSpan>(note.Time,
+                CurrentMidi.GetTempoMap()).TotalMilliseconds;
+
+            DisplayQueue.Enqueue(noteData);
+        }
+
         // Get input midi.
         if (GetInputMidi())
         {
@@ -70,7 +98,6 @@ public class MidiHandler : MonoBehaviour
         if (GetOutputMidi())
         {
             PlaybackEngine = CurrentMidi.GetPlayback(OutputMidi, settings);
-            PlaybackEngine.NoteCallback += PushNoteToRunway;
             print($"Using output device: {OutputMidi.Name}");
         }
         else
@@ -150,6 +177,18 @@ public class MidiHandler : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Gets the amount of time it takes for a note to touch the strikebar from the top of the runway.
+    /// </summary>
+    /// <param name="QuarterNotesToDisplay">Quarter note leadup length.</param>
+    /// <returns>Miliseconds.</returns>
+    float GetTimeToHitStrikebar (int QuarterNotesToDisplay)
+    {
+        var MiliPerQuarterNote = TimeConverter.ConvertTo<MetricTimeSpan>(new MusicalTimeSpan(4), CurrentMidi.GetTempoMap()).TotalMilliseconds; // Converts a quarter note to miliseconds.
+        print($"Miliseconds per quarter note: {MiliPerQuarterNote}");
+        return (float)(MiliPerQuarterNote * QuarterNotesToDisplay);
+    }
+
     void GetMidiInformationForDisplay()
     {
         short KeyboardSize = 0; // Number of notes.
@@ -176,32 +215,67 @@ public class MidiHandler : MonoBehaviour
         print($"Fits {KeyboardSize} key keyboard.");
 
         DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
-        DisplayManagerScript.CreateRunway(NoteRange, CurrentMidi.GetTempoMap());
+        PlaybackOffset = GetTimeToHitStrikebar(8);
+        DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);
         // InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
 
-    NotePlaybackData PushNoteToRunway(NotePlaybackData RawData, long RawTime, long RawLength, System.TimeSpan PlaybackTime)
+    void PushNotesToRunway()
     {
-        print($"Time: {RawTime}, Length: {RawLength}, TimeSpan: {PlaybackTime}");
-        DisplayManagerScript.AddNoteToRunway(RawData.NoteNumber, (float)TimeConverter.ConvertTo<MetricTimeSpan>(RawLength, CurrentMidi.GetTempoMap()).TotalMilliseconds);
+        if (PlaybackEngine == null)
+        {
+            return;
+        }
+        var CurrentTime = PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + PlaybackOffset;
+        while (DisplayQueue.Count > 0)
+        {
+            if (DisplayQueue.Peek().NoteTime < CurrentTime)
+            {
+                var note = DisplayQueue.Dequeue();
+                print($"Time: {note.NoteTime}, Length: {note.NoteLength}");
 
-        // TODO: Figure out how to delay playback of audio by the time it takes for the note to hit the strikebar.
+                DisplayManagerScript.AddNoteToRunway(note.NoteNumber, note.NoteLength);
+            } else
+            {
+                break;
+            }
+        }
+    }
 
-        return RawData;
+    void OffsetNotesPlayback()
+    {
+        var OffsetInMetric = new MetricTimeSpan((long)(PlaybackOffset * 1000));
+        var OffsetInTicks = TimeConverter.ConvertFrom(OffsetInMetric, CurrentMidi.GetTempoMap());
+
+        //CurrentMidi.ShiftEvents(OffsetInMetric);
+        
+        Action<TimedEvent> shiftEvt = (evt) => {
+            if (evt.Event.EventType != MidiEventType.NoteOn && evt.Event.EventType != MidiEventType.NoteOff)
+            {
+                // If not a note.
+                evt.Time = evt.Time + OffsetInTicks;
+            }
+        };
+        Action<Chord> shiftChord = (chord) =>
+        {
+            chord.Time = chord.Time + OffsetInTicks;
+        };
+
+        //CurrentMidi.ProcessTimedEvents(shiftEvt);
+        CurrentMidi.ProcessChords(shiftChord);
     }
 
     void Start()
     {
         InitDisplayManager = new();
         LoadMidi("TomOdelAnotherLove");
-        GetMidiInformationForDisplay();
         PlaybackEngine.Start();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        PushNotesToRunway();
     }
 
     private void OnApplicationQuit()

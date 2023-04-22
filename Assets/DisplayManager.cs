@@ -20,26 +20,23 @@ public class DisplayManager : MonoBehaviour
     private LinkedList<Runaway> Runways = new();
     public GameObject RunwayFab;
 
-    public void CreateRunway(short[] NoteRange, TempoMap Tempo)
+    public void CreateRunway(short[] NoteRange, float TimeToReachStrikeBar)
     {
         print("Initalizing runway.");
         
         UpdateDisplayInfo();
         print($"Aspect ratio: {AspectRatio}\nHeight: {Height}");
+        var StrikebarHeight = 4; // Height of strikebar from the bottom.
 
         // Get note speed.
-        float[] Dimensions = new float[2] { Height * AspectRatio, Height * 2 }; // Dimensions of runway.
-        const short LenRunway = 2; // In bars.
-        var MiliPerQuarter = TimeConverter.ConvertTo<MetricTimeSpan>(new MusicalTimeSpan(4), Tempo).TotalMilliseconds; // Converts a quarter note to miliseconds.
-        print($"Miliseconds per quarter note: {MiliPerQuarter}");
-        float DistPerMs = Dimensions[1] / (float)(4.0 * MiliPerQuarter * LenRunway); // Distance note should travel every milisecond.
-                                                                                     // (Length runway / Time in ms to reach end of runway)
+        float[] Dimensions = new float[2] { Height * AspectRatio * 2, Height * 2 }; // Dimensions of runway.
+        float DistPerMs = (Dimensions[1] - StrikebarHeight) / TimeToReachStrikeBar;
 
         // Initalize runway.
         Runaway NewRunway;
         NewRunway.UnityInstance = Instantiate(RunwayFab, transform);
         NewRunway.Script = NewRunway.UnityInstance.GetComponent<Runway>();
-        NewRunway.Script.Init(NoteRange, DistPerMs, Dimensions);
+        NewRunway.Script.Init(NoteRange, DistPerMs, Dimensions, StrikebarHeight);
         Runways.AddFirst(NewRunway);
     }
 

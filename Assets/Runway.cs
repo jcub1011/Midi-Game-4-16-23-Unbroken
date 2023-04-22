@@ -28,7 +28,7 @@ public class Runway : MonoBehaviour
     /// <param name="Range">Range of note numbers to display.</param>
     /// <param name="NoteSpeed">Distance notes should travel every milisecond in unity units.</param>
     /// <param name="Dimensions">Width and height of runway in unity units.</param>
-    public void Init(short[] Range, float NoteSpeed, float[] Dimensions)
+    public void Init(short[] Range, float NoteSpeed, float[] Dimensions, float StrikebarHeight)
     {
         print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
         print($"Note speed: {NoteSpeed} (units/milisecond)");
@@ -37,7 +37,7 @@ public class Runway : MonoBehaviour
         Height = Dimensions[1];
         Width = Dimensions[0];
         NoteWidth = Width / (float)(Range[1] - Range[0] + 1);
-        StrikeBarHeight = 4; // Height above the floor.
+        StrikeBarHeight = StrikebarHeight; // Height above the floor.
         print($"Note Width: {NoteWidth}");
 
         // Init lanes for managed notes.
@@ -49,8 +49,9 @@ public class Runway : MonoBehaviour
         }
 
         // Create Strike bar
-        StrikeBar.transform.localPosition = new Vector3(0, - Height / 2 + StrikeBarHeight, 1);
         StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
+        var barY = -Height / 2 + StrikeBarHeight - StrikeBar.transform.localScale.y;
+        StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
     }
 
@@ -69,7 +70,7 @@ public class Runway : MonoBehaviour
         }
         // Create new note.
         var NewNote = Instantiate(NotePrefab, this.transform);
-        float NoteX = (float)(NoteWidth * (NoteNumber - NoteRange[0]) + NoteWidth / 2.0); // Half width offset because anchor is in the middle.
+        float NoteX = (float)(NoteWidth * (NoteNumber - NoteRange[0]) + NoteWidth / 2.0 - Width / 2.0); // Half width offset because anchor is in the middle.
         float NoteY = (float)(NoteLength * GetNoteSpeed() / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
         NewNote.transform.position = new Vector3(NoteX, NoteY, 2);
         /// Child 0 is skin.
@@ -120,7 +121,7 @@ public class Runway : MonoBehaviour
                 Note.Value.transform.position -= new Vector3(0, (float)(GetNoteSpeed() * Time.deltaTime * 1000), 0);
 
                 // Check if visible and delete if not.
-                if (Note.Value.transform.position.y < -Height) // Below the floor.
+                if (Note.Value.transform.position.y < - Height / 2 - Note.Value.transform.GetChild(0).transform.localScale.y / 2) // Below the floor.
                 {
                     var temp = Note;
                     Note = Note.Next;
