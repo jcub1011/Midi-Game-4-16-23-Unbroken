@@ -6,6 +6,14 @@ struct NoteInfo
 {
     public short NoteNumber;
     public float NoteLength;
+    public float TimePosition;
+}
+
+struct NoteBlock
+{
+    public GameObject Note;
+    public float TimePosition;
+    public float PositionOffset;
 }
 
 public class Runway : MonoBehaviour
@@ -13,7 +21,7 @@ public class Runway : MonoBehaviour
     short[] NoteRange;
     float NoteSpeedCoeff; // How far the note moves per milisecond.
     float PlaybackSpeed = 1; // Multiplier to apply on top of NoteSpeedCoeff.
-    LinkedList<GameObject>[] Lanes;
+    LinkedList<NoteBlock>[] Lanes;
     float NoteWidth; // In unity units.
     float Height; // In unity units.
     float Width; // In unity units.
@@ -41,11 +49,11 @@ public class Runway : MonoBehaviour
         print($"Note Width: {NoteWidth}");
 
         // Init lanes for managed notes.
-        Lanes = new LinkedList<GameObject>[NoteRange[1] - NoteRange[0] + 1]; // Length = Range of notes to represent.
+        Lanes = new LinkedList<NoteBlock>[NoteRange[1] - NoteRange[0] + 1]; // Length = Range of notes to represent.
         
         for (int i = 0; i < Lanes.Length; i++) 
         {
-            Lanes[i] = new LinkedList<GameObject>();
+            Lanes[i] = new LinkedList<NoteBlock>();
         }
 
         // Create Strike bar
@@ -60,7 +68,7 @@ public class Runway : MonoBehaviour
     /// </summary>
     /// <param name="NoteNumber"></param>
     /// <param name="NoteLength"></param>
-    private void InsertNoteToRunway(short NoteNumber, float NoteLength)
+    private void InsertNoteToRunway(short NoteNumber, float NoteLength, float TimePosition)
     {
         // Check if valid note.
         if (NoteNumber < NoteRange[0] || NoteNumber > NoteRange[1])
@@ -84,13 +92,17 @@ public class Runway : MonoBehaviour
         NewNote.transform.GetChild(2).localScale = NoteDimensions + new Vector3(0, (float)0.1, 0); // Additional good collider offset.
         NewNote.transform.GetChild(3).localScale = NoteDimensions + new Vector3(0, (float)0.2, 0); // Additional ok collider offset.
 
-        print($"Inserting note '{NoteNumber}' to lane {NoteNumber - NoteRange[0]}.");
-        Lanes[NoteNumber - NoteRange[0]].AddFirst(NewNote); // Add to managed list.
+        // print($"Inserting note '{NoteNumber}' to lane {NoteNumber - NoteRange[0]}.");
+        var NewBlock = new NoteBlock();
+        NewBlock.Note = NewNote;
+        NewBlock.TimePosition = TimePosition;
+        NewBlock.PositionOffset = NewNote.transform.GetChild(0).transform.localScale.y / 2;
+        Lanes[NoteNumber - NoteRange[0]].AddFirst(NewBlock); // Add to managed list.
     }
 
-    public void AddNoteToQueue(short NoteNumber, float NoteLength)
+    public void AddNoteToQueue(short NoteNumber, float NoteLength, float TimePosition)
     {
-        DisplayQueue.Enqueue(new NoteInfo { NoteNumber = NoteNumber, NoteLength = NoteLength });
+        DisplayQueue.Enqueue(new NoteInfo { NoteNumber = NoteNumber, NoteLength = NoteLength, TimePosition = TimePosition });
     }
 
     float GetNoteSpeed()
@@ -98,7 +110,7 @@ public class Runway : MonoBehaviour
         return NoteSpeedCoeff * PlaybackSpeed;
     }
 
-    void Update()
+    public void UpdateNotePosition(float PlaybackTime)
     {
         if (Lanes == null) // If lanes has not been instantiated yet.
         {
@@ -108,25 +120,32 @@ public class Runway : MonoBehaviour
         while (DisplayQueue.Count > 0)
         {
             var temp = DisplayQueue.Dequeue();
-            InsertNoteToRunway(temp.NoteNumber, temp.NoteLength);
+            InsertNoteToRunway(temp.NoteNumber, temp.NoteLength, temp.TimePosition);
         }
         // Move notes down.
         foreach (var Lane in Lanes)
         {
-            print($"Lane length: {Lane.Count}");
+            // print($"Lane length: {Lane.Count}");
             // For every note in each lane.
             for (var Note = Lane.First; Note != null;)
             {
                 // Shift note down.
-                Note.Value.transform.position -= new Vector3(0, (float)(GetNoteSpeed() * Time.deltaTime * 1000), 0);
+                // Note.Value.Note.transform.position -= new Vector3(0, (float)(GetNoteSpeed() * Time.deltaTime * 1000), 0);
+                // Get new position.
+                var newPosition = new Vector3();
+                newPosition.x = Note.Value.Note.transform.localPosition.x;
+                newPosition.y = Height / 2 - (float)(NoteSpeedCoeff * (PlaybackTime - Note.Value.TimePosition)) + Note.Value.PositionOffset;
+                newPosition.z = Note.Value.Note.transform.localPosition.z;
+
+                Note.Value.Note.transform.localPosition = newPosition;
 
                 // Check if visible and delete if not.
-                if (Note.Value.transform.position.y < - Height / 2 - Note.Value.transform.GetChild(0).transform.localScale.y / 2) // Below the floor.
+                if (newPosition.y < - Height / 2 - Note.Value.PositionOffset) // Below the floor.
                 {
                     var temp = Note;
                     Note = Note.Next;
                     Lane.Remove(temp);
-                    Destroy(temp.Value);
+                    Destroy(temp.Value.Note);
                     continue;
                 }
 

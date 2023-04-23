@@ -41,6 +41,7 @@ public class MidiHandler : MonoBehaviour
     private float PlaybackOffset = 0;
     private Queue<NoteData> DisplayQueue = new();
     public InitializeDisplayManager InitDisplayManager;
+    private CustomTickGenerator IntroInterpolater; // For inserting notes before actual audio playback begins.
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -63,7 +64,6 @@ public class MidiHandler : MonoBehaviour
         print("Successfully loaded midi file.");
 
         GetMidiInformationForDisplay();
-        OffsetNotesPlayback();
 
         // Init display queue.
         foreach (var note in CurrentMidi.GetNotes())
@@ -217,61 +217,55 @@ public class MidiHandler : MonoBehaviour
         print($"Fits {KeyboardSize} key keyboard.");
 
         DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
-        PlaybackOffset = GetTimeToHitStrikebar(12);
+        PlaybackOffset = GetTimeToHitStrikebar(4);
         DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);
         // InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
 
     void PushNotesToRunway()
     {
-        if (PlaybackEngine == null)
+        if (PlaybackEngine == null || IntroInterpolater == null)
         {
             return;
         }
-        var CurrentTime = PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + PlaybackOffset;
+
+        if (!PlaybackEngine.IsRunning)
+        {
+            // Stop interpolater when intro offset is reached.
+            if (IntroInterpolater.GetCurrentTime() > PlaybackOffset)
+            {
+                IntroInterpolater.Stop();
+                IntroInterpolater.FixTime(PlaybackOffset);
+                PlaybackEngine.Start();
+            }
+        }
+
+        var CurrentTime = PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + IntroInterpolater.GetCurrentTime();
+
         while (DisplayQueue.Count > 0)
         {
             if (DisplayQueue.Peek().Time < CurrentTime)
             {
                 var note = DisplayQueue.Dequeue();
-                print($"Time: {note.Time}, Length: {note.Length}");
+                // print($"Time: {note.Time}, Length: {note.Length}");
 
-                DisplayManagerScript.AddNoteToRunway(note.Number, note.Length);
+                DisplayManagerScript.AddNoteToRunway(note.Number, note.Length, (float)note.Time);
             } else
             {
                 break;
             }
         }
-    }
 
-    void OffsetNotesPlayback()
-    {
-        var OffsetInMetric = new MetricTimeSpan((long)(PlaybackOffset * 1000));
-        var OffsetInTicks = TimeConverter.ConvertFrom(OffsetInMetric, CurrentMidi.GetTempoMap());
-
-        //CurrentMidi.ShiftEvents(OffsetInMetric);
-        
-        Action<TimedEvent> shiftEvt = (evt) => {
-            if (evt.Event.EventType != MidiEventType.NoteOn && evt.Event.EventType != MidiEventType.NoteOff)
-            {
-                // If not a note.
-                evt.Time = evt.Time + OffsetInTicks;
-            }
-        };
-        Action<Chord> shiftChord = (chord) =>
-        {
-            chord.Time = chord.Time + OffsetInTicks;
-        };
-
-        CurrentMidi.ProcessTimedEvents(shiftEvt);
-        CurrentMidi.ProcessChords(shiftChord);
+        DisplayManagerScript.UpdateRunways((float)CurrentTime);
     }
 
     void Start()
     {
         InitDisplayManager = new();
         LoadMidi("TomOdelAnotherLove");
-        PlaybackEngine.Start();
+        IntroInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, CurrentMidi.GetTempoMap()).TotalMilliseconds);
+        IntroInterpolater.Start();
+        // PlaybackEngine.Start();
     }
 
     // Update is called once per frame
@@ -290,6 +284,13 @@ public class MidiHandler : MonoBehaviour
             PlaybackEngine.Dispose();
             PlaybackEngine = null;
             print("Disposed playback engine.");
+        }
+        if (IntroInterpolater != null)
+        {
+            IntroInterpolater.Stop();
+            IntroInterpolater.DisposeTimer();
+            IntroInterpolater = null;
+            print("Disposed intro interpolater.");
         }
         if (OutputMidi != null)
         {

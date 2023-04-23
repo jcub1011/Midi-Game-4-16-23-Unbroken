@@ -46,14 +46,16 @@ public class DisplayManager : MonoBehaviour
         Height = Camera.main.orthographicSize;
     }
 
-    public void AddNoteToRunway(short NoteNumber, float NoteLength)
+    public void AddNoteToRunway(short NoteNumber, float NoteLength, float TimePosition)
     {
-        Runways.First().Script.AddNoteToQueue(NoteNumber, NoteLength);
+        Runways.First().Script.AddNoteToQueue(NoteNumber, NoteLength, TimePosition);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void UpdateRunways(float PlaybackTime)
     {
-        
+        foreach (var Runway in Runways)
+        {
+            Runway.Script.UpdateNotePosition(PlaybackTime);
+        }
     }
 }
