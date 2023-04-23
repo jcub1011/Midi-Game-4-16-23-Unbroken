@@ -146,6 +146,10 @@ public class MidiHandler : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Gets the range of notes in the midi file.
+    /// </summary>
+    /// <returns>An array of length 2 containing the minimum and maximum note number.</returns>
     short[] GetNoteRange()
     {
         // Keep track of min and max note.
@@ -168,6 +172,12 @@ public class MidiHandler : MonoBehaviour
         return new short[2] { MinNote, MaxNote };
     }
 
+    /// <summary>
+    /// Checks if the range will fit the other range.
+    /// </summary>
+    /// <param name="Range">The range you want to check.</param>
+    /// <param name="RangeToFit">The range to compare against.</param>
+    /// <returns>Bool</returns>
     bool FitsInRange(short[] Range, short[] RangeToFit)
     {
         if (Range[0] <= RangeToFit[0] && Range[1] >= RangeToFit[1])
@@ -191,6 +201,9 @@ public class MidiHandler : MonoBehaviour
         return (float)(MiliPerQuarterNote * QuarterNotesToDisplay);
     }
 
+    /// <summary>
+    /// Updates the display manager script, playback offset, and creates a runway in display manager.
+    /// </summary>
     void GetMidiInformationForDisplay()
     {
         short KeyboardSize = 0; // Number of notes.
@@ -222,6 +235,9 @@ public class MidiHandler : MonoBehaviour
         // InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
 
+    /// <summary>
+    /// Adds upcomming notes to the runway display queue.
+    /// </summary>
     void PushNotesToRunway()
     {
         if (PlaybackEngine == null || IntroInterpolater == null)
@@ -262,7 +278,7 @@ public class MidiHandler : MonoBehaviour
     void Start()
     {
         InitDisplayManager = new();
-        LoadMidi("TomOdelAnotherLove");
+        LoadMidi("NeverGonnaGiveYouUp");
         IntroInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, CurrentMidi.GetTempoMap()).TotalMilliseconds);
         IntroInterpolater.Start();
         // PlaybackEngine.Start();

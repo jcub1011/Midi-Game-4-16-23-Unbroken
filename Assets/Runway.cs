@@ -36,6 +36,7 @@ public class Runway : MonoBehaviour
     /// <param name="Range">Range of note numbers to display.</param>
     /// <param name="NoteSpeed">Distance notes should travel every milisecond in unity units.</param>
     /// <param name="Dimensions">Width and height of runway in unity units.</param>
+    /// <param name="StrikebarHeight">The height of the strikebar from the bottom of the runway.</param>
     public void Init(short[] Range, float NoteSpeed, float[] Dimensions, float StrikebarHeight)
     {
         print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
@@ -68,6 +69,7 @@ public class Runway : MonoBehaviour
     /// </summary>
     /// <param name="NoteNumber"></param>
     /// <param name="NoteLength"></param>
+    /// <param name="TimePosition">The time in miliseconds since the beginning of playback.</param>
     private void InsertNoteToRunway(short NoteNumber, float NoteLength, float TimePosition)
     {
         // Check if valid note.
@@ -100,6 +102,12 @@ public class Runway : MonoBehaviour
         Lanes[NoteNumber - NoteRange[0]].AddFirst(NewBlock); // Add to managed list.
     }
 
+    /// <summary>
+    /// Adds a note to the display queue.
+    /// </summary>
+    /// <param name="NoteNumber">The number of the note accoring to midi standard.</param>
+    /// <param name="NoteLength">The length of the note in miliseconds.</param>
+    /// <param name="TimePosition">The position of the note in playback. (miliseconds)</param>
     public void AddNoteToQueue(short NoteNumber, float NoteLength, float TimePosition)
     {
         DisplayQueue.Enqueue(new NoteInfo { NoteNumber = NoteNumber, NoteLength = NoteLength, TimePosition = TimePosition });
@@ -110,6 +118,10 @@ public class Runway : MonoBehaviour
         return NoteSpeedCoeff * PlaybackSpeed;
     }
 
+    /// <summary>
+    /// Updates the position of all the notes in each lane.
+    /// </summary>
+    /// <param name="PlaybackTime">The time since the beginning of playback. (in miliseconds)</param>
     public void UpdateNotePosition(float PlaybackTime)
     {
         if (Lanes == null) // If lanes has not been instantiated yet.
