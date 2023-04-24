@@ -1,3 +1,4 @@
+using Melanchall.DryWetMidi.Interaction;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -65,6 +66,43 @@ public class Runway : MonoBehaviour
     }
 
     /// <summary>
+    /// Initalizes a runway.
+    /// </summary>
+    /// <param name="Range">Range of notes where first is min and last is max. [min, max]</param>
+    /// <param name="Dimensions">Height and width of runway in unity units. [width, height]</param>
+    /// <param name="StrikebarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
+    /// <param name="QuarterNotesLeadup">Number of quarter notes that can be seen before first note touches the strikebar.</param>
+    /// <param name="Tempo">The tempo map of the song.</param>
+    /// <param name="SpeedMulti">Multiplier of speed. 1 is normal speed.</param>
+    public void Init(short[] Range, float[] Dimensions, float StrikebarHeight, short QuarterNotesLeadup, TempoMap Tempo, float SpeedMulti = 1)
+    {
+        print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
+        // Init private members.
+        NoteRange = Range;
+        Width = Dimensions[0];
+        Height = Dimensions[1];
+        PlaybackSpeed = 1;
+        StrikeBarHeight = StrikebarHeight;
+
+        // Get notespeed.
+        var DistToStrikebar = Height * 2 - StrikeBarHeight;
+        var TimeSpanQNotes = new MusicalTimeSpan(QuarterNotesLeadup);
+        var MsToReachStrikeBar = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, Tempo).TotalMilliseconds;
+        NoteSpeedCoeff = DistToStrikebar / MsToReachStrikeBar * SpeedMulti; // units/ms
+        print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
+
+        // Get note width.
+        var noteRange = Range[1] - Range[0] + 1;
+        NoteWidth = Width / noteRange;
+
+        // Init strike bar.
+        StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
+        var barY = - Height / 2 + StrikeBarHeight - StrikeBar.transform.localScale.y;
+        StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
+        StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
+    }
+
+    /// <summary>
     /// Inserts the given note to the proper lane. NoteLength is in miliseconds.
     /// </summary>
     /// <param name="NoteNumber"></param>
@@ -78,6 +116,7 @@ public class Runway : MonoBehaviour
             print($"Note {NoteNumber} outside range [{NoteRange[0]}, {NoteRange[1]}].");
             return;
         }
+
         // Create new note.
         var NewNote = Instantiate(NotePrefab, this.transform);
         float NoteX = (float)(NoteWidth * (NoteNumber - NoteRange[0]) + NoteWidth / 2.0 - Width / 2.0); // Half width offset because anchor is in the middle.

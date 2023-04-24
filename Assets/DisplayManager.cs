@@ -13,6 +13,33 @@ struct Runaway
 }
 
 
+public class DisplayHandler
+{
+    public float AspectRatio
+    {
+        get 
+        {
+            return Camera.main.aspect;
+        }
+    }
+    public float Height
+    {
+        get
+        {
+            return Camera.main.orthographicSize;
+        }
+    }
+
+    public float Width
+    {
+        get
+        {
+            return Height * AspectRatio;
+        }
+    }
+}
+
+
 public class DisplayManager : MonoBehaviour
 {
     private float AspectRatio;

@@ -10,8 +10,9 @@ using System.Threading;
 using System;
 using UnityEditor;
 
+/*
 [System.Serializable]
-public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }
+public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }*/
 
 public struct NoteData
 {
@@ -40,7 +41,6 @@ public class MidiHandler : MonoBehaviour
     private DisplayManager DisplayManagerScript;
     private float PlaybackOffset = 0;
     private Queue<NoteData> DisplayQueue = new();
-    public InitializeDisplayManager InitDisplayManager;
     private CustomTickGenerator IntroInterpolater; // For inserting notes before actual audio playback begins.
 
     /// <summary>
@@ -232,7 +232,6 @@ public class MidiHandler : MonoBehaviour
         DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
         PlaybackOffset = GetTimeToHitStrikebar(4);
         DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);
-        // InitDisplayManager.Invoke(NoteRange, CurrentMidi.GetTempoMap());
     }
 
     /// <summary>
@@ -277,7 +276,6 @@ public class MidiHandler : MonoBehaviour
 
     void Start()
     {
-        InitDisplayManager = new();
         LoadMidi("NeverGonnaGiveYouUp");
         IntroInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, CurrentMidi.GetTempoMap()).TotalMilliseconds);
         IntroInterpolater.Start();
