@@ -24,24 +24,19 @@ public struct NoteData
 
 public class MidiHandler : MonoBehaviour
 {
-    // TODO: Implement way of spawning notes a set amount of bars ahead of playback
-    // and keep synchronization so notes hit input bar at the same time playback sends the note on event.
-    // Stay synchronized regardless of framerate.
-    // IDEA: Create function that looks at notes a set time ahead of playback so that when the note reaches the strike bar playback will have reached that note.
-    // Delay the start of playback.
-    // IDEA: Loop through notes and delay playback by set time. Have playback start immediately instead and create custom function to spawn upcomming notes
-    // a set amount ahead of time.
-
     private MIDI.Playback PlaybackEngine = null;
     private MIDI.InputDevice InputMidi = null;
     private MIDI.OutputDevice OutputMidi = null;
     private MidiFile CurrentMidi = null;
     private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
-    public GameObject NoteDisplayManager;
-    private DisplayManager DisplayManagerScript;
     private float PlaybackOffset = 0;
     private Queue<NoteData> DisplayQueue = new();
     private CustomTickGenerator IntroInterpolater; // For inserting notes before actual audio playback begins.
+    private DisplayHandler DisplayHandler = null;
+    public GameObject Runway;
+    private Runway RunwayScript;
+    //public GameObject NoteDisplayManager;
+    //private DisplayManager DisplayManagerScript;
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -59,6 +54,7 @@ public class MidiHandler : MonoBehaviour
             PlaybackEngine = null;
         }
 
+        // Read file.
         print($"Loading midi file: {FileName}");
         CurrentMidi = MidiFile.Read($"{MidiBaseDirectory}\\{FileName}.mid");
         print("Successfully loaded midi file.");
@@ -228,10 +224,10 @@ public class MidiHandler : MonoBehaviour
         }
 
         print($"Fits {KeyboardSize} key keyboard.");
-
+        /*
         DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
         PlaybackOffset = GetTimeToHitStrikebar(4);
-        DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);
+        DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);*/
     }
 
     /// <summary>
@@ -257,29 +253,38 @@ public class MidiHandler : MonoBehaviour
 
         var CurrentTime = PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + IntroInterpolater.GetCurrentTime();
 
-        while (DisplayQueue.Count > 0)
+        while (DisplayQueue.Count > 0 && RunwayScript != null)
         {
             if (DisplayQueue.Peek().Time < CurrentTime)
             {
                 var note = DisplayQueue.Dequeue();
                 // print($"Time: {note.Time}, Length: {note.Length}");
 
-                DisplayManagerScript.AddNoteToRunway(note.Number, note.Length, (float)note.Time);
+                RunwayScript.AddNoteToQueue(note.Number, note.Length, (float)note.Time);
+                // DisplayManagerScript.AddNoteToRunway(note.Number, note.Length, (float)note.Time);
             } else
             {
                 break;
             }
         }
 
-        DisplayManagerScript.UpdateRunways((float)CurrentTime);
+        // DisplayManagerScript.UpdateRunways((float)CurrentTime);
+        RunwayScript.UpdateNotePosition((float)CurrentTime);
     }
 
     void Start()
     {
         LoadMidi("NeverGonnaGiveYouUp");
+        // Init interpolater.
         IntroInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, CurrentMidi.GetTempoMap()).TotalMilliseconds);
+
+        // Init runway.
+        RunwayScript = Runway.GetComponent<Runway>();
+        float[] Dimensions = new float[2] { DisplayHandler.Width, DisplayHandler.Height };
+        RunwayScript.Init(GetNoteRange(), Dimensions, 4, 8, CurrentMidi.GetTempoMap());
+
+        // Start playback.
         IntroInterpolater.Start();
-        // PlaybackEngine.Start();
     }
 
     // Update is called once per frame

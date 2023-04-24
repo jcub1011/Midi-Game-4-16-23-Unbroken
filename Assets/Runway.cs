@@ -100,6 +100,14 @@ public class Runway : MonoBehaviour
         var barY = - Height / 2 + StrikeBarHeight - StrikeBar.transform.localScale.y;
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
+
+        // Create lanes.
+        Lanes = new LinkedList<NoteBlock>[noteRange];
+
+        for (int i = 0; i < Lanes.Length; i++)
+        {
+            Lanes[i] = new LinkedList<NoteBlock>();
+        }
     }
 
     /// <summary>

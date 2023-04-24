@@ -13,7 +13,7 @@ struct Runaway
 }
 
 
-public class DisplayHandler
+public class DisplayHandler : ScriptableObject
 {
     public float AspectRatio
     {
