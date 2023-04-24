@@ -1,5 +1,4 @@
 using Melanchall.DryWetMidi.Interaction;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,7 +20,6 @@ public class Runway : MonoBehaviour
 {
     short[] NoteRange;
     float NoteSpeedCoeff; // How far the note moves per milisecond.
-    float PlaybackSpeed = 1; // Multiplier to apply on top of NoteSpeedCoeff.
     LinkedList<NoteBlock>[] Lanes;
     float NoteWidth; // In unity units.
     float Height; // In unity units.
@@ -30,40 +28,6 @@ public class Runway : MonoBehaviour
     Queue<NoteInfo> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
     public GameObject NotePrefab;
     public GameObject StrikeBar;
-    
-    /// <summary>
-    /// Inits a new runway.
-    /// </summary>
-    /// <param name="Range">Range of note numbers to display.</param>
-    /// <param name="NoteSpeed">Distance notes should travel every milisecond in unity units.</param>
-    /// <param name="Dimensions">Width and height of runway in unity units.</param>
-    /// <param name="StrikebarHeight">The height of the strikebar from the bottom of the runway.</param>
-    public void Init(short[] Range, float NoteSpeed, float[] Dimensions, float StrikebarHeight)
-    {
-        print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
-        print($"Note speed: {NoteSpeed} (units/milisecond)");
-        NoteRange = Range;
-        NoteSpeedCoeff = NoteSpeed;
-        Height = Dimensions[1];
-        Width = Dimensions[0];
-        NoteWidth = Width / (float)(Range[1] - Range[0] + 1);
-        StrikeBarHeight = StrikebarHeight; // Height above the floor.
-        print($"Note Width: {NoteWidth}");
-
-        // Init lanes for managed notes.
-        Lanes = new LinkedList<NoteBlock>[NoteRange[1] - NoteRange[0] + 1]; // Length = Range of notes to represent.
-        
-        for (int i = 0; i < Lanes.Length; i++) 
-        {
-            Lanes[i] = new LinkedList<NoteBlock>();
-        }
-
-        // Create Strike bar
-        StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
-        var barY = -Height / 2 + StrikeBarHeight - StrikeBar.transform.localScale.y;
-        StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
-        StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
-    }
 
     /// <summary>
     /// Initalizes a runway.
@@ -81,14 +45,13 @@ public class Runway : MonoBehaviour
         NoteRange = Range;
         Width = Dimensions[0];
         Height = Dimensions[1];
-        PlaybackSpeed = 1;
         StrikeBarHeight = StrikebarHeight;
 
         // Get notespeed.
-        var DistToStrikebar = Height * 2 - StrikeBarHeight;
-        var TimeSpanQNotes = new MusicalTimeSpan(QuarterNotesLeadup);
+        var DistToStrikebar = Height - StrikeBarHeight;
+        var TimeSpanQNotes = new MusicalTimeSpan(4) * QuarterNotesLeadup;
         var MsToReachStrikeBar = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, Tempo).TotalMilliseconds;
-        NoteSpeedCoeff = DistToStrikebar / MsToReachStrikeBar * SpeedMulti; // units/ms
+        NoteSpeedCoeff = DistToStrikebar / MsToReachStrikeBar; // units/ms
         print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
 
         // Get note width.
@@ -128,13 +91,13 @@ public class Runway : MonoBehaviour
         // Create new note.
         var NewNote = Instantiate(NotePrefab, this.transform);
         float NoteX = (float)(NoteWidth * (NoteNumber - NoteRange[0]) + NoteWidth / 2.0 - Width / 2.0); // Half width offset because anchor is in the middle.
-        float NoteY = (float)(NoteLength * GetNoteSpeed() / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
+        float NoteY = (float)(NoteLength * NoteSpeedCoeff / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
         NewNote.transform.position = new Vector3(NoteX, NoteY, 2);
         /// Child 0 is skin.
         /// Child 1 is perfect collider.
         /// Child 2 is good collider.
         /// Child 3 is ok collider.
-        var NoteDimensions = new Vector3(NoteWidth, NoteLength * GetNoteSpeed()); // Dimensions of note.
+        var NoteDimensions = new Vector3(NoteWidth, NoteLength * NoteSpeedCoeff); // Dimensions of note.
         NewNote.transform.GetChild(0).localScale = NoteDimensions;
         NewNote.transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = true;
         NewNote.transform.GetChild(1).localScale = NoteDimensions + new Vector3(0, (float)0.01, 0); // Additional perfect collider offset.
@@ -150,6 +113,15 @@ public class Runway : MonoBehaviour
     }
 
     /// <summary>
+    /// Turns on the collider for the specified note.
+    /// </summary>
+    /// <param name="NoteNumber">The note to activate the collider for.</param>
+    public void ActivateNoteCollider(short NoteNumber)
+    {
+
+    }
+
+    /// <summary>
     /// Adds a note to the display queue.
     /// </summary>
     /// <param name="NoteNumber">The number of the note accoring to midi standard.</param>
@@ -160,16 +132,11 @@ public class Runway : MonoBehaviour
         DisplayQueue.Enqueue(new NoteInfo { NoteNumber = NoteNumber, NoteLength = NoteLength, TimePosition = TimePosition });
     }
 
-    float GetNoteSpeed()
-    {
-        return NoteSpeedCoeff * PlaybackSpeed;
-    }
-
     /// <summary>
     /// Updates the position of all the notes in each lane.
     /// </summary>
     /// <param name="PlaybackTime">The time since the beginning of playback. (in miliseconds)</param>
-    public void UpdateNotePosition(float PlaybackTime)
+    public void UpdateNotesPositions(float PlaybackTime)
     {
         if (Lanes == null) // If lanes has not been instantiated yet.
         {
@@ -189,7 +156,6 @@ public class Runway : MonoBehaviour
             for (var Note = Lane.First; Note != null;)
             {
                 // Shift note down.
-                // Note.Value.Note.transform.position -= new Vector3(0, (float)(GetNoteSpeed() * Time.deltaTime * 1000), 0);
                 // Get new position.
                 var newPosition = new Vector3();
                 newPosition.x = Note.Value.Note.transform.localPosition.x;

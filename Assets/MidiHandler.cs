@@ -32,11 +32,9 @@ public class MidiHandler : MonoBehaviour
     private float PlaybackOffset = 0;
     private Queue<NoteData> DisplayQueue = new();
     private CustomTickGenerator IntroInterpolater; // For inserting notes before actual audio playback begins.
-    private DisplayHandler DisplayHandler = null;
+    private DisplayHandler DisplayHandler = new();
     public GameObject Runway;
     private Runway RunwayScript;
-    //public GameObject NoteDisplayManager;
-    //private DisplayManager DisplayManagerScript;
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -133,12 +131,30 @@ public class MidiHandler : MonoBehaviour
         if (MIDI.InputDevice.GetDevicesCount() > 0)
         {
             InputMidi = MIDI.InputDevice.GetByIndex(0);
+            InputMidi.EventReceived += OnEventRecieved;
+            InputMidi.StartEventsListening();
             return true;
         }
         else
         {
             InputMidi = null;
             return false;
+        }
+    }
+
+    void OnEventRecieved(object sender, MidiEventReceivedEventArgs evt)
+    {
+        switch (evt.Event.EventType)
+        {
+            case MidiEventType.NoteOn:
+                var NoteOn = (NoteOnEvent)evt.Event;
+                print($"Note number: {NoteOn.NoteNumber}, Velocity: {NoteOn.Velocity}");
+                break;
+
+            case MidiEventType.NoteOff:
+                var NoteOff = (NoteOffEvent)evt.Event;
+                print($"Note number: {NoteOff.NoteNumber}, Off Velocity: {NoteOff.Velocity}");
+                break;
         }
     }
 
@@ -186,18 +202,6 @@ public class MidiHandler : MonoBehaviour
     }
 
     /// <summary>
-    /// Gets the amount of time it takes for a note to touch the strikebar from the top of the runway.
-    /// </summary>
-    /// <param name="QuarterNotesToDisplay">Quarter note leadup length.</param>
-    /// <returns>Miliseconds.</returns>
-    float GetTimeToHitStrikebar (int QuarterNotesToDisplay)
-    {
-        var MiliPerQuarterNote = TimeConverter.ConvertTo<MetricTimeSpan>(new MusicalTimeSpan(4), CurrentMidi.GetTempoMap()).TotalMilliseconds; // Converts a quarter note to miliseconds.
-        print($"Miliseconds per quarter note: {MiliPerQuarterNote}");
-        return (float)(MiliPerQuarterNote * QuarterNotesToDisplay);
-    }
-
-    /// <summary>
     /// Updates the display manager script, playback offset, and creates a runway in display manager.
     /// </summary>
     void GetMidiInformationForDisplay()
@@ -224,10 +228,6 @@ public class MidiHandler : MonoBehaviour
         }
 
         print($"Fits {KeyboardSize} key keyboard.");
-        /*
-        DisplayManagerScript = NoteDisplayManager.GetComponent<DisplayManager>();
-        PlaybackOffset = GetTimeToHitStrikebar(4);
-        DisplayManagerScript.CreateRunway(NoteRange, PlaybackOffset);*/
     }
 
     /// <summary>
@@ -269,7 +269,7 @@ public class MidiHandler : MonoBehaviour
         }
 
         // DisplayManagerScript.UpdateRunways((float)CurrentTime);
-        RunwayScript.UpdateNotePosition((float)CurrentTime);
+        RunwayScript.UpdateNotesPositions((float)CurrentTime);
     }
 
     void Start()
