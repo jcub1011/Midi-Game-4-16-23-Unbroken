@@ -163,7 +163,7 @@ public class MidiHandler : MonoBehaviour
     /// Gets the range of notes in the midi file.
     /// </summary>
     /// <returns>An array of length 2 containing the minimum and maximum note number.</returns>
-    short[] GetNoteRange()
+    IntRange GetNoteRange()
     {
         // Keep track of min and max note.
         short MinNote = short.MaxValue;
@@ -182,24 +182,7 @@ public class MidiHandler : MonoBehaviour
             }
         }
 
-        return new short[2] { MinNote, MaxNote };
-    }
-
-    /// <summary>
-    /// Checks if the range will fit the other range.
-    /// </summary>
-    /// <param name="Range">The range you want to check.</param>
-    /// <param name="RangeToFit">The range to compare against.</param>
-    /// <returns>Bool</returns>
-    bool FitsInRange(short[] Range, short[] RangeToFit)
-    {
-        if (Range[0] <= RangeToFit[0] && Range[1] >= RangeToFit[1])
-        {
-            return true;
-        } else
-        {
-            return false;
-        }
+        return new IntRange ( MinNote, MaxNote );
     }
 
     /// <summary>
@@ -208,24 +191,24 @@ public class MidiHandler : MonoBehaviour
     void GetMidiInformationForDisplay()
     {
         short KeyboardSize = 0; // Number of notes.
-        short[] SmallKeyboardRange = new short[2] {36, 96}; // 61 Key
-        short[] MediumKeyboardRange = new short[2] {28, 103}; // 76 Key
-        short[] LargeKeyboardRange = new short[2] {21, 108}; // 88 Key
-        short[] NoteRange = GetNoteRange();
+        IntRange SmallKeyboardRange = new (36, 96); // 61 Key
+        IntRange MediumKeyboardRange = new (28, 103); // 76 Key
+        IntRange LargeKeyboardRange = new (21, 108); // 88 Key
+        IntRange NoteRange = GetNoteRange();
 
         // Check ranges.
-        if (FitsInRange(SmallKeyboardRange, NoteRange))
+        if (SmallKeyboardRange.InRange(NoteRange))
         {
             KeyboardSize = 61;
-        } else if (FitsInRange(MediumKeyboardRange, NoteRange))
+        } else if (MediumKeyboardRange.InRange(NoteRange))
         {
             KeyboardSize = 76;
-        } else if (FitsInRange(LargeKeyboardRange, NoteRange))
+        } else if (LargeKeyboardRange.InRange(NoteRange))
         {
             KeyboardSize = 88;
         } else
         {
-            KeyboardSize = (short)(NoteRange[1] - NoteRange[0] + 1);
+            KeyboardSize = (short)NoteRange.Range;
         }
 
         print($"Fits {KeyboardSize} key keyboard.");

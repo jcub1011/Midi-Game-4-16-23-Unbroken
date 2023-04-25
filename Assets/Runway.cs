@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Runway : MonoBehaviour
 {
-    short[] NoteRange;
+    IntRange NoteRange;
     float NoteSpeedCoeff; // How far the note moves per milisecond.
     float MsToTouchRunway;
     Queue<NoteBlock>[] Lanes;
@@ -23,12 +23,11 @@ public class Runway : MonoBehaviour
     /// <param name="Range">Range of notes where first is min and last is max. [min, max]</param>
     /// <param name="Dimensions">Height and width of runway in unity units. [width, height]</param>
     /// <param name="StrikebarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
-    /// <param name="QuarterNotesLeadup">Number of quarter notes that can be seen before first note touches the strikebar.</param>
-    /// <param name="Tempo">The tempo map of the song.</param>
+    /// <param name="MsToHitRunway">How long it takes to reach the strikebar.</param>
     /// <param name="SpeedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(short[] Range, float[] Dimensions, float StrikebarHeight, float MsToHitRunway, float SpeedMulti = 1)
+    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitRunway, float SpeedMulti = 1)
     {
-        print($"Initalizing runway. Note Range: {Range[0]} - {Range[1]}");
+        print($"Initalizing runway. Note Range: {Range.Min} - {Range.Max}");
         // Init private members.
         NoteRange = Range;
         Width = Dimensions[0];
@@ -42,8 +41,7 @@ public class Runway : MonoBehaviour
         print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
 
         // Get note width.
-        var noteRange = Range[1] - Range[0] + 1;
-        NoteWidth = Width / noteRange;
+        NoteWidth = Width / Range.Range;
 
         // Init strike bar.
         StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
@@ -52,7 +50,7 @@ public class Runway : MonoBehaviour
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
 
         // Create lanes.
-        Lanes = new Queue<NoteBlock>[noteRange];
+        Lanes = new Queue<NoteBlock>[Range.Range];
 
         for (int i = 0; i < Lanes.Length; i++)
         {
@@ -67,7 +65,7 @@ public class Runway : MonoBehaviour
     /// <returns>X position.</returns>
     float GetNoteXPos(short NoteNum)
     {
-        return (float)(NoteWidth * (NoteNum - NoteRange[0]) + NoteWidth / 2.0 - Width / 2.0); // Half width offset because anchor is in the middle.
+        return (float)(NoteWidth * (NoteNum - NoteRange.Min) + NoteWidth / 2.0 - Width / 2.0); // Half width offset because anchor is in the middle.
     }
 
     /// <summary>
@@ -83,8 +81,7 @@ public class Runway : MonoBehaviour
         print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
 
         // Update note width.
-        var noteRange = NoteRange[1] - NoteRange[0] + 1;
-        NoteWidth = Width / noteRange;
+        NoteWidth = Width / NoteRange.Range;
 
         // Update strike bar.
         StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
@@ -111,9 +108,9 @@ public class Runway : MonoBehaviour
     public void AddNoteToLane(NoteBlock noteBlock)
     {
         // Check if valid note.
-        if (noteBlock.NoteNumber < NoteRange[0] || noteBlock.NoteNumber > NoteRange[1])
+        if (!NoteRange.InRange(noteBlock.NoteNumber))
         {
-            print($"Note {noteBlock.NoteNumber} outside range [{NoteRange[0]}, {NoteRange[1]}].");
+            print($"Note {noteBlock.NoteNumber} outside range [{NoteRange.Min}, {NoteRange.Max}].");
             return;
         }
 
@@ -130,7 +127,7 @@ public class Runway : MonoBehaviour
 
         // Add to lane.
         noteBlock.SetNote(NewNote);
-        Lanes[noteBlock.NoteNumber - NoteRange[0]].Enqueue(noteBlock);
+        Lanes[noteBlock.NoteNumber - NoteRange.Min].Enqueue(noteBlock);
     }
 
     /// <summary>

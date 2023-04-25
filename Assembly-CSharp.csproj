@@ -59,8 +59,9 @@
     <Compile Include="Assets\Runway.cs" />
     <Compile Include="Assets\CustomTickGenerator.cs" />
     <Compile Include="Assets\DisplayManager.cs" />
-    <Compile Include="Assets\MidiHandler.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
+    <Compile Include="Assets\MidiHandler.cs" />
+    <Compile Include="Assets\Range.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

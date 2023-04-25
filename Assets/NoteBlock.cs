@@ -9,6 +9,7 @@ public class Leeway
     public float[] NoteOffLeeway;
 }
 
+
 public class NoteBlock
 {
     GameObject Note;
@@ -49,11 +50,10 @@ public class NoteBlock
     /// </summary>
     /// <param name="index">Index of the forgiveness range to use. 0 = Perfect, 1 = Good, 2 = Okay</param>
     /// <returns>Range of y values [min, max].</returns>
-    public float[] GetNoteOnCollisionRange(short index)
+    public FloatRange GetNoteOnCollisionRange(short index)
     {
         if (Note == null) {  return null; }
-        return new float[] { BottomY - Forgiveness.NoteOnLeeway[index], BottomY + Forgiveness.NoteOnLeeway[index] };
-
+        return new FloatRange( BottomY - Forgiveness.NoteOnLeeway[index], BottomY + Forgiveness.NoteOnLeeway[index] );
     }
 
     /// <summary>
@@ -61,10 +61,10 @@ public class NoteBlock
     /// </summary>
     /// <param name="index">Index of the forgiveness range to use. 0 = Perfect, 1 = Good, 2 = Okay.</param>
     /// <returns>Range of y values [min, max].</returns>
-    public float[] GetNoteOffCollisionRange(short index)
+    public FloatRange GetNoteOffCollisionRange(short index)
     {
         if (Note == null) { return null; }
-        return new float[] {TopY - Forgiveness.NoteOffLeeway[index], TopY + Forgiveness.NoteOffLeeway[index] };
+        return new FloatRange( TopY - Forgiveness.NoteOffLeeway[index], TopY + Forgiveness.NoteOffLeeway[index] );
     }
 
     /// <summary>
