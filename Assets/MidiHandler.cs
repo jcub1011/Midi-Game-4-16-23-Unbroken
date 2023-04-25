@@ -208,7 +208,7 @@ public class MidiHandler : MonoBehaviour
             KeyboardSize = 88;
         } else
         {
-            KeyboardSize = (short)NoteRange.Range;
+            KeyboardSize = (short)NoteRange.Len;
         }
 
         print($"Fits {KeyboardSize} key keyboard.");

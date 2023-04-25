@@ -41,7 +41,7 @@ public class Runway : MonoBehaviour
         print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
 
         // Get note width.
-        NoteWidth = Width / Range.Range;
+        NoteWidth = Width / Range.Len;
 
         // Init strike bar.
         StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
@@ -49,8 +49,14 @@ public class Runway : MonoBehaviour
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
 
+        // Init strike bar keys.
+        for (int i = 0; i < Range.Len; i++)
+        {
+            
+        }
+
         // Create lanes.
-        Lanes = new Queue<NoteBlock>[Range.Range];
+        Lanes = new Queue<NoteBlock>[Range.Len];
 
         for (int i = 0; i < Lanes.Length; i++)
         {
@@ -81,7 +87,7 @@ public class Runway : MonoBehaviour
         print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
 
         // Update note width.
-        NoteWidth = Width / NoteRange.Range;
+        NoteWidth = Width / NoteRange.Len;
 
         // Update strike bar.
         StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);

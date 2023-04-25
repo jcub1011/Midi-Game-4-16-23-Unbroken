@@ -62,6 +62,7 @@
     <Compile Include="Assets\NoteBlock.cs" />
     <Compile Include="Assets\MidiHandler.cs" />
     <Compile Include="Assets\Range.cs" />
+    <Compile Include="Assets\LaneScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
