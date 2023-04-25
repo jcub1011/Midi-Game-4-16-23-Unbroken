@@ -283,7 +283,7 @@ public class MidiHandler : MonoBehaviour
         RunwayScript = Runway.GetComponent<Runway>();
         float[] Dimensions = new float[2] { DisplayHandler.Width, DisplayHandler.Height };
         // Get time to hit runway.
-        var TimeSpanQNotes = new MusicalTimeSpan(4) * 32;
+        var TimeSpanQNotes = new MusicalTimeSpan(4) * 8;
         PlaybackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, CurrentMidi.GetTempoMap()).TotalMilliseconds;
         RunwayScript.Init(GetNoteRange(), Dimensions, 4, PlaybackOffset);
 

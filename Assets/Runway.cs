@@ -2,34 +2,17 @@ using Melanchall.DryWetMidi.Interaction;
 using System.Collections.Generic;
 using UnityEngine;
 
-struct NoteInfo
-{
-    public short NoteNumber;
-    public float NoteLength;
-    public float TimePosition;
-}
-
-struct NoteBlock
-{
-    public GameObject Note;
-    public float TimePosition;
-    public float PositionOffset;
-    public short Number;
-    public float Length;
-}
-
 public class Runway : MonoBehaviour
 {
     short[] NoteRange;
     float NoteSpeedCoeff; // How far the note moves per milisecond.
     float MsToTouchRunway;
-    LinkedList<NoteBlock>[] Lanes; // Treat like queue.
-    Queue<VisualNote>[] Lane;
+    Queue<NoteBlock>[] Lanes;
     float NoteWidth; // In unity units.
     float Height; // In unity units.
     float Width; // In unity units.
     float StrikeBarHeight; // In unity units.
-    Queue<NoteInfo> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
+    Queue<NoteBlock> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
     public GameObject NotePrefab;
     public GameObject StrikeBar;
     private float[] ColliderOffsets = new float[3] { (float)0.05, (float)0.15, (float)0.5 };
@@ -69,85 +52,28 @@ public class Runway : MonoBehaviour
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
 
         // Create lanes.
-        Lanes = new LinkedList<NoteBlock>[noteRange];
+        Lanes = new Queue<NoteBlock>[noteRange];
 
         for (int i = 0; i < Lanes.Length; i++)
         {
-            Lanes[i] = new LinkedList<NoteBlock>();
+            Lanes[i] = new Queue<NoteBlock>();
         }
     }
 
+    /// <summary>
+    /// Gets an x position using a note number.
+    /// </summary>
+    /// <param name="NoteNum">The note number.</param>
+    /// <returns>X position.</returns>
     float GetNoteXPos(short NoteNum)
     {
         return (float)(NoteWidth * (NoteNum - NoteRange[0]) + NoteWidth / 2.0 - Width / 2.0); // Half width offset because anchor is in the middle.
     }
 
-    /*
-    void PositionColliderSet( Transform ColliderWrapper, bool PositionBottom )
-    {
-        for (int i = 0; i < ColliderWrapper.childCount; i++)
-        {
-            // Update height.
-            var newScale = ColliderWrapper.GetChild(i).localScale;
-            newScale.y = ColliderOffsets[i];
-            newScale.x = NoteWidth;
-            ColliderWrapper.GetChild(i).localScale = newScale;
-
-            // Update position.
-            var newPos = new Vector3(0,0,0);
-            newPos.y = ColliderWrapper.parent.GetChild(0).localScale.y / 2;
-
-            // Flip to bottom.
-            if (PositionBottom)
-            {
-                newPos.y *= -1;
-            }
-
-            ColliderWrapper.GetChild(i).localPosition = newPos;
-        }
-    }*/
-
     /// <summary>
-    /// Inserts the given note to the proper lane. NoteLength is in miliseconds.
+    /// Updates info necessary for notes to display properly on the runway.
     /// </summary>
-    /// <param name="NoteNumber"></param>
-    /// <param name="NoteLength"></param>
-    /// <param name="TimePosition">The time in miliseconds since the beginning of playback.</param>
-    private void InsertNoteToRunway(short NoteNumber, float NoteLength, float TimePosition)
-    {
-        // Check if valid note.
-        if (NoteNumber < NoteRange[0] || NoteNumber > NoteRange[1])
-        {
-            print($"Note {NoteNumber} outside range [{NoteRange[0]}, {NoteRange[1]}].");
-            return;
-        }
-
-        // Create new note.
-        var NewNote = Instantiate(NotePrefab, this.transform);
-        float NoteX = GetNoteXPos(NoteNumber);
-        float NoteY = (float)(NoteLength * NoteSpeedCoeff / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
-        NewNote.transform.position = new Vector3(NoteX, NoteY, 2);
-
-        // Child 0 is skin.
-        var NoteDimensions = new Vector3(NoteWidth, NoteLength * NoteSpeedCoeff); // Dimensions of note.
-        NewNote.transform.GetChild(0).localScale = NoteDimensions;
-        NewNote.transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = true;
-
-        /*
-        // Adjust colliders.
-        PositionColliderSet(NewNote.transform.GetChild(1), true);
-        PositionColliderSet(NewNote.transform.GetChild(2), false);*/
-
-        // print($"Inserting note '{NoteNumber}' to lane {NoteNumber - NoteRange[0]}.");
-        var NewBlock = new NoteBlock();
-        NewBlock.Note = NewNote;
-        NewBlock.Number = NoteNumber;
-        NewBlock.TimePosition = TimePosition;
-        NewBlock.Length = NoteLength;
-        NewBlock.PositionOffset = NewNote.transform.GetChild(0).transform.localScale.y / 2;
-        Lanes[NoteNumber - NoteRange[0]].AddFirst(NewBlock); // Add to managed list.
-    }
-
+    /// <param name="NewDimensions">The new dimensions of the runway.</param>
     public void UpdateNoteDisplayInfo(float[] NewDimensions)
     {
         // Update runway dimensions.
@@ -167,15 +93,6 @@ public class Runway : MonoBehaviour
     }
 
     /// <summary>
-    /// Turns on the collider for the specified note.
-    /// </summary>
-    /// <param name="NoteNumber">The note to activate the collider for.</param>
-    public void ActivateNoteCollider(short NoteNumber)
-    {
-
-    }
-
-    /// <summary>
     /// Adds a note to the display queue.
     /// </summary>
     /// <param name="NoteNumber">The number of the note accoring to midi standard.</param>
@@ -183,32 +100,37 @@ public class Runway : MonoBehaviour
     /// <param name="TimePosition">The position of the note in playback. (miliseconds)</param>
     public void AddNoteToQueue(short NoteNumber, float NoteLength, float TimePosition)
     {
-        DisplayQueue.Enqueue(new NoteInfo { NoteNumber = NoteNumber, NoteLength = NoteLength, TimePosition = TimePosition });
+        var newNote = new NoteBlock(TimePosition, NoteLength, NoteNumber);
+        DisplayQueue.Enqueue(newNote);
     }
 
-    public void AddNoteToLane(VisualNote visualNote)
+    /// <summary>
+    /// Adds a note block to its respective lane.
+    /// </summary>
+    /// <param name="noteBlock">The note block to add to a lane.</param>
+    public void AddNoteToLane(NoteBlock noteBlock)
     {
         // Check if valid note.
-        if (visualNote.GetNoteNumber() < NoteRange[0] || visualNote.GetNoteNumber() > NoteRange[1])
+        if (noteBlock.NoteNumber < NoteRange[0] || noteBlock.NoteNumber > NoteRange[1])
         {
-            print($"Note {visualNote.GetNoteNumber()} outside range [{NoteRange[0]}, {NoteRange[1]}].");
+            print($"Note {noteBlock.NoteNumber} outside range [{NoteRange[0]}, {NoteRange[1]}].");
             return;
         }
 
         // Create new note.
         var NewNote = Instantiate(NotePrefab, this.transform);
-        float NoteX = GetNoteXPos(visualNote.GetNoteNumber());
-        float NoteY = (float)(visualNote.GetLength() * NoteSpeedCoeff / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
+        float NoteX = GetNoteXPos(noteBlock.NoteNumber);
+        float NoteY = (float)(noteBlock.Length * NoteSpeedCoeff / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
         NewNote.transform.position = new Vector3(NoteX, NoteY, 2);
 
         // Child 0 is skin.
-        var NoteDimensions = new Vector3(NoteWidth, visualNote.GetLength() * NoteSpeedCoeff); // Dimensions of note.
+        var NoteDimensions = new Vector3(NoteWidth, noteBlock.Length * NoteSpeedCoeff); // Dimensions of note.
         NewNote.transform.GetChild(0).localScale = NoteDimensions;
         NewNote.transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = true;
 
         // Add to lane.
-        visualNote.DisplayNote(NewNote);
-        Lane[visualNote.GetNoteNumber() - NoteRange[0]].Enqueue(visualNote);
+        noteBlock.SetNote(NewNote);
+        Lanes[noteBlock.NoteNumber - NoteRange[0]].Enqueue(noteBlock);
     }
 
     /// <summary>
@@ -217,7 +139,7 @@ public class Runway : MonoBehaviour
     /// <param name="PlaybackTime">The time since the beginning of playback. (in miliseconds)</param>
     public void UpdateNotesPositions(float PlaybackTime)
     {
-        if (Lane == null)
+        if (Lanes == null)
         {
             return;
         }
@@ -227,47 +149,36 @@ public class Runway : MonoBehaviour
             AddNoteToLane(DisplayQueue.Dequeue());
         }
 
-        /*
-        if (Lanes == null) // If lanes has not been instantiated yet.
+        foreach (var lane in Lanes)
         {
-            return;
-        }
-        // Insert new notes.
-        while (DisplayQueue.Count > 0)
-        {
-            var temp = DisplayQueue.Dequeue();
-            InsertNoteToRunway(temp.NoteNumber, temp.NoteLength, temp.TimePosition);
-        }
-        // Move notes down.
-        foreach (var Lane in Lanes)
-        {
-            // print($"Lane length: {Lane.Count}");
-            // For every note in each lane.
-            for (var Note = Lane.First; Note != null;)
+            foreach (var note in lane)
             {
-                // Update position.
+                // Get new scale.
+                var newScale = new Vector3();
+                newScale.x = NoteWidth;
+                newScale.y = note.Length * NoteSpeedCoeff;
+                newScale.z = 1;
+
+                // Get new position.
                 var newPosition = new Vector3();
-                newPosition.x = GetNoteXPos(Note.Value.Number);
-                newPosition.y = Height / 2 - (float)(NoteSpeedCoeff * (PlaybackTime - Note.Value.TimePosition)) + Note.Value.PositionOffset;
-                newPosition.z = Note.Value.Note.transform.localPosition.z;
-                Note.Value.Note.transform.localPosition = newPosition;
+                newPosition.x = GetNoteXPos(note.NoteNumber);
+                newPosition.y = Height / 2 - (float)(NoteSpeedCoeff * (PlaybackTime - note.TimePosition)) + note.NoteHeight / 2;
+                newPosition.z = 2;
 
-                // Update scale.
-                var newScale = new Vector3(NoteWidth, NoteSpeedCoeff * Note.Value.Length);
-                Note.Value.Note.transform.GetChild(0).localScale = newScale;
+                note.UpdateNote(newPosition, newScale);
+            }
 
-                // Check if visible and delete if not.
-                if (newPosition.y < - Height / 2 - Note.Value.PositionOffset) // Below the floor.
+            // Delete notes no longer visible.
+            while (lane.Count > 0)
+            {
+                if (lane.Peek().TopY < - Height / 2) // Below the floor.
                 {
-                    var temp = Note;
-                    Note = Note.Next;
-                    Lane.Remove(temp);
-                    Destroy(temp.Value.Note);
-                    continue;
+                    Destroy(lane.Dequeue().GetNote());
+                } else
+                {
+                    break;
                 }
-
-                Note = Note.Next; // Increment iterator.
             }
         }
-    }*/
+    }
 }
