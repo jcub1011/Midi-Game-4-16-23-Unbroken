@@ -35,6 +35,7 @@ public class MidiHandler : MonoBehaviour
     private DisplayHandler DisplayHandler = new();
     public GameObject Runway;
     private Runway RunwayScript;
+    private float[] PrevDimensions = new float[2] { 0, 0 };
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -281,15 +282,35 @@ public class MidiHandler : MonoBehaviour
         // Init runway.
         RunwayScript = Runway.GetComponent<Runway>();
         float[] Dimensions = new float[2] { DisplayHandler.Width, DisplayHandler.Height };
-        RunwayScript.Init(GetNoteRange(), Dimensions, 4, 8, CurrentMidi.GetTempoMap());
+        // Get time to hit runway.
+        var TimeSpanQNotes = new MusicalTimeSpan(4) * 32;
+        PlaybackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, CurrentMidi.GetTempoMap()).TotalMilliseconds;
+        RunwayScript.Init(GetNoteRange(), Dimensions, 4, PlaybackOffset);
 
         // Start playback.
         IntroInterpolater.Start();
     }
 
+    bool ScreenResized()
+    {
+        if (DisplayHandler.Width != PrevDimensions[0] || DisplayHandler.Height != PrevDimensions[1])
+        {
+            print($"Screen dimensions changed to '{DisplayHandler.Width} X {DisplayHandler.Height}'.");
+            PrevDimensions[0] = DisplayHandler.Width;
+            PrevDimensions[1] = DisplayHandler.Height;
+            return true;
+        }
+
+        return false;
+    }
+
     // Update is called once per frame
     void Update()
     {
+        if (ScreenResized())
+        {
+            RunwayScript.UpdateNoteDisplayInfo(new float[] { DisplayHandler.Width, DisplayHandler.Height });
+        }
         PushNotesToRunway();
     }
 
