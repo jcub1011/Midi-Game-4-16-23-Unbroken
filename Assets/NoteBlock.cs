@@ -3,16 +3,10 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
-public class Leeway
-{
-    public float[] NoteOnLeeway;
-    public float[] NoteOffLeeway;
-}
-
-
 public class NoteBlock
 {
     GameObject Note;
+    CollisionRanges Forgiveness;
     public float TimePosition { get; private set; }
     public float Length { get; private set; }
     public short NoteNumber { get; private set; }
@@ -43,7 +37,6 @@ public class NoteBlock
             return TopY - Note.transform.GetChild(0).localScale.y;
         }
     }
-    Leeway Forgiveness;
 
     /// <summary>
     /// Returns the range of y values that would count as collision for the given forgiveness index. Use for note on events.
@@ -53,7 +46,29 @@ public class NoteBlock
     public FloatRange GetNoteOnCollisionRange(short index)
     {
         if (Note == null) {  return null; }
-        return new FloatRange( BottomY - Forgiveness.NoteOnLeeway[index], BottomY + Forgiveness.NoteOnLeeway[index] );
+        float range;
+
+        switch (index)
+        {
+            case 0:
+                range = Forgiveness.OnPerfectRange;
+                break;
+
+            case 1:
+                range = Forgiveness.OnGoodRange;
+                break;
+
+            case 2:
+                range = Forgiveness.OnGoodRange;
+                break;
+
+            default:
+                return null;
+        }
+
+        range /= 2f;
+
+        return new FloatRange( BottomY - range, BottomY + range );
     }
 
     /// <summary>
@@ -64,7 +79,29 @@ public class NoteBlock
     public FloatRange GetNoteOffCollisionRange(short index)
     {
         if (Note == null) { return null; }
-        return new FloatRange( TopY - Forgiveness.NoteOffLeeway[index], TopY + Forgiveness.NoteOffLeeway[index] );
+        float range;
+
+        switch (index)
+        {
+            case 0:
+                range = Forgiveness.OffPerfectRange;
+                break;
+
+            case 1:
+                range = Forgiveness.OffGoodRange;
+                break;
+
+            case 2:
+                range = Forgiveness.OffGoodRange;
+                break;
+
+            default:
+                return null;
+        }
+
+        range /= 2f;
+
+        return new FloatRange(BottomY - range, BottomY + range );
     }
 
     /// <summary>
@@ -104,13 +141,11 @@ public class NoteBlock
     /// <param name="noteLength">Length of note in ms.</param>
     /// <param name="noteNumber">Note number.</param>
     /// <param name="Forgiveness">Leeway note collisions have.</param>
-    public NoteBlock(float positionInTime, float noteLength, short noteNumber, Leeway Forgiveness = null)
+    public NoteBlock(float positionInTime, float noteLength, short noteNumber, CollisionRanges Forgiveness = null)
     {
         if (Forgiveness == null)
         {
-            Forgiveness = new Leeway();
-            Forgiveness.NoteOnLeeway = new float[3] { 0, (float)0.2, (float)0.5 };
-            Forgiveness.NoteOffLeeway = new float[3] { 0, (float)0.2, (float)0.5 };
+            Forgiveness = new CollisionRanges( new float[3] { 0, (float)0.2, (float)0.5 } );
         }
 
         TimePosition = positionInTime;
