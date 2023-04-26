@@ -99,7 +99,7 @@ public class LaneScript : MonoBehaviour
     /// Returns -1 if no collision.
     /// </summary>
     /// <returns>Collision index.</returns>
-    public short NoteOnCollision()
+    public short NoteOnCollisionLevel()
     {
         if (Notes.Count == 0)
         {
@@ -125,7 +125,7 @@ public class LaneScript : MonoBehaviour
     /// Returns -1 if no collision.
     /// </summary>
     /// <returns>Collision index.</returns>
-    public short NoteOffCollision()
+    public short NoteOffCollisionLevel()
     {
         if (Notes.Count == 0)
         {
