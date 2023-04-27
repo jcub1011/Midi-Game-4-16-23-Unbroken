@@ -1,3 +1,4 @@
 TODO:
 Implement way of detecting input.
 Implement way of checking if input matches what is currently supposed to be played.
+Replace collision ranges with checking if the edge is within the strike range. Probably how it should have been done from the get go.
