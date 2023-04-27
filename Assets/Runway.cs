@@ -1,3 +1,4 @@
+using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,17 +6,17 @@ using UnityEngine;
 public class Runway : MonoBehaviour
 {
     IntRange NoteRange;
-    float NoteSpeedCoeff; // How far the note moves per milisecond.
+    float UnitsPerMs; // How far the note moves per milisecond.
     float MsToTouchRunway;
-    Queue<NoteBlock>[] Lanes;
     float NoteWidth; // In unity units.
     float Height; // In unity units.
     float Width; // In unity units.
     float StrikeBarHeight; // In unity units.
+    LaneWrapper[] Lanes;
     Queue<NoteBlock> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
     public GameObject NotePrefab;
     public GameObject StrikeBar;
-    private float[] ColliderOffsets = new float[3] { (float)0.05, (float)0.15, (float)0.5 };
+    public GameObject LanePrefab;
 
     /// <summary>
     /// Initalizes a runway.
@@ -23,9 +24,9 @@ public class Runway : MonoBehaviour
     /// <param name="Range">Range of notes where first is min and last is max. [min, max]</param>
     /// <param name="Dimensions">Height and width of runway in unity units. [width, height]</param>
     /// <param name="StrikebarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
-    /// <param name="MsToHitRunway">How long it takes to reach the strikebar.</param>
+    /// <param name="MsToHitStrikebar">How long it takes to reach the strikebar.</param>
     /// <param name="SpeedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitRunway, float SpeedMulti = 1)
+    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float Forgiveness = 400f, float SpeedMulti = 1)
     {
         print($"Initalizing runway. Note Range: {Range.Min} - {Range.Max}");
         // Init private members.
@@ -36,31 +37,35 @@ public class Runway : MonoBehaviour
 
         // Get notespeed.
         var DistToStrikebar = Height - StrikeBarHeight;
-        MsToTouchRunway = MsToHitRunway;
-        NoteSpeedCoeff = DistToStrikebar / MsToTouchRunway; // units/ms
-        print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
+        MsToTouchRunway = MsToHitStrikebar;
+        UnitsPerMs = DistToStrikebar / MsToTouchRunway; // units/ms
+        print($"Note speed: {UnitsPerMs} (units/milisecond)");
 
         // Get note width.
         NoteWidth = Width / Range.Len;
 
         // Init strike bar.
-        StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
-        var barY = - Height / 2 + StrikeBarHeight - StrikeBar.transform.localScale.y;
+        StrikeBar.transform.localScale = new Vector3(Width, (float)(Forgiveness * UnitsPerMs * 2f), 0);
+        var barY = - Height / 2 + StrikeBarHeight + StrikeBar.transform.localScale.y / 2f - StrikeBar.transform.localScale.y;
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
 
-        // Init strike bar keys.
-        for (int i = 0; i < Range.Len; i++)
-        {
-            
-        }
-
         // Create lanes.
-        Lanes = new Queue<NoteBlock>[Range.Len];
+        Lanes = new LaneWrapper[Range.Len];
 
         for (int i = 0; i < Lanes.Length; i++)
         {
-            Lanes[i] = new Queue<NoteBlock>();
+            // Create lane.
+            var newLane = new LaneWrapper();
+            newLane.Lane = Instantiate(LanePrefab, transform);
+            newLane.Script = newLane.Lane.transform.GetComponent<LaneScript>();
+
+            // Lane position;
+            var posX = GetNoteXPos((short)(Range.Min + i));
+
+            newLane.Script.Init(new float[2] { NoteWidth, Height }, StrikebarHeight, posX, MsToHitStrikebar, Forgiveness);
+
+            Lanes[i] = newLane;
         }
     }
 
@@ -78,20 +83,20 @@ public class Runway : MonoBehaviour
     /// Updates info necessary for notes to display properly on the runway.
     /// </summary>
     /// <param name="NewDimensions">The new dimensions of the runway.</param>
-    public void UpdateNoteDisplayInfo(float[] NewDimensions)
+    public void UpdateNoteDisplayInfo(float[] NewDimensions, float Forgiveness = 400f)
     {
         // Update runway dimensions.
         Width = NewDimensions[0];
         Height = NewDimensions[1];
-        NoteSpeedCoeff = (Height - StrikeBarHeight) / MsToTouchRunway; // units/ms
-        print($"Note speed: {NoteSpeedCoeff} (units/milisecond)");
+        UnitsPerMs = (Height - StrikeBarHeight) / MsToTouchRunway; // units/ms
+        print($"Note speed: {UnitsPerMs} (units/milisecond)");
 
         // Update note width.
         NoteWidth = Width / NoteRange.Len;
 
         // Update strike bar.
-        StrikeBar.transform.localScale = new Vector3(Width, (float)0.5, 0);
-        var barY = -Height / 2 + StrikeBarHeight - StrikeBar.transform.localScale.y;
+        StrikeBar.transform.localScale = new Vector3(Width, (float)(Forgiveness * UnitsPerMs * 2f), 0);
+        var barY = -Height / 2 + StrikeBarHeight + StrikeBar.transform.localScale.y / 2f - StrikeBar.transform.localScale.y;
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
     }
 
@@ -121,26 +126,22 @@ public class Runway : MonoBehaviour
         }
 
         // Create new note.
-        var NewNote = Instantiate(NotePrefab, this.transform);
-        float NoteX = GetNoteXPos(noteBlock.NoteNumber);
-        float NoteY = (float)(noteBlock.Length * NoteSpeedCoeff / 2.0 + Height / 2.0); // Half height offset because anchor is in the middle.
-        NewNote.transform.position = new Vector3(NoteX, NoteY, 2);
+        var NewNote = Instantiate(NotePrefab);
+        // NewNote.transform.localPosition = new Vector3(0, Height + NewNote.transform.localScale.y * 2, 0);
 
         // Child 0 is skin.
-        var NoteDimensions = new Vector3(NoteWidth, noteBlock.Length * NoteSpeedCoeff); // Dimensions of note.
-        NewNote.transform.GetChild(0).localScale = NoteDimensions;
         NewNote.transform.GetChild(0).GetComponent<SpriteRenderer>().enabled = true;
 
         // Add to lane.
         noteBlock.SetNote(NewNote);
-        Lanes[noteBlock.NoteNumber - NoteRange.Min].Enqueue(noteBlock);
+        Lanes[noteBlock.NoteNumber - NoteRange.Min].Script.AddNote(noteBlock);
     }
 
     /// <summary>
-    /// Updates the position of all the notes in each lane.
+    /// Updates each lane.
     /// </summary>
     /// <param name="PlaybackTime">The time since the beginning of playback. (in miliseconds)</param>
-    public void UpdateNotesPositions(float PlaybackTime)
+    public void UpdateLanes(float PlaybackTime)
     {
         if (Lanes == null)
         {
@@ -152,36 +153,21 @@ public class Runway : MonoBehaviour
             AddNoteToLane(DisplayQueue.Dequeue());
         }
 
-        foreach (var lane in Lanes)
+        for (var i = 0; i < Lanes.Length; i++)
         {
-            foreach (var note in lane)
-            {
-                // Get new scale.
-                var newScale = new Vector3();
-                newScale.x = NoteWidth;
-                newScale.y = note.Length * NoteSpeedCoeff;
-                newScale.z = 1;
-
-                // Get new position.
-                var newPosition = new Vector3();
-                newPosition.x = GetNoteXPos(note.NoteNumber);
-                newPosition.y = Height / 2 - (float)(NoteSpeedCoeff * (PlaybackTime - note.TimePosition)) + note.NoteHeight / 2;
-                newPosition.z = 2;
-
-                note.UpdateNote(newPosition, newScale);
-            }
-
-            // Delete notes no longer visible.
-            while (lane.Count > 0)
-            {
-                if (lane.Peek().TopY < - Height / 2) // Below the floor.
-                {
-                    Destroy(lane.Dequeue().GetNote());
-                } else
-                {
-                    break;
-                }
-            }
+            // Update each lane.
+            Lanes[i].Script.UpdateDimensions(new float[2] { NoteWidth, Height }, GetNoteXPos((short)(NoteRange.Min + i)));
+            Lanes[i].Script.UpdateNotePositions(PlaybackTime);
         }
+    }
+
+    public float GetNoteInputAccuracy(float PlaybackTime, NoteOnEvent note)
+    {
+        return Lanes[note.NoteNumber - NoteRange.Min].Script.NoteEventAccuracy(PlaybackTime, true);
+    }
+
+    public float GetNoteInputAccuracy(float PlaybackTime, NoteOffEvent note)
+    {
+        return Lanes[note.NoteNumber - NoteRange.Min].Script.NoteEventAccuracy(PlaybackTime, false);
     }
 }

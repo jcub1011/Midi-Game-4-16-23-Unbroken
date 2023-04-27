@@ -1,13 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+struct LaneWrapper
+{
+    public GameObject Lane;
+    public LaneScript Script;
+}
+
 public class LaneScript : MonoBehaviour
 {
     Queue<NoteBlock> Notes = new Queue<NoteBlock>();
     float Width = 0f;
     float Height = 0f;
     float UnitsPerMs = 0f;
-    float MsForgiveness = 0f;
+    float MsForgiveness;
     float TimeToReachStrike = 0f;
     float StrikeHeight = 0f;
     float BottomY { 
@@ -16,24 +22,21 @@ public class LaneScript : MonoBehaviour
             return -Height / 2;
         }
     }
-    FloatRange StrikeRange
-    {
-        get
-        {
-            return new FloatRange(BottomY + StrikeHeight, BottomY + StrikeHeight + UnitsPerMs * MsForgiveness);
-        }
-    }
     public GameObject StrikeKey;
 
     /// <summary>
     /// Initalize lane.
     /// </summary>
     /// <param name="Dimensions">Width and height of lane.</param>
+    /// <param name="Strikeheight">Height of the strike area.</param>
     /// <param name="xPos">X position of lane.</param>
     /// <param name="timeToReachStrike">How long it takes a note to reach the strike.</param>
-    public void Init(float[] Dimensions, float xPos, float timeToReachStrike)
+    /// <param name="Forgiveness">Range of forgiveness. (in ms)</param>
+    public void Init(float[] Dimensions, float Strikeheight, float xPos, float timeToReachStrike, float Forgiveness)
     {
         TimeToReachStrike = timeToReachStrike;
+        MsForgiveness = Forgiveness;
+        StrikeHeight = Strikeheight;
 
         UpdateDimensions(Dimensions, xPos);
     }
@@ -57,9 +60,14 @@ public class LaneScript : MonoBehaviour
 
     public void AddNote(NoteBlock newNote)
     {
+        newNote.GetNote().transform.parent = transform;
         Notes.Enqueue(newNote);
     }
 
+    /// <summary>
+    /// Updates the positions of each note and deletes notes no longer visible.
+    /// </summary>
+    /// <param name="CurrentPlaybackTimeMs">Current time of playback.</param>
     public void UpdateNotePositions(float CurrentPlaybackTimeMs)
     {
         // Update positions for all managed notes.
@@ -75,9 +83,9 @@ public class LaneScript : MonoBehaviour
             var newPosition = new Vector3();
             newPosition.x = 0;
             newPosition.y = Height / 2 - (UnitsPerMs * (CurrentPlaybackTimeMs - note.TimePosition)) + note.NoteHeight / 2;
-            newPosition.z = 2;
+            newPosition.z = 0;
 
-            note.UpdateNote(newPosition, newScale);
+            note.UpdateNotePos(newPosition, newScale);
         }
 
         // Delete notes that are no longer visible.
@@ -95,54 +103,41 @@ public class LaneScript : MonoBehaviour
     }
 
     /// <summary>
-    /// Gets the collision index of the note on event. 0 = Perfect, 1 = Good, 2 = Okay.
-    /// Returns -1 if no collision.
+    /// Returns percent accuracy.
     /// </summary>
-    /// <returns>Collision index.</returns>
-    public short NoteOnCollisionLevel()
+    /// <param name="Time">Current playback time.</param>
+    /// <param name="NoteOnEvent">True if note on event, otherwise note off event.</param>
+    /// <returns>Accuracy</returns>
+    public float NoteEventAccuracy(float Time, bool NoteOnEvent)
     {
         if (Notes.Count == 0)
         {
             print($"Attempted to check note collision but lane is empty.");
-            return -1;
+            return 0f;
         }
 
-        for (short i = 0; i < 3; i++)
+        var MsDist = Time - (NoteOnEvent ? Notes.Peek().NoteOnTime : Notes.Peek().NoteOffTime); // Distance from actual time.
+        if (MsDist < 0f) MsDist *= -1f; // Make it positive.
+
+        print($"Distance in ms from actual: {MsDist}ms");
+
+        if (MsDist == 0)
         {
-            if (StrikeRange.RangesCollide(Notes.Peek().GetNoteOnCollisionRange(i)))
-            {
-                print($"Note On Collision Level '{i}' @ note number '{Notes.Peek().NoteNumber}'.");
-                return i;
-            }
+            print($"Perfect accuracy.");
+            return 100f;
         }
 
-        print($"No collision @ note number: {Notes.Peek().NoteNumber}");
-        return -1;
-    }
-
-    /// <summary>
-    /// Gets the collision index of the note off event. 0 = Perfect, 1 = Good, 2 = Okay.
-    /// Returns -1 if no collision.
-    /// </summary>
-    /// <returns>Collision index.</returns>
-    public short NoteOffCollisionLevel()
-    {
-        if (Notes.Count == 0)
+        if (MsDist > MsForgiveness)
         {
-            print($"Attempted to check note collision but lane is empty.");
-            return -1;
+            print($"Total miss.");
+            return 0f;
         }
 
-        for (short i = 0; i < 3; i++)
-        {
-            if (StrikeRange.RangesCollide(Notes.Peek().GetNoteOffCollisionRange(i))) 
-            {
-                print($"Note Off Collision Level '{i}' @ note number '{Notes.Peek().NoteNumber}'.");
-                return i; 
-            }
-        }
+        float Accuracy = 100f - (MsDist / MsForgiveness) * 100f;
 
-        print($"No collision @ note number: {Notes.Peek().NoteNumber}");
-        return -1;
+        if (NoteOnEvent) print($"Note on accuracy: {Accuracy}%");
+        else print($"Note off accuracy: {Accuracy}%");
+
+        return Accuracy;
     }
 }

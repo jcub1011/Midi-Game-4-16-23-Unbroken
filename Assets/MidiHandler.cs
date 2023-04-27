@@ -29,13 +29,29 @@ public class MidiHandler : MonoBehaviour
     private MIDI.OutputDevice OutputMidi = null;
     private MidiFile CurrentMidi = null;
     private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
-    private float PlaybackOffset = 0;
+    private float PlaybackOffset = 0; // miliseconds.
     private Queue<NoteData> DisplayQueue = new();
     private CustomTickGenerator IntroInterpolater; // For inserting notes before actual audio playback begins.
     private DisplayHandler DisplayHandler = new();
     public GameObject Runway;
     private Runway RunwayScript;
     private float[] PrevDimensions = new float[2] { 0, 0 };
+    public float CurrentDisplayTime
+    {
+        get
+        {
+            if (PlaybackEngine == null || IntroInterpolater == null) return 0f;
+            return (float)(PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + IntroInterpolater.GetCurrentTime());
+        }
+    }
+    public float CurrentPlaybackTime
+    {
+        get
+        {
+            if (PlaybackEngine == null || IntroInterpolater == null) return 0f;
+            return (float)(CurrentDisplayTime - PlaybackOffset);
+        }
+    }
 
     /// <summary>
     /// Attempts to open a midi file and initalize midi variables.
@@ -150,11 +166,13 @@ public class MidiHandler : MonoBehaviour
             case MidiEventType.NoteOn:
                 var NoteOn = (NoteOnEvent)evt.Event;
                 print($"Note number: {NoteOn.NoteNumber}, Velocity: {NoteOn.Velocity}");
+                RunwayScript.GetNoteInputAccuracy(CurrentPlaybackTime, NoteOn);
                 break;
 
             case MidiEventType.NoteOff:
                 var NoteOff = (NoteOffEvent)evt.Event;
                 print($"Note number: {NoteOff.NoteNumber}, Off Velocity: {NoteOff.Velocity}");
+                RunwayScript.GetNoteInputAccuracy(CurrentPlaybackTime, NoteOff);
                 break;
         }
     }
@@ -235,7 +253,7 @@ public class MidiHandler : MonoBehaviour
             }
         }
 
-        var CurrentTime = PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + IntroInterpolater.GetCurrentTime();
+        var CurrentTime = CurrentDisplayTime;
 
         while (DisplayQueue.Count > 0 && RunwayScript != null)
         {
@@ -253,12 +271,12 @@ public class MidiHandler : MonoBehaviour
         }
 
         // DisplayManagerScript.UpdateRunways((float)CurrentTime);
-        RunwayScript.UpdateNotesPositions((float)CurrentTime);
+        RunwayScript.UpdateLanes((float)CurrentTime);
     }
 
     void Start()
     {
-        LoadMidi("NeverGonnaGiveYouUp");
+        LoadMidi("TomOdelAnotherLove");
         // Init interpolater.
         IntroInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, CurrentMidi.GetTempoMap()).TotalMilliseconds);
 
