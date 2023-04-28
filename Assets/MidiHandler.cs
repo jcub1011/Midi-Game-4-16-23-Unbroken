@@ -24,32 +24,32 @@ public struct NoteData
 
 public class MidiHandler : MonoBehaviour
 {
-    private MIDI.Playback PlaybackEngine = null;
-    private MIDI.InputDevice InputMidi = null;
-    private MIDI.OutputDevice OutputMidi = null;
-    private MidiFile CurrentMidi = null;
-    private string MidiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
-    private float PlaybackOffset = 0; // miliseconds.
-    private Queue<NoteData> DisplayQueue = new();
-    private CustomTickGenerator IntroInterpolater; // For inserting notes before actual audio playback begins.
-    private DisplayHandler DisplayHandler = new();
+    private MIDI.Playback _playbackEngine = null;
+    private MIDI.InputDevice _inputMidi = null;
+    private MIDI.OutputDevice _outputMidi = null;
+    private MidiFile _currentMidi = null;
+    private string _midiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
+    private float _playbackOffset = 0; // miliseconds.
+    private Queue<NoteData> _displayQueue = new();
+    private CustomTickGenerator _introInterpolater; // For inserting notes before actual audio playback begins.
+    private DisplayHandler _displayHandler = new();
     public GameObject Runway;
-    private Runway RunwayScript;
-    private float[] PrevDimensions = new float[2] { 0, 0 };
+    private Runway _runwayScript;
+    private float[] _prevDimensions = new float[2] { 0, 0 };
     public float CurrentDisplayTime
     {
         get
         {
-            if (PlaybackEngine == null || IntroInterpolater == null) return 0f;
-            return (float)(PlaybackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + IntroInterpolater.GetCurrentTime());
+            if (_playbackEngine == null || _introInterpolater == null) return 0f;
+            return (float)(_playbackEngine.GetCurrentTime<MetricTimeSpan>().TotalMilliseconds + _introInterpolater.GetCurrentTime());
         }
     }
     public float CurrentPlaybackTime
     {
         get
         {
-            if (PlaybackEngine == null || IntroInterpolater == null) return 0f;
-            return (float)(CurrentDisplayTime - PlaybackOffset);
+            if (_playbackEngine == null || _introInterpolater == null) return 0f;
+            return (float)(CurrentDisplayTime - _playbackOffset);
         }
     }
 
@@ -61,39 +61,39 @@ public class MidiHandler : MonoBehaviour
     bool LoadMidi(string FileName)
     {
         // Clear PlaybackEngine.
-        if (PlaybackEngine != null)
+        if (_playbackEngine != null)
         {
             print("Clearing playback engine.");
-            PlaybackEngine.Stop();
-            PlaybackEngine.Dispose();
-            PlaybackEngine = null;
+            _playbackEngine.Stop();
+            _playbackEngine.Dispose();
+            _playbackEngine = null;
         }
 
         // Read file.
         print($"Loading midi file: {FileName}");
-        CurrentMidi = MidiFile.Read($"{MidiBaseDirectory}\\{FileName}.mid");
+        _currentMidi = MidiFile.Read($"{_midiBaseDirectory}\\{FileName}.mid");
         print("Successfully loaded midi file.");
 
         GetMidiInformationForDisplay();
 
         // Init display queue.
-        foreach (var note in CurrentMidi.GetNotes())
+        foreach (var note in _currentMidi.GetNotes())
         {
             var noteData = new NoteData();
 
             noteData.Number = note.NoteNumber;
             noteData.Length = (float)TimeConverter.ConvertTo<MetricTimeSpan>(note.Length,
-                CurrentMidi.GetTempoMap()).TotalMilliseconds;
+                _currentMidi.GetTempoMap()).TotalMilliseconds;
             noteData.Time = TimeConverter.ConvertTo<MetricTimeSpan>(note.Time,
-                CurrentMidi.GetTempoMap()).TotalMilliseconds;
+                _currentMidi.GetTempoMap()).TotalMilliseconds;
 
-            DisplayQueue.Enqueue(noteData);
+            _displayQueue.Enqueue(noteData);
         }
 
         // Get input midi.
         if (GetInputMidi())
         {
-            print($"Using input device: {InputMidi.Name}");
+            print($"Using input device: {_inputMidi.Name}");
         }
 
 
@@ -109,12 +109,12 @@ public class MidiHandler : MonoBehaviour
         // Init Playback.
         if (GetOutputMidi())
         {
-            PlaybackEngine = CurrentMidi.GetPlayback(OutputMidi, settings);
-            print($"Using output device: {OutputMidi.Name}");
+            _playbackEngine = _currentMidi.GetPlayback(_outputMidi, settings);
+            print($"Using output device: {_outputMidi.Name}");
         }
         else
         {
-            PlaybackEngine = CurrentMidi.GetPlayback(settings);
+            _playbackEngine = _currentMidi.GetPlayback(settings);
         }
 
         return true;
@@ -128,13 +128,13 @@ public class MidiHandler : MonoBehaviour
     {
         if (MIDI.OutputDevice.GetDevicesCount() > 0)
         {
-            OutputMidi = MIDI.OutputDevice.GetByIndex(0);
-            OutputMidi.PrepareForEventsSending();
+            _outputMidi = MIDI.OutputDevice.GetByIndex(0);
+            _outputMidi.PrepareForEventsSending();
             return true;
         }
         else
         {
-            OutputMidi = null;
+            _outputMidi = null;
             return false;
         }
     }
@@ -147,14 +147,14 @@ public class MidiHandler : MonoBehaviour
     {
         if (MIDI.InputDevice.GetDevicesCount() > 0)
         {
-            InputMidi = MIDI.InputDevice.GetByIndex(0);
-            InputMidi.EventReceived += OnEventRecieved;
-            InputMidi.StartEventsListening();
+            _inputMidi = MIDI.InputDevice.GetByIndex(0);
+            _inputMidi.EventReceived += OnEventRecieved;
+            _inputMidi.StartEventsListening();
             return true;
         }
         else
         {
-            InputMidi = null;
+            _inputMidi = null;
             return false;
         }
     }
@@ -165,14 +165,14 @@ public class MidiHandler : MonoBehaviour
         {
             case MidiEventType.NoteOn:
                 var NoteOn = (NoteOnEvent)evt.Event;
-                print($"Note number: {NoteOn.NoteNumber}, Velocity: {NoteOn.Velocity}");
-                RunwayScript.GetNoteInputAccuracy(CurrentPlaybackTime, NoteOn);
+                // print($"Note number: {NoteOn.NoteNumber}, Velocity: {NoteOn.Velocity}");
+                _runwayScript.GetNoteInputAccuracy(CurrentPlaybackTime, NoteOn);
                 break;
 
             case MidiEventType.NoteOff:
                 var NoteOff = (NoteOffEvent)evt.Event;
-                print($"Note number: {NoteOff.NoteNumber}, Off Velocity: {NoteOff.Velocity}");
-                RunwayScript.GetNoteInputAccuracy(CurrentPlaybackTime, NoteOff);
+                // print($"Note number: {NoteOff.NoteNumber}, Off Velocity: {NoteOff.Velocity}");
+                _runwayScript.GetNoteInputAccuracy(CurrentPlaybackTime, NoteOff);
                 break;
         }
     }
@@ -188,7 +188,7 @@ public class MidiHandler : MonoBehaviour
         short MaxNote = short.MinValue;
 
         // Find min and max note.
-        foreach (var note in CurrentMidi.GetNotes())
+        foreach (var note in _currentMidi.GetNotes())
         {
             if (note.NoteNumber < MinNote)
             {
@@ -237,32 +237,32 @@ public class MidiHandler : MonoBehaviour
     /// </summary>
     void PushNotesToRunway()
     {
-        if (PlaybackEngine == null || IntroInterpolater == null)
+        if (_playbackEngine == null || _introInterpolater == null)
         {
             return;
         }
 
-        if (!PlaybackEngine.IsRunning)
+        if (!_playbackEngine.IsRunning)
         {
             // Stop interpolater when intro offset is reached.
-            if (IntroInterpolater.GetCurrentTime() > PlaybackOffset)
+            if (_introInterpolater.GetCurrentTime() > _playbackOffset)
             {
-                IntroInterpolater.Stop();
-                IntroInterpolater.FixTime(PlaybackOffset);
-                PlaybackEngine.Start();
+                _introInterpolater.Stop();
+                _introInterpolater.FixTime(_playbackOffset);
+                _playbackEngine.Start();
             }
         }
 
         var CurrentTime = CurrentDisplayTime;
 
-        while (DisplayQueue.Count > 0 && RunwayScript != null)
+        while (_displayQueue.Count > 0 && _runwayScript != null)
         {
-            if (DisplayQueue.Peek().Time < CurrentTime)
+            if (_displayQueue.Peek().Time < CurrentTime)
             {
-                var note = DisplayQueue.Dequeue();
+                var note = _displayQueue.Dequeue();
                 // print($"Time: {note.Time}, Length: {note.Length}");
 
-                RunwayScript.AddNoteToQueue(note.Number, note.Length, (float)note.Time);
+                _runwayScript.AddNoteToQueue(note.Number, note.Length, (float)note.Time);
                 // DisplayManagerScript.AddNoteToRunway(note.Number, note.Length, (float)note.Time);
             } else
             {
@@ -271,34 +271,34 @@ public class MidiHandler : MonoBehaviour
         }
 
         // DisplayManagerScript.UpdateRunways((float)CurrentTime);
-        RunwayScript.UpdateLanes((float)CurrentTime);
+        _runwayScript.UpdateLanes((float)CurrentTime);
     }
 
     void Start()
     {
-        LoadMidi("TomOdelAnotherLove");
+        LoadMidi("EasyPlayTest");
         // Init interpolater.
-        IntroInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, CurrentMidi.GetTempoMap()).TotalMilliseconds);
+        _introInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, _currentMidi.GetTempoMap()).TotalMilliseconds);
 
         // Init runway.
-        RunwayScript = Runway.GetComponent<Runway>();
-        float[] Dimensions = new float[2] { DisplayHandler.Width, DisplayHandler.Height };
+        _runwayScript = Runway.GetComponent<Runway>();
+        float[] Dimensions = new float[2] { _displayHandler.Width, _displayHandler.Height };
         // Get time to hit runway.
         var TimeSpanQNotes = new MusicalTimeSpan(4) * 8;
-        PlaybackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, CurrentMidi.GetTempoMap()).TotalMilliseconds;
-        RunwayScript.Init(GetNoteRange(), Dimensions, 4, PlaybackOffset);
+        _playbackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, _currentMidi.GetTempoMap()).TotalMilliseconds;
+        _runwayScript.Init(GetNoteRange(), Dimensions, 4, _playbackOffset, 400f);
 
         // Start playback.
-        IntroInterpolater.Start();
+        _introInterpolater.Start();
     }
 
     bool ScreenResized()
     {
-        if (DisplayHandler.Width != PrevDimensions[0] || DisplayHandler.Height != PrevDimensions[1])
+        if (_displayHandler.Width != _prevDimensions[0] || _displayHandler.Height != _prevDimensions[1])
         {
-            print($"Screen dimensions changed to '{DisplayHandler.Width} X {DisplayHandler.Height}'.");
-            PrevDimensions[0] = DisplayHandler.Width;
-            PrevDimensions[1] = DisplayHandler.Height;
+            print($"Screen dimensions changed to '{_displayHandler.Width} X {_displayHandler.Height}'.");
+            _prevDimensions[0] = _displayHandler.Width;
+            _prevDimensions[1] = _displayHandler.Height;
             return true;
         }
 
@@ -310,7 +310,7 @@ public class MidiHandler : MonoBehaviour
     {
         if (ScreenResized())
         {
-            RunwayScript.UpdateNoteDisplayInfo(new float[] { DisplayHandler.Width, DisplayHandler.Height });
+            _runwayScript.UpdateNoteDisplayInfo(new float[] { _displayHandler.Width, _displayHandler.Height });
         }
         PushNotesToRunway();
     }
@@ -319,27 +319,27 @@ public class MidiHandler : MonoBehaviour
     {
         // Cleanup.
         print("Releasing resources.");
-        if (PlaybackEngine != null)
+        if (_playbackEngine != null)
         {
-            PlaybackEngine.Stop();
-            PlaybackEngine.Dispose();
-            PlaybackEngine = null;
+            _playbackEngine.Stop();
+            _playbackEngine.Dispose();
+            _playbackEngine = null;
             print("Disposed playback engine.");
         }
-        if (IntroInterpolater != null)
+        if (_introInterpolater != null)
         {
-            IntroInterpolater.Stop();
-            IntroInterpolater.DisposeTimer();
-            IntroInterpolater = null;
+            _introInterpolater.Stop();
+            _introInterpolater.DisposeTimer();
+            _introInterpolater = null;
             print("Disposed intro interpolater.");
         }
-        if (OutputMidi != null)
+        if (_outputMidi != null)
         {
-            OutputMidi.Dispose();
+            _outputMidi.Dispose();
         }
-        if (InputMidi != null)
+        if (_inputMidi != null)
         {
-            InputMidi.Dispose();
+            _inputMidi.Dispose();
         }
     }
 }

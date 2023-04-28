@@ -6,6 +6,8 @@ using UnityEngine;
 public class NoteBlock
 {
     GameObject Note;
+    public bool NoteOnPlayed = false;
+    public bool NoteOffPlayed = false;
     public float TimePosition { get; private set; }
     public float Length { get; private set; }
     public short NoteNumber { get; private set; }

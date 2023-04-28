@@ -12,6 +12,7 @@ public class Runway : MonoBehaviour
     float Height; // In unity units.
     float Width; // In unity units.
     float StrikeBarHeight; // In unity units.
+    float Forgiveness; // In ms.
     LaneWrapper[] Lanes;
     Queue<NoteBlock> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
     public GameObject NotePrefab;
@@ -25,14 +26,13 @@ public class Runway : MonoBehaviour
     /// <param name="Dimensions">Height and width of runway in unity units. [width, height]</param>
     /// <param name="StrikebarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
     /// <param name="MsToHitStrikebar">How long it takes to reach the strikebar.</param>
+    /// <param name="ForgiveRadius">Ms of forgiveness around the strike area.</param>
     /// <param name="SpeedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float Forgiveness = 400f, float SpeedMulti = 1)
+    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float ForgiveRadius, float SpeedMulti = 1)
     {
         print($"Initalizing runway. Note Range: {Range.Min} - {Range.Max}");
         // Init private members.
         NoteRange = Range;
-        Width = Dimensions[0];
-        Height = Dimensions[1];
         StrikeBarHeight = StrikebarHeight;
 
         // Get notespeed.
@@ -41,14 +41,11 @@ public class Runway : MonoBehaviour
         UnitsPerMs = DistToStrikebar / MsToTouchRunway; // units/ms
         print($"Note speed: {UnitsPerMs} (units/milisecond)");
 
-        // Get note width.
-        NoteWidth = Width / Range.Len;
-
         // Init strike bar.
-        StrikeBar.transform.localScale = new Vector3(Width, (float)(Forgiveness * UnitsPerMs * 2f), 0);
-        var barY = - Height / 2 + StrikeBarHeight + StrikeBar.transform.localScale.y / 2f - StrikeBar.transform.localScale.y;
-        StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
         StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
+
+        Forgiveness = ForgiveRadius;
+        UpdateNoteDisplayInfo(Dimensions);
 
         // Create lanes.
         Lanes = new LaneWrapper[Range.Len];
@@ -63,7 +60,7 @@ public class Runway : MonoBehaviour
             // Lane position;
             var posX = GetNoteXPos((short)(Range.Min + i));
 
-            newLane.Script.Init(new float[2] { NoteWidth, Height }, StrikebarHeight, posX, MsToHitStrikebar, Forgiveness);
+            newLane.Script.Init(new float[2] { NoteWidth, Height }, StrikebarHeight, posX, MsToHitStrikebar, ForgiveRadius);
 
             Lanes[i] = newLane;
         }
@@ -83,7 +80,8 @@ public class Runway : MonoBehaviour
     /// Updates info necessary for notes to display properly on the runway.
     /// </summary>
     /// <param name="NewDimensions">The new dimensions of the runway.</param>
-    public void UpdateNoteDisplayInfo(float[] NewDimensions, float Forgiveness = 400f)
+    /// <param name="Forgiveness">Forgiveness of player input.</param>
+    public void UpdateNoteDisplayInfo(float[] NewDimensions)
     {
         // Update runway dimensions.
         Width = NewDimensions[0];
@@ -96,7 +94,7 @@ public class Runway : MonoBehaviour
 
         // Update strike bar.
         StrikeBar.transform.localScale = new Vector3(Width, (float)(Forgiveness * UnitsPerMs * 2f), 0);
-        var barY = -Height / 2 + StrikeBarHeight + StrikeBar.transform.localScale.y / 2f - StrikeBar.transform.localScale.y;
+        var barY = -Height / 2 + StrikeBarHeight;
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
     }
 

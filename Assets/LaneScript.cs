@@ -1,3 +1,4 @@
+using Melanchall.DryWetMidi.MusicTheory;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,17 +10,17 @@ struct LaneWrapper
 
 public class LaneScript : MonoBehaviour
 {
-    Queue<NoteBlock> Notes = new Queue<NoteBlock>();
-    float Width = 0f;
-    float Height = 0f;
-    float UnitsPerMs = 0f;
-    float MsForgiveness;
-    float TimeToReachStrike = 0f;
-    float StrikeHeight = 0f;
-    float BottomY { 
+    Queue<NoteBlock> _notes = new Queue<NoteBlock>();
+    float _width = 0f;
+    float _height = 0f;
+    float _unitsPerMs = 0f;
+    float _msForgiveness;
+    float _timeToReachStrike = 0f;
+    float _strikeHeight = 0f;
+    float BottomY {
         get
         {
-            return -Height / 2;
+            return -_height / 2;
         }
     }
     public GameObject StrikeKey;
@@ -34,9 +35,9 @@ public class LaneScript : MonoBehaviour
     /// <param name="Forgiveness">Range of forgiveness. (in ms)</param>
     public void Init(float[] Dimensions, float Strikeheight, float xPos, float timeToReachStrike, float Forgiveness)
     {
-        TimeToReachStrike = timeToReachStrike;
-        MsForgiveness = Forgiveness;
-        StrikeHeight = Strikeheight;
+        _timeToReachStrike = timeToReachStrike;
+        _msForgiveness = Forgiveness;
+        _strikeHeight = Strikeheight;
 
         UpdateDimensions(Dimensions, xPos);
     }
@@ -44,25 +45,27 @@ public class LaneScript : MonoBehaviour
     public void UpdateDimensions(float[] Dimensions, float xPos)
     {
         // Update width and height.
-        Width = Dimensions[0];
-        Height = Dimensions[1];
+        _width = Dimensions[0];
+        _height = Dimensions[1];
 
         // Update units per ms.
-        UnitsPerMs = (Height - StrikeHeight) / TimeToReachStrike;
+        _unitsPerMs = (_height - _strikeHeight) / _timeToReachStrike;
 
         // Update x position.
         transform.localPosition = new Vector3(xPos, 0, 1);
 
         // Update strike range.
-        StrikeKey.transform.GetChild(0).localScale = new Vector3(Width, MsForgiveness * UnitsPerMs, 1);
-        StrikeKey.transform.localPosition = new Vector3(0, BottomY + MsForgiveness * UnitsPerMs / 2, 1);
+        StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, _msForgiveness * _unitsPerMs, 1);
+        StrikeKey.transform.localPosition = new Vector3(0, BottomY + _msForgiveness * _unitsPerMs / 2, 1);
     }
 
     public void AddNote(NoteBlock newNote)
     {
         newNote.GetNote().transform.parent = transform;
-        Notes.Enqueue(newNote);
+        _notes.Enqueue(newNote);
     }
+
+
 
     /// <summary>
     /// Updates the positions of each note and deletes notes no longer visible.
@@ -71,35 +74,58 @@ public class LaneScript : MonoBehaviour
     public void UpdateNotePositions(float CurrentPlaybackTimeMs)
     {
         // Update positions for all managed notes.
-        foreach (var note in Notes)
+        foreach (var note in _notes)
         {
             // Get new scale.
             var newScale = new Vector3();
-            newScale.x = Width;
-            newScale.y = note.Length * UnitsPerMs;
+            newScale.x = _width;
+            newScale.y = note.Length * _unitsPerMs;
             newScale.z = 1;
 
             // Get new position.
             var newPosition = new Vector3();
             newPosition.x = 0;
-            newPosition.y = Height / 2 - (UnitsPerMs * (CurrentPlaybackTimeMs - note.TimePosition)) + note.NoteHeight / 2;
+            newPosition.y = _height / 2 - (_unitsPerMs * (CurrentPlaybackTimeMs - note.TimePosition)) + note.NoteHeight / 2;
             newPosition.z = 0;
 
             note.UpdateNotePos(newPosition, newScale);
         }
 
         // Delete notes that are no longer visible.
-        while (Notes.Count > 0)
+        while (_notes.Count > 0)
         {
-            if (Notes.Peek().TopY < BottomY) // Below the floor.
+            if (_notes.Peek().TopY < BottomY) // Below the floor.
             {
-                Destroy(Notes.Dequeue().GetNote());
+                Destroy(_notes.Dequeue().GetNote());
             }
             else
             {
                 break;
             }
         }
+    }
+
+    private float CalculateAccuracy(float differenceMs)
+    {
+        if (differenceMs < 0f) differenceMs *= -1f; // Make it positive.
+
+        print($"Distance in ms from actual: {differenceMs}ms");
+
+        if (differenceMs == 0)
+        {
+            print($"Perfect accuracy.");
+            return 100f;
+        }
+
+        if (differenceMs > _msForgiveness)
+        {
+            print($"Total miss.");
+            return 0f;
+        }
+
+        float accuracy = 100f - (differenceMs / _msForgiveness) * 100f;
+
+        return accuracy;
     }
 
     /// <summary>
@@ -110,33 +136,82 @@ public class LaneScript : MonoBehaviour
     /// <returns>Accuracy</returns>
     public float NoteEventAccuracy(float Time, bool NoteOnEvent)
     {
-        if (Notes.Count == 0)
+        if (_notes.Count == 0)
         {
             print($"Attempted to check note collision but lane is empty.");
             return 0f;
         }
 
-        var MsDist = Time - (NoteOnEvent ? Notes.Peek().NoteOnTime : Notes.Peek().NoteOffTime); // Distance from actual time.
-        if (MsDist < 0f) MsDist *= -1f; // Make it positive.
+        // Finds the closest unplayed note to the bottom of the strikebar to check accuracy against.
+        var noteCache = _notes.ToArray();
 
-        print($"Distance in ms from actual: {MsDist}ms");
+        int closestNoteIndex = -1;
+        float currentNoteTimeDist;
+        float closestNoteTimeDist = _msForgiveness;
 
-        if (MsDist == 0)
+        for (int i = 0; i < noteCache.Length; i++)
+        {
+            currentNoteTimeDist = Time - (NoteOnEvent ? noteCache[i].NoteOnTime : noteCache[i].NoteOffTime);
+
+            // If note has already been played.
+            if (NoteOnEvent ? noteCache[i].NoteOnPlayed : noteCache[i].NoteOffPlayed)
+            {
+                continue;
+            }
+
+            // If note on time is within forgiveness range.
+            if (-_msForgiveness < currentNoteTimeDist && currentNoteTimeDist < _msForgiveness)
+            {
+                // If closer to the bottom of the strike bar.
+                if (currentNoteTimeDist < closestNoteTimeDist)
+                {
+                    closestNoteIndex = i;
+                    closestNoteTimeDist = currentNoteTimeDist;
+                }
+            }
+        }
+
+        if (closestNoteIndex == -1) // -1 means no note within forgiveness range was found.
+        {
+            print("Total miss.");
+            return 0f;
+        }
+
+        if (closestNoteTimeDist < 0f) closestNoteTimeDist *= -1f; // Make positive.
+
+        if (closestNoteTimeDist == 0)
         {
             print($"Perfect accuracy.");
             return 100f;
         }
 
-        if (MsDist > MsForgiveness)
+        float Accuracy = 100f - (closestNoteTimeDist / _msForgiveness) * 100f;
+
+        if (NoteOnEvent)
         {
-            print($"Total miss.");
-            return 0f;
+
+            print($"Note on event accuracy: {Accuracy}%\nNote time position: {noteCache[closestNoteIndex].NoteOnTime}ms\nPlayed note time distance: {closestNoteTimeDist}ms");
         }
+        else print($"Note on event accuracy: {Accuracy}%\nNote time position: {noteCache[closestNoteIndex].NoteOffTime}ms\nPlayed note time distance: {closestNoteTimeDist}ms");
 
-        float Accuracy = 100f - (MsDist / MsForgiveness) * 100f;
+        // Update queue.
+        _notes.Clear();
+        for (int i = 0; i < noteCache.Length; i++)
+        {
+            // If this was the played note mark it as such.
+            if (i == closestNoteIndex)
+            {
+                if (NoteOnEvent)
+                {
+                    noteCache[i].NoteOnPlayed = true;
+                } else
+                {
+                    noteCache[i].NoteOffPlayed = true;
+                }
+            }
 
-        if (NoteOnEvent) print($"Note on accuracy: {Accuracy}%");
-        else print($"Note off accuracy: {Accuracy}%");
+            _notes.Enqueue(noteCache[i]);
+        }
 
         return Accuracy;
     }
