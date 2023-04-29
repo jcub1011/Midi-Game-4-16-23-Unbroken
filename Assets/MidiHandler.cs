@@ -276,7 +276,7 @@ public class MidiHandler : MonoBehaviour
 
     void Start()
     {
-        LoadMidi("Collision Test");
+        LoadMidi("TomOdelAnotherLove");
         // Init interpolater.
         _introInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, _currentMidi.GetTempoMap()).TotalMilliseconds);
 
