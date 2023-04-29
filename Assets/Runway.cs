@@ -13,6 +13,7 @@ public class Runway : MonoBehaviour
     float Width; // In unity units.
     float StrikeBarHeight; // In unity units.
     float Forgiveness; // In ms.
+    float[] _forgivenessDivision;
     LaneWrapper[] Lanes;
     Queue<NoteBlock> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
     public GameObject NotePrefab;
@@ -28,8 +29,12 @@ public class Runway : MonoBehaviour
     /// <param name="MsToHitStrikebar">How long it takes to reach the strikebar.</param>
     /// <param name="ForgiveRadius">Ms of forgiveness around the strike area.</param>
     /// <param name="SpeedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float ForgiveRadius, float SpeedMulti = 1)
+    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float ForgiveRadius, float SpeedMulti = 1, float[] ForgivenessDivision = null)
     {
+        // Init forgiveness range.
+        if (ForgivenessDivision == null) _forgivenessDivision = new float[] { 0.1f, 0.5f };
+        else _forgivenessDivision = ForgivenessDivision;
+
         print($"Initalizing runway. Note Range: {Range.Min} - {Range.Max}");
         // Init private members.
         NoteRange = Range;
@@ -42,7 +47,10 @@ public class Runway : MonoBehaviour
         print($"Note speed: {UnitsPerMs} (units/milisecond)");
 
         // Init strike bar.
-        StrikeBar.transform.GetComponent<SpriteRenderer>().enabled = true;
+        foreach (var renderer in StrikeBar.transform.GetComponentsInChildren<SpriteRenderer>())
+        {
+            renderer.enabled = true;
+        }
 
         Forgiveness = ForgiveRadius;
         UpdateNoteDisplayInfo(Dimensions);
@@ -93,7 +101,15 @@ public class Runway : MonoBehaviour
         NoteWidth = Width / NoteRange.Len;
 
         // Update strike bar.
-        StrikeBar.transform.localScale = new Vector3(Width, (float)(Forgiveness * UnitsPerMs * 2f), 0);
+        StrikeBar.transform.localScale = new Vector3(Width, 1, 0);
+        // Update inner strike bars.
+        StrikeBar.transform.GetChild(0).localScale = new Vector3(Width, _forgivenessDivision[0] * Forgiveness * UnitsPerMs, 1); // Perfect
+        StrikeBar.transform.GetChild(0).localPosition = new Vector3(0, 0, 2); // Perfect
+        StrikeBar.transform.GetChild(1).localScale = new Vector3(Width, _forgivenessDivision[1] * Forgiveness * UnitsPerMs, 1); // Good
+        StrikeBar.transform.GetChild(1).localPosition = new Vector3(0, 0, 3); // Good
+        StrikeBar.transform.GetChild(2).localScale = new Vector3(Width, Forgiveness * UnitsPerMs, 1); // Okay
+        StrikeBar.transform.GetChild(2).localPosition = new Vector3(0, 0, 4); // Okay
+        // Position outside strike bar.
         var barY = -Height / 2 + StrikeBarHeight;
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
     }

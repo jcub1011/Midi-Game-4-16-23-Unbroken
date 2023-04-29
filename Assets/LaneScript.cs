@@ -1,6 +1,8 @@
 using Melanchall.DryWetMidi.MusicTheory;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using UnityEngine;
+using Utils;
 
 struct LaneWrapper
 {
@@ -11,6 +13,8 @@ struct LaneWrapper
 public class LaneScript : MonoBehaviour
 {
     Queue<NoteBlock> _notes = new Queue<NoteBlock>();
+    PriorityQueue<float, float> _noteOnCollisionQueue = new PriorityQueue<float, float>();
+    PriorityQueue<float, float> _noteOffCollisionQueue = new PriorityQueue<float, float>();
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
@@ -52,7 +56,7 @@ public class LaneScript : MonoBehaviour
         _unitsPerMs = (_height - _strikeHeight) / _timeToReachStrike;
 
         // Update x position.
-        transform.localPosition = new Vector3(xPos, 0, 1);
+        transform.localPosition = new Vector3(xPos, 0, 0);
 
         // Update strike range.
         StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, _msForgiveness * _unitsPerMs, 1);
@@ -62,10 +66,11 @@ public class LaneScript : MonoBehaviour
     public void AddNote(NoteBlock newNote)
     {
         newNote.GetNote().transform.parent = transform;
+        var priority = newNote.NoteOnTime;
         _notes.Enqueue(newNote);
+        _noteOnCollisionQueue.Enqueue(newNote.NoteOnTime, priority);
+        _noteOffCollisionQueue.Enqueue(newNote.NoteOffTime, priority);
     }
-
-
 
     /// <summary>
     /// Updates the positions of each note and deletes notes no longer visible.
@@ -109,23 +114,26 @@ public class LaneScript : MonoBehaviour
     {
         if (differenceMs < 0f) differenceMs *= -1f; // Make it positive.
 
-        print($"Distance in ms from actual: {differenceMs}ms");
-
         if (differenceMs == 0)
         {
-            print($"Perfect accuracy.");
             return 100f;
         }
 
         if (differenceMs > _msForgiveness)
         {
-            print($"Total miss.");
             return 0f;
         }
 
         float accuracy = 100f - (differenceMs / _msForgiveness) * 100f;
 
         return accuracy;
+    }
+
+    float AbsTimeDiff(float time1, float time2)
+    {
+        var diff = time1 - time2;
+        if (diff < 0f) diff *= -1;
+        return diff;
     }
 
     /// <summary>
@@ -136,83 +144,71 @@ public class LaneScript : MonoBehaviour
     /// <returns>Accuracy</returns>
     public float NoteEventAccuracy(float Time, bool NoteOnEvent)
     {
-        if (_notes.Count == 0)
-        {
-            print($"Attempted to check note collision but lane is empty.");
-            return 0f;
-        }
+        float eventTimeToCompareWith = 2f * _msForgiveness;
 
-        // Finds the closest unplayed note to the bottom of the strikebar to check accuracy against.
-        var noteCache = _notes.ToArray();
-
-        int closestNoteIndex = -1;
-        float currentNoteTimeDist;
-        float closestNoteTimeDist = _msForgiveness;
-
-        for (int i = 0; i < noteCache.Length; i++)
-        {
-            currentNoteTimeDist = Time - (NoteOnEvent ? noteCache[i].NoteOnTime : noteCache[i].NoteOffTime);
-
-            // If note has already been played.
-            if (NoteOnEvent ? noteCache[i].NoteOnPlayed : noteCache[i].NoteOffPlayed)
-            {
-                continue;
-            }
-
-            // If note on time is within forgiveness range.
-            if (-_msForgiveness < currentNoteTimeDist && currentNoteTimeDist < _msForgiveness)
-            {
-                // If closer to the bottom of the strike bar.
-                if (currentNoteTimeDist < closestNoteTimeDist)
-                {
-                    closestNoteIndex = i;
-                    closestNoteTimeDist = currentNoteTimeDist;
-                }
-            }
-        }
-
-        if (closestNoteIndex == -1) // -1 means no note within forgiveness range was found.
-        {
-            print("Total miss.");
-            return 0f;
-        }
-
-        if (closestNoteTimeDist < 0f) closestNoteTimeDist *= -1f; // Make positive.
-
-        if (closestNoteTimeDist == 0)
-        {
-            print($"Perfect accuracy.");
-            return 100f;
-        }
-
-        float Accuracy = 100f - (closestNoteTimeDist / _msForgiveness) * 100f;
+        print($"Current time: {Time}");
 
         if (NoteOnEvent)
         {
-
-            print($"Note on event accuracy: {Accuracy}%\nNote time position: {noteCache[closestNoteIndex].NoteOnTime}ms\nPlayed note time distance: {closestNoteTimeDist}ms");
-        }
-        else print($"Note on event accuracy: {Accuracy}%\nNote time position: {noteCache[closestNoteIndex].NoteOffTime}ms\nPlayed note time distance: {closestNoteTimeDist}ms");
-
-        // Update queue.
-        _notes.Clear();
-        for (int i = 0; i < noteCache.Length; i++)
-        {
-            // If this was the played note mark it as such.
-            if (i == closestNoteIndex)
+            print($"Checking note on accuracy. Unplayed notes {_noteOnCollisionQueue.Count}");
+            while (_noteOnCollisionQueue.Count > 0)
             {
-                if (NoteOnEvent)
-                {
-                    noteCache[i].NoteOnPlayed = true;
-                } else
-                {
-                    noteCache[i].NoteOffPlayed = true;
-                }
-            }
+                var eventTimeDiff = Time - _noteOnCollisionQueue.Peek();
+                print($"Next playable on note time: {_noteOnCollisionQueue.Peek()}");
 
-            _notes.Enqueue(noteCache[i]);
+                // If below strike bar.
+                if (eventTimeDiff > _msForgiveness)
+                {
+                    eventTimeToCompareWith = _noteOnCollisionQueue.Dequeue();
+                    print("Skipping note.");
+                    continue;
+                }
+
+                // If above the strike bar.
+                if (eventTimeDiff < -_msForgiveness)
+                {
+                    eventTimeToCompareWith = _noteOnCollisionQueue.Peek();
+                    break;
+                }
+
+                // When within strike bar.
+                eventTimeToCompareWith = _noteOnCollisionQueue.Dequeue();
+                break;
+            }
+        }
+        else
+        {
+            print($"Checking note off accuracy. Unplayed notes {_noteOffCollisionQueue.Count}");
+            while (_noteOffCollisionQueue.Count > 0)
+            {
+                var eventTimeDiff = Time - _noteOffCollisionQueue.Peek();
+                print($"Next playable off note time: {_noteOffCollisionQueue.Peek()}");
+
+                // If below strike bar.
+                if (eventTimeDiff > _msForgiveness)
+                {
+                    eventTimeToCompareWith = _noteOffCollisionQueue.Dequeue();
+                    print("Skipping note.");
+                    continue;
+                }
+
+                // If above the strike bar.
+                if (eventTimeDiff < -_msForgiveness)
+                {
+                    eventTimeToCompareWith = _noteOffCollisionQueue.Peek();
+                    break;
+                }
+
+                // When within strike bar.
+                eventTimeToCompareWith = _noteOffCollisionQueue.Dequeue();
+                break;
+            }
         }
 
-        return Accuracy;
+        var msDist = eventTimeToCompareWith - Time;
+        var accuracy = CalculateAccuracy(msDist);
+        print($"Note event accuracy: {accuracy}%\nNote time position: {eventTimeToCompareWith}ms\nPlayed note time distance: {msDist}ms");
+
+        return accuracy;
     }
 }

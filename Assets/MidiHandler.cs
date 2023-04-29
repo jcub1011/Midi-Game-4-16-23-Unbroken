@@ -276,13 +276,14 @@ public class MidiHandler : MonoBehaviour
 
     void Start()
     {
-        LoadMidi("EasyPlayTest");
+        LoadMidi("Collision Test");
         // Init interpolater.
         _introInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, _currentMidi.GetTempoMap()).TotalMilliseconds);
 
         // Init runway.
         _runwayScript = Runway.GetComponent<Runway>();
         float[] Dimensions = new float[2] { _displayHandler.Width, _displayHandler.Height };
+
         // Get time to hit runway.
         var TimeSpanQNotes = new MusicalTimeSpan(4) * 8;
         _playbackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, _currentMidi.GetTempoMap()).TotalMilliseconds;
