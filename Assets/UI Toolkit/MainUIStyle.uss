@@ -1,0 +1,34 @@
+Button {
+	font-size: 20px;
+	-unity-text-align: middle-left;
+	margin: 10px;
+	padding: 10px;
+	background-color: #FB5012;
+	border-radius: 0px;
+	border-width: 0px;
+}
+
+#Header {
+	font-size: 30px;
+	-unity-text-align: middle-center;
+	margin: 10px;
+	padding: 10px;
+	-unity-font-style: bold;
+}
+
+.backdrop {
+	background-color: #424242;
+	color: #DBF9F4;
+	margin: 0px;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+}
+
+#Title {
+	font-size: 50px;
+	-unity-text-align: middle-center;
+	margin: 10px;
+	padding: 10px;
+	-unity-font-style: bold;
+}

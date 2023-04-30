@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/Main%20Menu/MainMenu.uss?fileID=7433441132597879392&amp;guid=63af78b874ef2e14c91b3a145bb96982&amp;type=3#MainMenu" />
+    <ui:VisualElement name="Wrapper" style="align-items: center; justify-content: center; width: auto; height: auto; flex-grow: 1;">
+        <ui:Button text="Select Song" display-tooltip-when-elided="true" name="SelectSong" class="main-menu-button" />
+        <ui:Button text="Settings" display-tooltip-when-elided="true" name="Settings" class="main-menu-button" />
+    </ui:VisualElement>
+</ui:UXML>

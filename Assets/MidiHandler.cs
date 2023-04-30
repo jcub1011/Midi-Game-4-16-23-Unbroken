@@ -10,10 +10,6 @@ using System.Threading;
 using System;
 using UnityEditor;
 
-/*
-[System.Serializable]
-public class InitializeDisplayManager : UnityEngine.Events.UnityEvent<short[], TempoMap> { }*/
-
 public struct NoteData
 {
     public short Number;
@@ -274,9 +270,9 @@ public class MidiHandler : MonoBehaviour
         _runwayScript.UpdateLanes((float)CurrentTime);
     }
 
-    void Start()
+    public void StartSongPlayback(string songName, int quarterNoteLeadup, float leeway)
     {
-        LoadMidi("TomOdelAnotherLove");
+        LoadMidi(songName);
         // Init interpolater.
         _introInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, _currentMidi.GetTempoMap()).TotalMilliseconds);
 
@@ -285,9 +281,9 @@ public class MidiHandler : MonoBehaviour
         float[] Dimensions = new float[2] { _displayHandler.Width, _displayHandler.Height };
 
         // Get time to hit runway.
-        var TimeSpanQNotes = new MusicalTimeSpan(4) * 8;
+        var TimeSpanQNotes = new MusicalTimeSpan(4) * quarterNoteLeadup;
         _playbackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, _currentMidi.GetTempoMap()).TotalMilliseconds;
-        _runwayScript.Init(GetNoteRange(), Dimensions, 4, _playbackOffset, 400f);
+        _runwayScript.Init(GetNoteRange(), Dimensions, 4, _playbackOffset, leeway);
 
         // Start playback.
         _introInterpolater.Start();
@@ -309,7 +305,7 @@ public class MidiHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (ScreenResized())
+        if (ScreenResized() && _runwayScript != null)
         {
             _runwayScript.UpdateNoteDisplayInfo(new float[] { _displayHandler.Width, _displayHandler.Height });
         }
