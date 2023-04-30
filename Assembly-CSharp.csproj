@@ -56,16 +56,17 @@
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Events.cs" />
     <Compile Include="Assets\PriorityQueuePort.cs" />
     <Compile Include="Assets\Runway.cs" />
+    <Compile Include="Assets\UI Toolkit\MainUIScript.cs" />
     <Compile Include="Assets\CustomTickGenerator.cs" />
     <Compile Include="Assets\Range.cs" />
     <Compile Include="Assets\DisplayManager.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
     <Compile Include="Assets\MidiHandler.cs" />
     <Compile Include="Assets\LaneScript.cs" />
-    <Compile Include="Assets\Events.cs" />
-    <Compile Include="Assets\UI Toolkit\MainUIScript.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\MainMenu.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
