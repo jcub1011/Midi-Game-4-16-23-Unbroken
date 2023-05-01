@@ -6,6 +6,8 @@ using System.Xml.Schema;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
+using Unity.VisualScripting.FullSerializer;
 
 public class MainMenu : MonoBehaviour
 {
@@ -21,6 +23,7 @@ public class MainMenu : MonoBehaviour
 
     private void OnEnable()
     {
+        DontDestroyOnLoad(gameObject);
         // Get root.
         _root = GetComponent<UIDocument>().rootVisualElement;
 
@@ -74,6 +77,7 @@ public class StartMenu
 
 public class SongList : StartMenu
 {
+    private NewGame newGame = new();
     public SongList(VisualElement element) : base(element) { }
 
     public void RefreshList(string _midiFolder)
@@ -90,8 +94,23 @@ public class SongList : StartMenu
             var button = new Button();
             button.AddToClassList("song-list-button");
             button.text = song;
+            button.RegisterCallback<ClickEvent, string>(OnSongSelect, song);
             visualElement.Add(button);
         }
+    }
+
+    public void OnSongSelect(ClickEvent evt, string songName)
+    {
+        SceneManager.LoadSceneAsync(1, UnityEngine.SceneManagement.LoadSceneMode.Additive).completed += LoadSong;
+    }
+
+    public void LoadSong(AsyncOperation scene)
+    {
+        if (scene.isDone)
+        {
+            Debug.Log("Song scene successfully loaded.");
+        }
+        // SceneManager.UnloadSceneAsync(1);
     }
 
     private List<string> GetSongNames(string folderDirectory)
