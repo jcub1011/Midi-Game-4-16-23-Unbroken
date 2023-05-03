@@ -270,9 +270,29 @@ public class MidiHandler : MonoBehaviour
         _runwayScript.UpdateLanes((float)CurrentTime);
     }
 
-    public void StartSongPlayback(string songName, int quarterNoteLeadup, float leeway)
+    private void CheckGameDataArgs ()
     {
-        LoadMidi(songName);
+        if (GameData.SongToPlay == null)
+        {
+            throw new ArgumentNullException("No song name was set in GameData.");
+        }
+        if (GameData.PlaybackSpeed <= 0)
+        {
+            throw new ArgumentOutOfRangeException("Invalid playback speed, must be greater than 0.");
+        }
+        if (GameData.Forgiveness < 0)
+        {
+            throw new ArgumentOutOfRangeException("Invalid forgiveness range, must be greater than or equal to 0.");
+        }
+    }
+
+    public void StartSongPlayback()
+    {
+        // Check args.
+        CheckGameDataArgs();
+
+        LoadMidi(GameData.SongToPlay);
+
         // Init interpolater.
         _introInterpolater = new(TimeConverter.ConvertTo<MetricTimeSpan>(1, _currentMidi.GetTempoMap()).TotalMilliseconds);
 
@@ -281,9 +301,9 @@ public class MidiHandler : MonoBehaviour
         float[] Dimensions = new float[2] { _displayHandler.Width, _displayHandler.Height };
 
         // Get time to hit runway.
-        var TimeSpanQNotes = new MusicalTimeSpan(4) * quarterNoteLeadup;
+        var TimeSpanQNotes = new MusicalTimeSpan(4) * GameData.QuarterNoteLeadup;
         _playbackOffset = (float)TimeConverter.ConvertTo<MetricTimeSpan>(TimeSpanQNotes, _currentMidi.GetTempoMap()).TotalMilliseconds;
-        _runwayScript.Init(GetNoteRange(), Dimensions, 4, _playbackOffset, leeway);
+        _runwayScript.Init(GetNoteRange(), Dimensions, 4, _playbackOffset);
 
         // Start playback.
         _introInterpolater.Start();
@@ -312,7 +332,7 @@ public class MidiHandler : MonoBehaviour
         PushNotesToRunway();
     }
 
-    private void OnApplicationQuit()
+    private void Dispose()
     {
         // Cleanup.
         print("Releasing resources.");
@@ -333,10 +353,27 @@ public class MidiHandler : MonoBehaviour
         if (_outputMidi != null)
         {
             _outputMidi.Dispose();
+            _outputMidi = null;
         }
         if (_inputMidi != null)
         {
             _inputMidi.Dispose();
+            _inputMidi = null;
         }
+    }
+
+    private void Start()
+    {
+        StartSongPlayback();
+    }
+
+    private void OnApplicationQuit()
+    {
+        Dispose();
+    }
+
+    private void OnDisable()
+    {
+        Dispose();
     }
 }

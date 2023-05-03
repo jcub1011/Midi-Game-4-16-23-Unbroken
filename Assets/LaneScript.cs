@@ -18,7 +18,6 @@ public class LaneScript : MonoBehaviour
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
-    float _msForgiveness;
     float _timeToReachStrike = 0f;
     float _strikeHeight = 0f;
     float BottomY {
@@ -36,11 +35,9 @@ public class LaneScript : MonoBehaviour
     /// <param name="Strikeheight">Height of the strike area.</param>
     /// <param name="xPos">X position of lane.</param>
     /// <param name="timeToReachStrike">How long it takes a note to reach the strike.</param>
-    /// <param name="Forgiveness">Range of forgiveness. (in ms)</param>
-    public void Init(float[] Dimensions, float Strikeheight, float xPos, float timeToReachStrike, float Forgiveness)
+    public void Init(float[] Dimensions, float Strikeheight, float xPos, float timeToReachStrike)
     {
         _timeToReachStrike = timeToReachStrike;
-        _msForgiveness = Forgiveness;
         _strikeHeight = Strikeheight;
 
         UpdateDimensions(Dimensions, xPos);
@@ -59,8 +56,8 @@ public class LaneScript : MonoBehaviour
         transform.localPosition = new Vector3(xPos, 0, 0);
 
         // Update strike range.
-        StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, _msForgiveness * _unitsPerMs, 1);
-        StrikeKey.transform.localPosition = new Vector3(0, BottomY + _msForgiveness * _unitsPerMs / 2, 1);
+        StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
+        StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
     }
 
     public void AddNote(NoteBlock newNote)
@@ -119,12 +116,12 @@ public class LaneScript : MonoBehaviour
             return 100f;
         }
 
-        if (differenceMs > _msForgiveness)
+        if (differenceMs > GameData.Forgiveness)
         {
             return 0f;
         }
 
-        float accuracy = 100f - (differenceMs / _msForgiveness) * 100f;
+        float accuracy = 100f - (differenceMs / GameData.Forgiveness) * 100f;
 
         return accuracy;
     }
@@ -144,7 +141,7 @@ public class LaneScript : MonoBehaviour
     /// <returns>Accuracy</returns>
     public float NoteEventAccuracy(float Time, bool NoteOnEvent)
     {
-        float eventTimeToCompareWith = 2f * _msForgiveness;
+        float eventTimeToCompareWith = 2f * GameData.Forgiveness;
 
         print($"Current time: {Time}");
 
@@ -157,7 +154,7 @@ public class LaneScript : MonoBehaviour
                 print($"Next playable on note time: {_noteOnCollisionQueue.Peek()}");
 
                 // If below strike bar.
-                if (eventTimeDiff > _msForgiveness)
+                if (eventTimeDiff > GameData.Forgiveness)
                 {
                     eventTimeToCompareWith = _noteOnCollisionQueue.Dequeue();
                     print("Skipping note.");
@@ -165,7 +162,7 @@ public class LaneScript : MonoBehaviour
                 }
 
                 // If above the strike bar.
-                if (eventTimeDiff < -_msForgiveness)
+                if (eventTimeDiff < -GameData.Forgiveness)
                 {
                     eventTimeToCompareWith = _noteOnCollisionQueue.Peek();
                     break;
@@ -185,7 +182,7 @@ public class LaneScript : MonoBehaviour
                 print($"Next playable off note time: {_noteOffCollisionQueue.Peek()}");
 
                 // If below strike bar.
-                if (eventTimeDiff > _msForgiveness)
+                if (eventTimeDiff > GameData.Forgiveness)
                 {
                     eventTimeToCompareWith = _noteOffCollisionQueue.Dequeue();
                     print("Skipping note.");
@@ -193,7 +190,7 @@ public class LaneScript : MonoBehaviour
                 }
 
                 // If above the strike bar.
-                if (eventTimeDiff < -_msForgiveness)
+                if (eventTimeDiff < -GameData.Forgiveness)
                 {
                     eventTimeToCompareWith = _noteOffCollisionQueue.Peek();
                     break;

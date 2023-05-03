@@ -12,7 +12,6 @@ public class Runway : MonoBehaviour
     float Height; // In unity units.
     float Width; // In unity units.
     float StrikeBarHeight; // In unity units.
-    float Forgiveness; // In ms.
     float[] _forgivenessDivision;
     LaneWrapper[] Lanes;
     Queue<NoteBlock> DisplayQueue = new(); // Notes waiting to be displayed on next frame.
@@ -27,9 +26,8 @@ public class Runway : MonoBehaviour
     /// <param name="Dimensions">Height and width of runway in unity units. [width, height]</param>
     /// <param name="StrikebarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
     /// <param name="MsToHitStrikebar">How long it takes to reach the strikebar.</param>
-    /// <param name="ForgiveRadius">Ms of forgiveness around the strike area.</param>
     /// <param name="SpeedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float ForgiveRadius, float SpeedMulti = 1, float[] ForgivenessDivision = null)
+    public void Init(IntRange Range, float[] Dimensions, float StrikebarHeight, float MsToHitStrikebar, float SpeedMulti = 1, float[] ForgivenessDivision = null)
     {
         // Init forgiveness range.
         if (ForgivenessDivision == null) _forgivenessDivision = new float[] { 0.1f, 0.5f };
@@ -52,7 +50,6 @@ public class Runway : MonoBehaviour
             renderer.enabled = true;
         }
 
-        Forgiveness = ForgiveRadius;
         UpdateNoteDisplayInfo(Dimensions);
 
         // Create lanes.
@@ -68,7 +65,7 @@ public class Runway : MonoBehaviour
             // Lane position;
             var posX = GetNoteXPos((short)(Range.Min + i));
 
-            newLane.Script.Init(new float[2] { NoteWidth, Height }, StrikebarHeight, posX, MsToHitStrikebar, ForgiveRadius);
+            newLane.Script.Init(new float[2] { NoteWidth, Height }, StrikebarHeight, posX, MsToHitStrikebar);
 
             Lanes[i] = newLane;
         }
@@ -103,11 +100,11 @@ public class Runway : MonoBehaviour
         // Update strike bar.
         StrikeBar.transform.localScale = new Vector3(Width, 1, 0);
         // Update inner strike bars.
-        StrikeBar.transform.GetChild(0).localScale = new Vector3(Width, _forgivenessDivision[0] * Forgiveness * UnitsPerMs, 1); // Perfect
+        StrikeBar.transform.GetChild(0).localScale = new Vector3(Width, _forgivenessDivision[0] * GameData.Forgiveness * UnitsPerMs, 1); // Perfect
         StrikeBar.transform.GetChild(0).localPosition = new Vector3(0, 0, 2); // Perfect
-        StrikeBar.transform.GetChild(1).localScale = new Vector3(Width, _forgivenessDivision[1] * Forgiveness * UnitsPerMs, 1); // Good
+        StrikeBar.transform.GetChild(1).localScale = new Vector3(Width, _forgivenessDivision[1] * GameData.Forgiveness * UnitsPerMs, 1); // Good
         StrikeBar.transform.GetChild(1).localPosition = new Vector3(0, 0, 3); // Good
-        StrikeBar.transform.GetChild(2).localScale = new Vector3(Width, Forgiveness * UnitsPerMs, 1); // Okay
+        StrikeBar.transform.GetChild(2).localScale = new Vector3(Width, GameData.Forgiveness * UnitsPerMs, 1); // Okay
         StrikeBar.transform.GetChild(2).localPosition = new Vector3(0, 0, 4); // Okay
         // Position outside strike bar.
         var barY = -Height / 2 + StrikeBarHeight;
@@ -183,5 +180,21 @@ public class Runway : MonoBehaviour
     public float GetNoteInputAccuracy(float PlaybackTime, NoteOffEvent note)
     {
         return Lanes[note.NoteNumber - NoteRange.Min].Script.NoteEventAccuracy(PlaybackTime, false);
+    }
+
+    private void Dispose()
+    {
+        Lanes = null;
+        DisplayQueue = new();
+    }
+
+    private void OnApplicationQuit()
+    {
+        Dispose();
+    }
+
+    private void OnDisable()
+    {
+        Dispose();
     }
 }

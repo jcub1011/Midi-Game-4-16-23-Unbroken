@@ -48,6 +48,57 @@ public class MainMenu : MonoBehaviour
     }
 }
 
+/// <summary>
+/// Holds the game data.
+/// </summary>
+public static class GameData
+{
+    public static string SongToPlay { get; private set; } = null;
+    public static float PlaybackSpeed { get; private set; } = 1.0f;
+    public static float Forgiveness { get; private set; } = 400.0f;
+    public static int QuarterNoteLeadup { get; private set; } = 4;
+
+    public static void SetSongToPlay(string songName)
+    {
+        if (songName == null || songName == "")
+        {
+            throw new ArgumentException("Argument song name is invalid.");
+        }
+
+        SongToPlay = songName;
+    }
+
+    public static void SetPlaybackSpeed(float speed)
+    {
+        if (speed <= 0.0f)
+        {
+            throw new ArgumentException("Playback speed must be greater than 0.");
+        }
+
+        PlaybackSpeed = speed;
+    }
+
+    public static void SetForgiveness(float forgiveness)
+    {
+        if (forgiveness < 0)
+        {
+            throw new ArgumentException("Forgiveness must not be negative.");
+        }
+
+        Forgiveness = forgiveness;
+    }
+
+    public static void SetQuarterNoteLeadup(int quarterNoteLeadup)
+    {
+        if (quarterNoteLeadup <= 0)
+        {
+            throw new ArgumentException("Quarter note leadup must be greater than 0.");
+        }
+
+        QuarterNoteLeadup = quarterNoteLeadup;
+    }
+}
+
 public class StartMenu
 {
     public VisualElement visualElement { get; protected set; }
@@ -101,7 +152,15 @@ public class SongList : StartMenu
 
     public void OnSongSelect(ClickEvent evt, string songName)
     {
+        Debug.Log($"Selected song name: {songName}");
+        // Set up game data.
+        GameData.SetSongToPlay(songName);
+        GameData.SetQuarterNoteLeadup(4);
+        GameData.SetForgiveness(400f);
+        GameData.SetPlaybackSpeed(1f);
+
         SceneManager.LoadSceneAsync(1, UnityEngine.SceneManagement.LoadSceneMode.Additive).completed += LoadSong;
+        Hide();
     }
 
     public void LoadSong(AsyncOperation scene)

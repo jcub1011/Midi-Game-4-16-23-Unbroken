@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -92,6 +93,11 @@ public class NoteBlock
         TimePosition = positionInTime;
         Length = noteLength;
         NoteNumber = noteNumber;
+        Note = null;
+    }
+
+    void Dispose()
+    {
         Note = null;
     }
 }
