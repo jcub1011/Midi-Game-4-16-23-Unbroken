@@ -2,10 +2,67 @@
 using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
 using Melanchall.DryWetMidi.Tools;
+using System;
 using System.Timers;
 using Unity.VisualScripting.FullSerializer;
 using UnityEditor;
 using UnityEngine;
+
+public class PlaybackClock
+{
+    #region Properties
+    private const float MAX_PRECISION = 16f;
+    private float _tickLength = 1f;
+    private float _tickIncrementFactor = 1f;
+    private static System.Timers.Timer _intervalTimer = null;
+    #endregion
+
+    #region GetterSetters
+    public float CurrentTick { get; private set; } = 0f;
+    public float ClockSpeedFactor { get; private set; } = 1f;
+    #endregion
+
+    #region Methods
+    public float CurrentTimeMs()
+    {
+        return _tickLength * CurrentTick;
+    }
+
+    public void SetIncrementMultiplier(float tickSpeedMultiplicationFactor)
+    {
+        if (_intervalTimer == null) return;
+        ClockSpeedFactor = tickSpeedMultiplicationFactor;
+
+        var newInterval = _tickLength / ClockSpeedFactor;
+
+        // Update tick increment factor.
+        if (newInterval < MAX_PRECISION)
+        {
+            newInterval = MAX_PRECISION;
+            _tickIncrementFactor = MAX_PRECISION / _tickLength;
+        }
+        else
+        {
+            _tickIncrementFactor = 1f;
+        }
+
+        // Update interval timer.
+        _intervalTimer.Interval = newInterval;
+    }
+
+    private void IncrementTicks(System.Object source, ElapsedEventArgs evt)
+    {
+        CurrentTick += _tickIncrementFactor;
+    }
+    #endregion
+
+    #region Constructors
+    public PlaybackClock (float interval)
+    {
+        _intervalTimer = new System.Timers.Timer();
+    }
+    #endregion
+}
 
 public class CustomPlaybackEngine
 {
@@ -14,7 +71,7 @@ public class CustomPlaybackEngine
     private static System.Timers.Timer _intervalTimer = null;
     private float _tickIncrementFactor = 1f;
     private float _tickLength = 1f;
-    private float _forgivness = 400f;
+    private float _forgiveness = 400f;
     #endregion
 
     #region GetterSetterMethods
