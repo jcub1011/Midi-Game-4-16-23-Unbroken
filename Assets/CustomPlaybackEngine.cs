@@ -88,9 +88,10 @@ public class PlaybackClock
     /// <summary>
     /// Creates a new playback clock.
     /// </summary>
-    /// <param name="msInterval"></param>
-    /// <exception cref="System.ArgumentOutOfRangeException"></exception>
-    public PlaybackClock (float msInterval)
+    /// <param name="msInterval">Ms per tick.</param>
+    /// <param name="initalTime">Inital time of clock in ms.</param>
+    /// <exception cref="System.ArgumentOutOfRangeException">msInterval must be greater than 0.</exception>
+    public PlaybackClock (float msInterval, float initalTime = 0f)
     {
         if (!(msInterval > 0f))
         {
@@ -101,6 +102,9 @@ public class PlaybackClock
         _tickLength = msInterval;
         SetIncrementMultiplier(1f);
         _intervalTimer.Elapsed += IncrementTicks; // Set callback.
+
+        // Set inital tick.
+        CurrentTick = initalTime / msInterval;
     }
     #endregion
 }
@@ -110,6 +114,7 @@ public class CustomPlaybackEngine
     #region Properties
     private static PlaybackClock _ticker = null;
     private float _forgiveness = 400f;
+    private OutputDevice _outputDevice = null;
     #endregion
 
     #region GetterSetterMethods
@@ -138,11 +143,42 @@ public class CustomPlaybackEngine
         // Read midi file.
         var midiFile = MidiFile.Read(songFilePath);
 
-        var msPerTick = (float)TimeConverter.ConvertTo<MetricTimeSpan>(1, midiFile.GetTempoMap()).TotalMilliseconds;
-        _ticker = new PlaybackClock(msPerTick);
+        InitTicker(midiFile.GetTempoMap(), qNoteLeadup);
+
+        InitOutputDevice(outputDevice);
     }
     #endregion
 
     #region Methods
+    #endregion
+
+    #region Initalization Methods
+    private void InitOutputDevice(OutputDevice outputDevice)
+    {
+        if (_outputDevice != null)
+        {
+            _outputDevice.Dispose();
+            _outputDevice = null;
+        }
+
+        _outputDevice = outputDevice;
+        _outputDevice.PrepareForEventsSending();
+
+    }
+
+    private void InitTicker(TempoMap tempoMap, int qNoteLeadup)
+    {
+        if (_ticker != null)
+        {
+            _ticker.Dispose();
+            _ticker = null;
+        }
+
+        var msPerTick = (float)TimeConverter.ConvertTo<MetricTimeSpan>(1, tempoMap).TotalMilliseconds;
+        var ticksPerQNote = TimeConverter.ConvertFrom(new MusicalTimeSpan(4), tempoMap);
+        var msLeadup = ticksPerQNote * qNoteLeadup * msPerTick;
+
+        _ticker = new PlaybackClock(msPerTick, -msLeadup);
+    }
     #endregion
 }
