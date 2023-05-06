@@ -109,12 +109,24 @@ public class PlaybackClock
     #endregion
 }
 
+public class NoteDisplayArgs : EventArgs
+{
+    public short NoteNumber { get; set; }
+    public short Channel { get; set; }
+    public float PlaybackPosition { get; set; }
+    public float Length { get; set; }
+}
+
 public class CustomPlaybackEngine
 {
     #region Properties
     private static PlaybackClock _ticker = null;
     private float _forgiveness = 400f;
     private OutputDevice _outputDevice = null;
+    #endregion
+
+    #region events
+    public event EventHandler<NoteDisplayArgs> NoteReachedRunway;
     #endregion
 
     #region GetterSetterMethods
@@ -135,7 +147,7 @@ public class CustomPlaybackEngine
     #endregion
 
     #region Constructor
-    CustomPlaybackEngine(string songFilePath, OutputDevice outputDevice, float playbackSpeed = 1f, 
+    public CustomPlaybackEngine(string songFilePath, OutputDevice outputDevice = null, float playbackSpeed = 1f, 
         float forgiveness = 400f, int qNoteLeadup = 4, bool forScrubbing = false)
     {
         if (forScrubbing) throw new System.NotImplementedException("Scrubbing method is not implemented yet.");
@@ -155,6 +167,7 @@ public class CustomPlaybackEngine
     #region Initalization Methods
     private void InitOutputDevice(OutputDevice outputDevice)
     {
+        if (outputDevice == null) return;
         if (_outputDevice != null)
         {
             _outputDevice.Dispose();
