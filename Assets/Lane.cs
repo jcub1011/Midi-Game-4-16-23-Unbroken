@@ -39,6 +39,9 @@ public class NoteWrapper
 public class Lane : MonoBehaviour
 {
     LinkedList<NoteWrapper> _activeNotes = new LinkedList<NoteWrapper>();
+    List<NoteEvtData> _notePlayList;
+    int _nextMaxIndex = 0;
+    int _prevMinIndex = -1;
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
@@ -92,7 +95,7 @@ public class Lane : MonoBehaviour
         StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
         StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
     }
-
+    /*
     public void AddNote(NoteEvtData newNote)
     {
         // Create new note block.
@@ -100,6 +103,11 @@ public class Lane : MonoBehaviour
 
         // Add note to managed list.
         _activeNotes.AddLast(noteBlock);
+    }*/
+
+    public void AddNotesList(List<NoteEvtData> notes)
+    {
+        _notePlayList = notes;
     }
 
     /// <summary>
@@ -108,6 +116,26 @@ public class Lane : MonoBehaviour
     /// <param name="CurrentPlaybackTimeMs">Current time of playback.</param>
     public void UpdateNotePositions(float CurrentPlaybackTimeMs)
     {
+        // Add visible notes to managed list.
+        var laneUpperBound = CurrentPlaybackTimeMs + _timeToReachStrike;
+        var laneLowerBound = CurrentPlaybackTimeMs - _strikeHeight * _unitsPerMs;
+
+        // Add notes to the top.
+        while (_nextMaxIndex != _notePlayList.Count && _notePlayList[_nextMaxIndex].onTime < laneUpperBound)
+        {
+            var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_nextMaxIndex]);
+            _nextMaxIndex++;
+            _activeNotes.AddLast(newNote);
+        }
+
+        // Add notes to the bottom.
+        while (_prevMinIndex >= 0 && _notePlayList[_prevMinIndex].offTime > laneLowerBound)
+        {
+            var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_prevMinIndex]);
+            _prevMinIndex--;
+            _activeNotes.AddFirst(newNote);
+        }
+
         // Update positions for all managed notes.
         foreach (var noteWrapper in _activeNotes)
         {
@@ -138,6 +166,7 @@ public class Lane : MonoBehaviour
             if (noteTopY < BottomY) // Below the floor.
             {
                 _activeNotes.RemoveFirst();
+                _prevMinIndex++;
                 Destroy(firstNote);
             }
             else
@@ -156,6 +185,7 @@ public class Lane : MonoBehaviour
             if (noteBottomY > TopY) // Above the ceiling.
             {
                 _activeNotes.RemoveLast();
+                _nextMaxIndex--;
                 Destroy(lastNote);
             }
             else

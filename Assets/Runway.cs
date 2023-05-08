@@ -1,6 +1,7 @@
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 public class Runway : MonoBehaviour
@@ -12,9 +13,11 @@ public class Runway : MonoBehaviour
     float _height; // In unity units.
     float _width; // In unity units.
     float _strikeBarHeight; // In unity units.
-    List<Note> _notes = new(); // Notes managed by this runway.
-    long _earliestNoteIndex = -1; // Note with greatest playback position.
-    long _latestNoteIndex = -1; // Note with lowest playback position.
+    List<NoteEvtData> _notes = new(); // Notes managed by this runway.
+    IntRange _displayRange = new(0, -1);
+    LinkedList<int> _displayIndicies = new(); // Stores indexes of notes that are currently being displayed.
+    int _upcommingMaxNoteIndex = 0;
+    int _previousMinNoteIndex = 0;
     LaneWrapper[] _lanes;
     public GameObject StrikeBar;
     public GameObject LanePrefab;
@@ -27,7 +30,7 @@ public class Runway : MonoBehaviour
     /// <param name="strikeBarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
     /// <param name="msToReachStrikeBar">How long it takes to reach the strikebar.</param>
     /// <param name="speedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(List<Note> notes, float[] dimensions, float strikeBarHeight, float msToReachStrikeBar, float speedMulti = 1)
+    public void Init(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight, float msToReachStrikeBar, float speedMulti = 1)
     {
         // Init private members.
         _noteRange = getNoteRange(notes);
@@ -61,15 +64,15 @@ public class Runway : MonoBehaviour
         }
     }
 
-    IntRange getNoteRange(List<Note> notes)
+    IntRange getNoteRange(List<NoteEvtData> notes)
     {
         short min = short.MaxValue;
         short max = short.MinValue;
 
         foreach (var note in notes)
         {
-            if (note.NoteNumber < min) min = note.NoteNumber;
-            if (note.NoteNumber > max) max = note.NoteNumber;
+            if (note.number < min) min = note.number;
+            if (note.number > max) max = note.number;
         }
 
         return new IntRange(min, max);
@@ -111,24 +114,152 @@ public class Runway : MonoBehaviour
     /// Adds a note block to its respective lane.
     /// </summary>
     /// <param name="note">The note a lane.</param>
-    public void AddNoteToLane(Note note)
+    public void AddNoteToLane(NoteEvtData note)
     {
         // Check if valid note.
-        if (!_noteRange.InRange(note.NoteNumber))
+        if (!_noteRange.InRange(note.number))
         {
-            print($"Note {note.NoteNumber} outside range [{_noteRange.Min}, {_noteRange.Max}].");
+            print($"Note {note.number} outside range [{_noteRange.Min}, {_noteRange.Max}].");
             return;
         }
 
         // Add to lane.
-        _lanes[note.NoteNumber - _noteRange.Min].Script.AddNote(note);
+        _lanes[note.number - _noteRange.Min].Script.AddNote(note);
     }
 
     public void UpdateRunway(float playbackTime)
     {
         if (_notes == null || _notes.Count < 1) return;
+        UpdateDisplayRange(playbackTime);
+
+    }
+
+    private void IncrementDisplayIndexMax()
+    {
+        if (_upcommingMaxNoteIndex == _notes.Count) return;
+
+        _displayIndicies.AddLast(_upcommingMaxNoteIndex);
+        _lanes[_notes[_upcommingMaxNoteIndex].number - _noteRange.Min].Script.AddNote(_notes[_upcommingMaxNoteIndex]);
+
+        _upcommingMaxNoteIndex++;
+    }
+
+    private void DecrementDisplayIndexMax()
+    {
+        if (_displayIndicies.Count == 0) return;
+
+        _displayIndicies.RemoveLast();
+        _upcommingMaxNoteIndex--;
+    }
+
+    private void IncrementDisplayIndexMin()
+    {
+        if (_previousMinNoteIndex == _notes.Count) return;
+        if (_displayIndicies.Count == 0) return;
+
+        _displayIndicies.RemoveFirst();
+    }
+
+    private void DecrementDisplayIndexMin()
+    {
+        if (_displayIndicies.Count == 0) return;
+        if (_previousMinNoteIndex < 0) return;
+
+        _displayIndicies.AddFirst(_previousMinNoteIndex);
+        _lanes[_notes[_previousMinNoteIndex].number - _noteRange.Min].Script.AddNote(_notes[_previousMinNoteIndex]);
+
+        _previousMinNoteIndex--;
+    }
+
+    private void UpdateDisplayIndicies(float playbackTime)
+    {
+        if (_notes == null || _notes.Count == 0) return;
+        float _runwayUpperBound = playbackTime + _msToReachRunway;
+        float _runwayLowerBound = playbackTime - _strikeBarHeight * _distPerMs;
+
+        // Base case.
+        if (_displayIndicies.Count == 0)
+        {
+            if (_notes[_upcommingMaxNoteIndex].onTime < _runwayUpperBound)
+            {
+                _displayIndicies.AddFirst(_upcommingMaxNoteIndex);
+            }
+            else
+            {
+                return;
+            }
+        }
 
 
+    }
+
+    private void UpdateDisplayRange(float playbackTime)
+    {
+        if (_notes == null || _notes.Count == 0) return;
+        float _runwayUpperBound = playbackTime + _msToReachRunway;
+        float _runwayLowerBound = playbackTime - _strikeBarHeight * _distPerMs;
+        var prevMax = _displayRange.Max;
+        var prevMin = _displayRange.Min;
+        var newMax = prevMax;
+        var newMin = prevMin;
+
+        if (prevMax == -1)
+        {
+            prevMax = 0;
+        }
+
+        // If last item in display range is in runway.
+        if (_runwayUpperBound > _notes[prevMax].onTime)
+        {
+            // Add notes that aren't being displayed to their respective lanes.
+            int iterator = prevMax + 1;
+            while (_notes[iterator].onTime < _runwayUpperBound)
+            {
+                // Add note to range.
+                _lanes[_notes[iterator].number - _noteRange.Min].Script.AddNote(_notes[iterator]);
+                newMax++;
+                iterator++;
+                if (iterator >= _notes.Count) break;
+            }
+        }
+        else
+        {
+            int iterator = prevMax - 1;
+            while (_notes[iterator].onTime > _runwayUpperBound)
+            {
+                // Remove notes from range.
+                newMax--;
+                iterator--;
+                if (iterator < 0) break;
+            }
+        }
+
+        // If first item in display range is in runway.
+        if (_runwayLowerBound < _notes[prevMin].offTime)
+        {
+            // Add notes that aren't being displayed to their respective lanes.
+            int iterator = prevMin - 1;
+            while (_notes[iterator].offTime > _runwayLowerBound)
+            {
+                _lanes[_notes[iterator].number - _noteRange.Min].Script.AddNote(_notes[iterator]);
+                newMin--;
+                iterator--;
+                if (iterator < 0) break;
+            }
+        } 
+        else
+        {
+            int iterator = prevMin + 1;
+            while (_notes[iterator].offTime < _runwayLowerBound)
+            {
+                // remove notes from range.
+                newMin++;
+                iterator++;
+                if (iterator >= _notes.Count) break;
+            }
+        }
+
+        _displayRange = new IntRange(newMin, newMax);
     }
 
     /// <summary>
@@ -137,38 +268,36 @@ public class Runway : MonoBehaviour
     /// <param name="PlaybackTime">The time since the beginning of playback. (in miliseconds)</param>
     public void UpdateLanes(float PlaybackTime)
     {
-        if (Lanes == null)
+        if (_lanes == null)
         {
             return;
         }
 
-        while (DisplayQueue.Count > 0)
-        {
-            AddNoteToLane(DisplayQueue.Dequeue());
-        }
+        // Update indicies of playback.
 
-        for (var i = 0; i < Lanes.Length; i++)
+
+        for (var i = 0; i < _lanes.Length; i++)
         {
             // Update each lane.
-            Lanes[i].Script.UpdateDimensions(new float[2] { NoteWidth, Height }, GetNoteXPos((short)(_noteRange.Min + i)));
-            Lanes[i].Script.UpdateNotePositions(PlaybackTime);
+            _lanes[i].Script.UpdateDimensions(new float[2] { _noteWidth, _height }, GetNoteXPos((short)(_noteRange.Min + i)));
+            _lanes[i].Script.UpdateNotePositions(PlaybackTime);
         }
     }
 
-    public float GetNoteInputAccuracy(float PlaybackTime, NoteOnEvent note)
+    public float GetNoteInputAccuracy(float PlaybackTime, float forgiveness, NoteOnEvent note)
     {
-        return Lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(PlaybackTime, true);
+        return _lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(PlaybackTime, forgiveness, true);
     }
 
-    public float GetNoteInputAccuracy(float PlaybackTime, NoteOffEvent note)
+    public float GetNoteInputAccuracy(float PlaybackTime, float forgiveness, NoteOffEvent note)
     {
-        return Lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(PlaybackTime, false);
+        return _lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(PlaybackTime, forgiveness, false);
     }
 
     private void Dispose()
     {
-        Lanes = null;
-        DisplayQueue = new();
+        _lanes = null;
+        _notes = null;
     }
 
     private void OnApplicationQuit()
