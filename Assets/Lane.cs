@@ -95,15 +95,12 @@ public class Lane : MonoBehaviour
         StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
         StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
     }
-    /*
+    
     public void AddNote(NoteEvtData newNote)
     {
-        // Create new note block.
-        NoteWrapper noteBlock = new(Instantiate(NotePrefab, transform), newNote);
-
-        // Add note to managed list.
-        _activeNotes.AddLast(noteBlock);
-    }*/
+        if (_notePlayList == null) _notePlayList = new List<NoteEvtData>();
+        _notePlayList.Add(newNote);
+    }
 
     public void AddNotesList(List<NoteEvtData> notes)
     {
