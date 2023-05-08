@@ -3,6 +3,7 @@ using Melanchall.DryWetMidi.MusicTheory;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using UnityEngine;
+using UnityEngine.UIElements;
 using Utils;
 
 struct LaneWrapper
@@ -11,19 +12,47 @@ struct LaneWrapper
     public Lane Script;
 }
 
+public class NoteWrapper
+{
+    public GameObject Note { get; private set; }
+    public float Length { get; private set; }
+    public float OnTime { get; private set; }
+    public float OffTime { get; private set; }
+
+    public NoteWrapper(GameObject note, float length, float noteOnTime, float noteOffTime)
+    {
+        Note = note;
+        Length = length;
+        OnTime = noteOnTime;
+        OffTime = noteOffTime;
+    }
+
+    public NoteWrapper(GameObject note, NoteEvtData data)
+    {
+        Note = note;
+        Length = data.len;
+        OnTime = data.onTime;
+        OffTime = data.offTime;
+    }
+}
+
 public class Lane : MonoBehaviour
 {
-    Queue<NoteBlock> _notes = new Queue<NoteBlock>();
-    LinkedList<float> _noteCollisionTimes = new LinkedList<float>();
-    LinkedList<GameObject> _activeNotes = new LinkedList<GameObject>();
-    PriorityQueue<float, float> _noteOnCollisionQueue = new PriorityQueue<float, float>();
-    PriorityQueue<float, float> _noteOffCollisionQueue = new PriorityQueue<float, float>();
+    LinkedList<NoteWrapper> _activeNotes = new LinkedList<NoteWrapper>();
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
     float _timeToReachStrike = 0f;
     float _strikeHeight = 0f;
-    float BottomY {
+    float TopY
+    {
+        get
+        {
+            return _height / 2;
+        }
+    }
+    float BottomY
+    {
         get
         {
             return -_height / 2;
@@ -67,17 +96,10 @@ public class Lane : MonoBehaviour
     public void AddNote(NoteEvtData newNote)
     {
         // Create new note block.
-        var noteBlock = Instantiate(NotePrefab, transform);
+        NoteWrapper noteBlock = new(Instantiate(NotePrefab, transform), newNote);
 
-        // Add respective note times to collision queue.
-        _noteCollisionTimes.Enqueue(newNote.onTime);
-        _noteCollisionTimes.Enqueue(newNote.offTime);
-
-        newNote.GetNote().transform.parent = transform;
-        var priority = newNote.NoteOnTime;
-        _notes.Enqueue(newNote);
-        _noteOnCollisionQueue.Enqueue(newNote.NoteOnTime, priority);
-        _noteOffCollisionQueue.Enqueue(newNote.NoteOffTime, priority);
+        // Add note to managed list.
+        _activeNotes.AddLast(noteBlock);
     }
 
     /// <summary>
@@ -87,29 +109,54 @@ public class Lane : MonoBehaviour
     public void UpdateNotePositions(float CurrentPlaybackTimeMs)
     {
         // Update positions for all managed notes.
-        foreach (var note in _notes)
+        foreach (var noteWrapper in _activeNotes)
         {
             // Get new scale.
             var newScale = new Vector3();
             newScale.x = _width;
-            newScale.y = note.Length * _unitsPerMs;
+            newScale.y = noteWrapper.Length * _unitsPerMs;
             newScale.z = 1;
 
             // Get new position.
             var newPosition = new Vector3();
             newPosition.x = 0;
-            newPosition.y = _height / 2 - (_unitsPerMs * (CurrentPlaybackTimeMs - note.TimePosition)) + note.NoteHeight / 2;
+            newPosition.y = _height / 2 - (_unitsPerMs * (CurrentPlaybackTimeMs - noteWrapper.OnTime)) + newScale.y / 2;
             newPosition.z = 0;
 
-            note.UpdateNotePos(newPosition, newScale);
+            // Update scale and position.
+            noteWrapper.Note.transform.localPosition = newPosition;
+            noteWrapper.Note.transform.localScale = newScale;
         }
 
-        // Delete notes that are no longer visible.
-        while (_notes.Count > 0)
+        // Delete notes that are below floor.
+        while (_activeNotes.Count > 0)
         {
-            if (_notes.Peek().TopY < BottomY) // Below the floor.
+            // Get top y pos of note.
+            var firstNote = _activeNotes.First.Value.Note;
+            var noteTopY = firstNote.transform.localPosition.y + firstNote.transform.localScale.y / 2f;
+
+            if (noteTopY < BottomY) // Below the floor.
             {
-                Destroy(_notes.Dequeue().GetNote());
+                _activeNotes.RemoveFirst();
+                Destroy(firstNote);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Delete notes that are above ceiling.
+        while (_activeNotes.Count > 0)
+        {
+            // Get bottom y pos of note.
+            var lastNote = _activeNotes.Last.Value.Note;
+            var noteBottomY = lastNote.transform.localPosition.y - lastNote.transform.localScale.y / 2f;
+
+            if (noteBottomY > TopY) // Above the ceiling.
+            {
+                _activeNotes.RemoveLast();
+                Destroy(lastNote);
             }
             else
             {
@@ -118,7 +165,7 @@ public class Lane : MonoBehaviour
         }
     }
 
-    private float CalculateAccuracy(float differenceMs)
+    private float CalculateAccuracy(float differenceMs, float forgiveness)
     {
         if (differenceMs < 0f) differenceMs *= -1f; // Make it positive.
 
@@ -127,12 +174,12 @@ public class Lane : MonoBehaviour
             return 100f;
         }
 
-        if (differenceMs > GameData.Forgiveness)
+        if (differenceMs > forgiveness)
         {
             return 0f;
         }
 
-        float accuracy = 100f - (differenceMs / GameData.Forgiveness) * 100f;
+        float accuracy = 100f - (differenceMs / forgiveness) * 100f;
 
         return accuracy;
     }
@@ -144,77 +191,48 @@ public class Lane : MonoBehaviour
         return diff;
     }
 
+    bool InRange(float number, float rangeMin, float rangeMax)
+    {
+        if (rangeMin <= number && number <= rangeMax) return true;
+        return false;
+    }
+
     /// <summary>
     /// Returns percent accuracy.
     /// </summary>
-    /// <param name="Time">Current playback time.</param>
+    /// <param name="time">Current playback time.</param>
+    /// <param name="forgiveness">Forgivness range in ms.</param>
     /// <param name="NoteOnEvent">True if note on event, otherwise note off event.</param>
     /// <returns>Accuracy</returns>
-    public float NoteEventAccuracy(float Time, bool NoteOnEvent)
+    public float NoteEventAccuracy(float time, float forgiveness, bool NoteOnEvent)
     {
         float eventTimeToCompareWith = 2f * GameData.Forgiveness;
+        float evtTime = -10f;
 
-        print($"Current time: {Time}");
+        print($"Current time: {time}");
 
-        if (NoteOnEvent)
+        // Find next playable note time.
+        foreach (var note in _activeNotes)
         {
-            print($"Checking note on accuracy. Unplayed notes {_noteOnCollisionQueue.Count}");
-            while (_noteOnCollisionQueue.Count > 0)
+            var noteTime = NoteOnEvent ? note.OnTime : note.OffTime;
+
+            if (InRange(time, noteTime - forgiveness, noteTime + forgiveness))
             {
-                var eventTimeDiff = Time - _noteOnCollisionQueue.Peek();
-                print($"Next playable on note time: {_noteOnCollisionQueue.Peek()}");
-
-                // If below strike bar.
-                if (eventTimeDiff > GameData.Forgiveness)
-                {
-                    eventTimeToCompareWith = _noteOnCollisionQueue.Dequeue();
-                    print("Skipping note.");
-                    continue;
-                }
-
-                // If above the strike bar.
-                if (eventTimeDiff < -GameData.Forgiveness)
-                {
-                    eventTimeToCompareWith = _noteOnCollisionQueue.Peek();
-                    break;
-                }
-
-                // When within strike bar.
-                eventTimeToCompareWith = _noteOnCollisionQueue.Dequeue();
+                evtTime = noteTime;
                 break;
             }
+
         }
-        else
+
+        // Only when there is no note within forgiveness range.
+        if (evtTime < 0f)
         {
-            print($"Checking note off accuracy. Unplayed notes {_noteOffCollisionQueue.Count}");
-            while (_noteOffCollisionQueue.Count > 0)
-            {
-                var eventTimeDiff = Time - _noteOffCollisionQueue.Peek();
-                print($"Next playable off note time: {_noteOffCollisionQueue.Peek()}");
-
-                // If below strike bar.
-                if (eventTimeDiff > GameData.Forgiveness)
-                {
-                    eventTimeToCompareWith = _noteOffCollisionQueue.Dequeue();
-                    print("Skipping note.");
-                    continue;
-                }
-
-                // If above the strike bar.
-                if (eventTimeDiff < -GameData.Forgiveness)
-                {
-                    eventTimeToCompareWith = _noteOffCollisionQueue.Peek();
-                    break;
-                }
-
-                // When within strike bar.
-                eventTimeToCompareWith = _noteOffCollisionQueue.Dequeue();
-                break;
-            }
+            print("Total miss.");
+            return 0f;
         }
 
-        var msDist = eventTimeToCompareWith - Time;
-        var accuracy = CalculateAccuracy(msDist);
+        var msDist = evtTime - time;
+        var accuracy = CalculateAccuracy(msDist, forgiveness);
         print($"Note event accuracy: {accuracy}%\nNote time position: {eventTimeToCompareWith}ms\nPlayed note time distance: {msDist}ms");
 
         return accuracy;

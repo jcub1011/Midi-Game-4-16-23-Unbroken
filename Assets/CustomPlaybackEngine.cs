@@ -7,7 +7,7 @@ using System.Diagnostics.Tracing;
 using UnityEditor;
 using UnityEngine;
 
-struct NoteEvtData
+public struct NoteEvtData
 {
     public short number;
     public float onTime;
