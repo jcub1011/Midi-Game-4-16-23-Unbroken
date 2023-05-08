@@ -7,6 +7,14 @@ using System.Diagnostics.Tracing;
 using UnityEditor;
 using UnityEngine;
 
+struct NoteEvtData
+{
+    public short number;
+    public float onTime;
+    public float offTime;
+    public float len;
+}
+
 public class PlaybackClock
 {
     #region Properties

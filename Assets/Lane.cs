@@ -1,3 +1,4 @@
+using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.MusicTheory;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -7,12 +8,14 @@ using Utils;
 struct LaneWrapper
 {
     public GameObject Lane;
-    public LaneScript Script;
+    public Lane Script;
 }
 
-public class LaneScript : MonoBehaviour
+public class Lane : MonoBehaviour
 {
     Queue<NoteBlock> _notes = new Queue<NoteBlock>();
+    LinkedList<float> _noteCollisionTimes = new LinkedList<float>();
+    LinkedList<GameObject> _activeNotes = new LinkedList<GameObject>();
     PriorityQueue<float, float> _noteOnCollisionQueue = new PriorityQueue<float, float>();
     PriorityQueue<float, float> _noteOffCollisionQueue = new PriorityQueue<float, float>();
     float _width = 0f;
@@ -27,6 +30,7 @@ public class LaneScript : MonoBehaviour
         }
     }
     public GameObject StrikeKey;
+    public GameObject NotePrefab;
 
     /// <summary>
     /// Initalize lane.
@@ -60,8 +64,15 @@ public class LaneScript : MonoBehaviour
         StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
     }
 
-    public void AddNote(NoteBlock newNote)
+    public void AddNote(NoteEvtData newNote)
     {
+        // Create new note block.
+        var noteBlock = Instantiate(NotePrefab, transform);
+
+        // Add respective note times to collision queue.
+        _noteCollisionTimes.Enqueue(newNote.onTime);
+        _noteCollisionTimes.Enqueue(newNote.offTime);
+
         newNote.GetNote().transform.parent = transform;
         var priority = newNote.NoteOnTime;
         _notes.Enqueue(newNote);
