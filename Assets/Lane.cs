@@ -38,22 +38,59 @@ public class NoteWrapper
 
 public class NotePlayList
 {
-    List<NoteEvtData> notes;
+    List<NoteEvtData> _notes = new();
     public int NextMaxIndex { get; private set; } = 0;
     public int PrevMinIndex { get; private set; } = -1;
 
-    NotePlayList(List<NoteEvtData> noteList)
+    public NotePlayList()
     {
 
+    }
+
+    public void ClearNoteList()
+    {
+        _notes.Clear();
+    }
+
+    public void AddNewNote(NoteEvtData noteEvtData)
+    {
+        _notes.Add(noteEvtData);
+    }
+
+    public void OverwriteNoteList(List<NoteEvtData> notes)
+    {
+        _notes = notes;
+    }
+
+    public NoteEvtData GetNextMaxNote()
+    {
+        if (_notes.Count == NextMaxIndex) return null;
+        return _notes[NextMaxIndex++];
+    }
+
+    public NoteEvtData PeekNextMaxNote()
+    {
+        if (_notes.Count == NextMaxIndex) return null;
+        return _notes[NextMaxIndex];
+    }
+
+    public NoteEvtData GetPrevMinNote()
+    {
+        if (PrevMinIndex < 0) return null;
+        return _notes[PrevMinIndex--];
+    }
+
+    public NoteEvtData PeekPrevMinNote()
+    {
+        if (PrevMinIndex < 0) return null;
+        return _notes[PrevMinIndex];
     }
 }
 
 public class Lane : MonoBehaviour
 {
     readonly LinkedList<NoteWrapper> _activeNotes = new();
-    List<NoteEvtData> _notePlayList;
-    int _nextMaxIndex = 0;
-    int _prevMinIndex = -1;
+    NotePlayList _notePlayList;
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
@@ -110,13 +147,13 @@ public class Lane : MonoBehaviour
     
     public void AddNote(NoteEvtData newNote)
     {
-        _notePlayList ??= new List<NoteEvtData>(); // Null coalescing operator.
-        _notePlayList.Add(newNote);
+        _notePlayList ??= new (); // Null coalescing operator.
+        _notePlayList.AddNewNote(newNote);
     }
 
     public void AddNotesList(List<NoteEvtData> notes)
     {
-        _notePlayList = notes;
+        _notePlayList.OverwriteNoteList(notes);
     }
 
     bool NoteVisible(float playbackTime, float noteOnTime, float noteOffTime)
@@ -130,26 +167,27 @@ public class Lane : MonoBehaviour
 
     bool NoteVisible(float playbackTime, NoteWrapper noteWrapper)
     {
+        if (noteWrapper == null) return false;
         return NoteVisible(playbackTime, noteWrapper.OnTime, noteWrapper.OffTime);
     }
 
     bool NoteVisible(float playbackTime, NoteEvtData noteEvtData)
     {
+        if (noteEvtData == null) return false;
         return NoteVisible(playbackTime, noteEvtData.onTime, noteEvtData.offTime);
     }
     
     void UpdateActiveNoteList(float playbackTime)
     {
         // Add notes to the top.
-        while (_nextMaxIndex != _notePlayList.Count && NoteVisible(playbackTime, _notePlayList[_nextMaxIndex]))
+        while (NoteVisible(playbackTime, _notePlayList.PeekNextMaxNote()))
         {
-            var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_nextMaxIndex]);
-            _nextMaxIndex++;
+            var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList.GetNextMaxNote());
             _activeNotes.AddLast(newNote);
         }
 
         // Add notes to the bottom.
-        while (_prevMinIndex >= 0 && NoteVisible(playbackTime, _notePlayList[_prevMinIndex]))
+        while (NoteVisible(playbackTime, _notePlayList.PeekPrevMinNote()))
         {
             var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_prevMinIndex]);
             _prevMinIndex--;
