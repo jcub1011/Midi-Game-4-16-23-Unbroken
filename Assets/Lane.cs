@@ -38,7 +38,7 @@ public class NoteWrapper
 
 public class Lane : MonoBehaviour
 {
-    LinkedList<NoteWrapper> _activeNotes = new LinkedList<NoteWrapper>();
+    readonly LinkedList<NoteWrapper> _activeNotes = new();
     List<NoteEvtData> _notePlayList;
     int _nextMaxIndex = 0;
     int _prevMinIndex = -1;
@@ -98,7 +98,7 @@ public class Lane : MonoBehaviour
     
     public void AddNote(NoteEvtData newNote)
     {
-        if (_notePlayList == null) _notePlayList = new List<NoteEvtData>();
+        _notePlayList ??= new List<NoteEvtData>(); // Null coalescing operator.
         _notePlayList.Add(newNote);
     }
 
@@ -107,18 +107,29 @@ public class Lane : MonoBehaviour
         _notePlayList = notes;
     }
 
-    /// <summary>
-    /// Updates the positions of each note and deletes notes no longer visible.
-    /// </summary>
-    /// <param name="CurrentPlaybackTimeMs">Current time of playback.</param>
-    public void UpdateNotePositions(float CurrentPlaybackTimeMs)
+    bool NoteVisible(float currentPlaybackTime, float noteOnTime, float noteOffTime)
     {
-        // Add visible notes to managed list.
-        var laneUpperBound = CurrentPlaybackTimeMs + _timeToReachStrike;
-        var laneLowerBound = CurrentPlaybackTimeMs - _strikeHeight * _unitsPerMs;
+        float runwayEnterTime = currentPlaybackTime - _timeToReachStrike;
+        float runwayExitTime = currentPlaybackTime + _unitsPerMs * _timeToReachStrike;
 
+        // Check if either end is within the lane bounds.
+        return noteOnTime > runwayEnterTime && noteOffTime < runwayExitTime;
+    }
+
+    bool NoteVisible(float currentPlaybackTime, NoteWrapper noteWrapper)
+    {
+        return NoteVisible(currentPlaybackTime, noteWrapper.OnTime, noteWrapper.OffTime);
+    }
+
+    bool NoteVisible(float currentPlaybackTime, NoteEvtData noteEvtData)
+    {
+        return NoteVisible(currentPlaybackTime, noteEvtData.onTime, noteEvtData.offTime);
+    }
+    
+    void UpdateActiveNoteList(float playbackTime)
+    {
         // Add notes to the top.
-        while (_nextMaxIndex != _notePlayList.Count && _notePlayList[_nextMaxIndex].onTime < laneUpperBound)
+        while (_nextMaxIndex != _notePlayList.Count && NoteVisible(playbackTime, _notePlayList[_nextMaxIndex]))
         {
             var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_nextMaxIndex]);
             _nextMaxIndex++;
@@ -126,45 +137,27 @@ public class Lane : MonoBehaviour
         }
 
         // Add notes to the bottom.
-        while (_prevMinIndex >= 0 && _notePlayList[_prevMinIndex].offTime > laneLowerBound)
+        while (_prevMinIndex >= 0 && NoteVisible(playbackTime, _notePlayList[_nextMaxIndex]))
         {
             var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_prevMinIndex]);
             _prevMinIndex--;
             _activeNotes.AddFirst(newNote);
         }
+    }
 
-        // Update positions for all managed notes.
-        foreach (var noteWrapper in _activeNotes)
-        {
-            // Get new scale.
-            var newScale = new Vector3();
-            newScale.x = _width;
-            newScale.y = noteWrapper.Length * _unitsPerMs;
-            newScale.z = 1;
-
-            // Get new position.
-            var newPosition = new Vector3();
-            newPosition.x = 0;
-            newPosition.y = _height / 2 - (_unitsPerMs * (CurrentPlaybackTimeMs - noteWrapper.OnTime)) + newScale.y / 2;
-            newPosition.z = 0;
-
-            // Update scale and position.
-            noteWrapper.Note.transform.localPosition = newPosition;
-            noteWrapper.Note.transform.localScale = newScale;
-        }
-
+    void UnmanageNotesNotVisible(float currentPlaybackTimeMs)
+    {
         // Delete notes that are below floor.
         while (_activeNotes.Count > 0)
         {
             // Get top y pos of note.
-            var firstNote = _activeNotes.First.Value.Note;
-            var noteTopY = firstNote.transform.localPosition.y + firstNote.transform.localScale.y / 2f;
+            var firstNote = _activeNotes.First.Value;
 
-            if (noteTopY < BottomY) // Below the floor.
+            if (!NoteVisible(currentPlaybackTimeMs, firstNote))
             {
                 _activeNotes.RemoveFirst();
                 _prevMinIndex++;
-                Destroy(firstNote);
+                Destroy(firstNote.Note);
             }
             else
             {
@@ -176,20 +169,57 @@ public class Lane : MonoBehaviour
         while (_activeNotes.Count > 0)
         {
             // Get bottom y pos of note.
-            var lastNote = _activeNotes.Last.Value.Note;
-            var noteBottomY = lastNote.transform.localPosition.y - lastNote.transform.localScale.y / 2f;
+            var lastNote = _activeNotes.Last.Value;
 
-            if (noteBottomY > TopY) // Above the ceiling.
+            if (!NoteVisible(currentPlaybackTimeMs, lastNote))
             {
                 _activeNotes.RemoveLast();
                 _nextMaxIndex--;
-                Destroy(lastNote);
+                Destroy(lastNote.Note);
             }
             else
             {
                 break;
             }
         }
+    }
+
+    void UpdateNotePositions(float currentPlaybackTimeMs)
+    {
+        // Update positions for all managed notes.
+        foreach (var noteWrapper in _activeNotes)
+        {
+            // Get new scale.
+            var newScale = new Vector3
+            {
+                x = _width,
+                y = noteWrapper.Length * _unitsPerMs,
+                z = 1
+            };
+
+            // Get new position.
+            var newPosition = new Vector3
+            {
+                x = 0,
+                y = _height / 2 - (_unitsPerMs * (currentPlaybackTimeMs - noteWrapper.OnTime)) + newScale.y / 2,
+                z = 0
+            };
+
+            // Update scale and position.
+            noteWrapper.Note.transform.localPosition = newPosition;
+            noteWrapper.Note.transform.localScale = newScale;
+        }
+    }
+
+    /// <summary>
+    /// Updates the positions of each note and deletes notes no longer visible.
+    /// </summary>
+    /// <param name="currentPlaybackTimeMs">Current time of playback.</param>
+    public void UpdateLane(float currentPlaybackTimeMs)
+    {
+        UpdateActiveNoteList(currentPlaybackTimeMs);
+        UpdateNotePositions(currentPlaybackTimeMs);
+        UnmanageNotesNotVisible(currentPlaybackTimeMs);
     }
 
     private float CalculateAccuracy(float differenceMs, float forgiveness)

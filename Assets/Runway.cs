@@ -159,7 +159,7 @@ public class Runway : MonoBehaviour
         {
             // Update each lane.
             _lanes[i].Script.UpdateDimensions(new float[2] { _noteWidth, _height }, GetNoteXPos((short)(_noteRange.Min + i)));
-            _lanes[i].Script.UpdateNotePositions(PlaybackTime);
+            _lanes[i].Script.UpdateLane(PlaybackTime);
         }
     }
 
