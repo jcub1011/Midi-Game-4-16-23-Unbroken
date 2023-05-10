@@ -327,7 +327,7 @@ public class MidiHandler : MonoBehaviour
     {
         if (ScreenResized() && _runwayScript != null)
         {
-            _runwayScript.UpdateNoteDisplayInfo(new float[] { _displayHandler.Width, _displayHandler.Height });
+            _runwayScript.UpdateDisplayInfo(new float[] { _displayHandler.Width, _displayHandler.Height });
         }
         PushNotesToRunway();
     }

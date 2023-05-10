@@ -39,7 +39,7 @@ public class Runway : MonoBehaviour
         _distPerMs = DistToStrikebar / _msToReachRunway; // units/ms
         print($"Note speed: {_distPerMs} (units/milisecond)");
 
-        UpdateNoteDisplayInfo(dimensions);
+        UpdateDisplayInfo(dimensions);
 
         // Create lanes.
         _lanes = new LaneWrapper[_noteRange.Len];
@@ -105,7 +105,7 @@ public class Runway : MonoBehaviour
     /// Updates info necessary for notes to display properly on the runway.
     /// </summary>
     /// <param name="newDimensions">The new dimensions of the runway.</param>
-    public void UpdateNoteDisplayInfo(float[] newDimensions)
+    public void UpdateDisplayInfo(float[] newDimensions)
     {
         // Update runway dimensions.
         _width = newDimensions[0];

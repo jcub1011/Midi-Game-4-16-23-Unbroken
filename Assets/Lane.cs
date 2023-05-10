@@ -36,6 +36,18 @@ public class NoteWrapper
     }
 }
 
+public class NotePlayList
+{
+    List<NoteEvtData> notes;
+    public int NextMaxIndex { get; private set; } = 0;
+    public int PrevMinIndex { get; private set; } = -1;
+
+    NotePlayList(List<NoteEvtData> noteList)
+    {
+
+    }
+}
+
 public class Lane : MonoBehaviour
 {
     readonly LinkedList<NoteWrapper> _activeNotes = new();
@@ -107,23 +119,23 @@ public class Lane : MonoBehaviour
         _notePlayList = notes;
     }
 
-    bool NoteVisible(float currentPlaybackTime, float noteOnTime, float noteOffTime)
+    bool NoteVisible(float playbackTime, float noteOnTime, float noteOffTime)
     {
-        float runwayEnterTime = currentPlaybackTime - _timeToReachStrike;
-        float runwayExitTime = currentPlaybackTime + _unitsPerMs * _timeToReachStrike;
+        float runwayEnterTime = playbackTime - _timeToReachStrike;
+        float runwayExitTime = playbackTime + _unitsPerMs * _timeToReachStrike;
 
         // Check if either end is within the lane bounds.
         return noteOnTime > runwayEnterTime && noteOffTime < runwayExitTime;
     }
 
-    bool NoteVisible(float currentPlaybackTime, NoteWrapper noteWrapper)
+    bool NoteVisible(float playbackTime, NoteWrapper noteWrapper)
     {
-        return NoteVisible(currentPlaybackTime, noteWrapper.OnTime, noteWrapper.OffTime);
+        return NoteVisible(playbackTime, noteWrapper.OnTime, noteWrapper.OffTime);
     }
 
-    bool NoteVisible(float currentPlaybackTime, NoteEvtData noteEvtData)
+    bool NoteVisible(float playbackTime, NoteEvtData noteEvtData)
     {
-        return NoteVisible(currentPlaybackTime, noteEvtData.onTime, noteEvtData.offTime);
+        return NoteVisible(playbackTime, noteEvtData.onTime, noteEvtData.offTime);
     }
     
     void UpdateActiveNoteList(float playbackTime)
@@ -137,7 +149,7 @@ public class Lane : MonoBehaviour
         }
 
         // Add notes to the bottom.
-        while (_prevMinIndex >= 0 && NoteVisible(playbackTime, _notePlayList[_nextMaxIndex]))
+        while (_prevMinIndex >= 0 && NoteVisible(playbackTime, _notePlayList[_prevMinIndex]))
         {
             var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_prevMinIndex]);
             _prevMinIndex--;
@@ -145,7 +157,7 @@ public class Lane : MonoBehaviour
         }
     }
 
-    void UnmanageNotesNotVisible(float currentPlaybackTimeMs)
+    void UnmanageNotesNotVisible(float playbackTime)
     {
         // Delete notes that are below floor.
         while (_activeNotes.Count > 0)
@@ -153,7 +165,7 @@ public class Lane : MonoBehaviour
             // Get top y pos of note.
             var firstNote = _activeNotes.First.Value;
 
-            if (!NoteVisible(currentPlaybackTimeMs, firstNote))
+            if (!NoteVisible(playbackTime, firstNote))
             {
                 _activeNotes.RemoveFirst();
                 _prevMinIndex++;
@@ -171,7 +183,7 @@ public class Lane : MonoBehaviour
             // Get bottom y pos of note.
             var lastNote = _activeNotes.Last.Value;
 
-            if (!NoteVisible(currentPlaybackTimeMs, lastNote))
+            if (!NoteVisible(playbackTime, lastNote))
             {
                 _activeNotes.RemoveLast();
                 _nextMaxIndex--;
@@ -184,16 +196,16 @@ public class Lane : MonoBehaviour
         }
     }
 
-    void UpdateNotePositions(float currentPlaybackTimeMs)
+    void UpdateNotePositions(float playbackTime)
     {
         // Update positions for all managed notes.
-        foreach (var noteWrapper in _activeNotes)
+        foreach (var wrapper in _activeNotes)
         {
             // Get new scale.
             var newScale = new Vector3
             {
                 x = _width,
-                y = noteWrapper.Length * _unitsPerMs,
+                y = wrapper.Length * _unitsPerMs,
                 z = 1
             };
 
@@ -201,13 +213,13 @@ public class Lane : MonoBehaviour
             var newPosition = new Vector3
             {
                 x = 0,
-                y = _height / 2 - (_unitsPerMs * (currentPlaybackTimeMs - noteWrapper.OnTime)) + newScale.y / 2,
+                y = _height / 2 - (_unitsPerMs * (playbackTime - wrapper.OnTime)) + newScale.y / 2,
                 z = 0
             };
 
             // Update scale and position.
-            noteWrapper.Note.transform.localPosition = newPosition;
-            noteWrapper.Note.transform.localScale = newScale;
+            wrapper.Note.transform.localPosition = newPosition;
+            wrapper.Note.transform.localScale = newScale;
         }
     }
 
@@ -290,7 +302,9 @@ public class Lane : MonoBehaviour
 
         var msDist = evtTime - time;
         var accuracy = CalculateAccuracy(msDist, forgiveness);
-        print($"Note event accuracy: {accuracy}%\nNote time position: {eventTimeToCompareWith}ms\nPlayed note time distance: {msDist}ms");
+        print($"Note event accuracy: {accuracy}%\n" +
+            $"Note time position: {eventTimeToCompareWith}ms\n" +
+            $"Played note time distance: {msDist}ms");
 
         return accuracy;
     }
