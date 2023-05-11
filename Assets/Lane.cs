@@ -36,15 +36,19 @@ public class NoteWrapper
     }
 }
 
-public class NotePlayList
+public class NoteListManager
 {
     List<NoteEvtData> _notes = new();
-    public int NextMaxIndex { get; private set; } = 0;
-    public int PrevMinIndex { get; private set; } = -1;
-
-    public NotePlayList()
+    public LinkedList<NoteWrapper> ActiveNotes = new();
+    public int NextYoungestIndex { get; private set; } = 0;
+    public int NextOldestIndex { get; private set; } = -1;
+    public int ActiveNoteCount
     {
-
+        get { return ActiveNotes.Count; }
+    }
+    public int TotalNoteCount
+    {
+        get { return _notes.Count; }
     }
 
     public void ClearNoteList()
@@ -62,35 +66,70 @@ public class NotePlayList
         _notes = notes;
     }
 
-    public NoteEvtData GetNextMaxNote()
+    public NoteWrapper PeekCurrentYoungestNote()
     {
-        if (_notes.Count == NextMaxIndex) return null;
-        return _notes[NextMaxIndex++];
+        if (ActiveNoteCount == 0) return null;
+        return ActiveNotes.Last.Value;
     }
 
-    public NoteEvtData PeekNextMaxNote()
+    public NoteEvtData PeekNextYoungestNote()
     {
-        if (_notes.Count == NextMaxIndex) return null;
-        return _notes[NextMaxIndex];
+        if (_notes.Count == NextYoungestIndex) return null;
+        return _notes[NextYoungestIndex];
     }
 
-    public NoteEvtData GetPrevMinNote()
+    public NoteWrapper PeekCurrentOldestNote()
     {
-        if (PrevMinIndex < 0) return null;
-        return _notes[PrevMinIndex--];
+        if (ActiveNoteCount == 0) return null;
+        return ActiveNotes.First.Value;
     }
 
-    public NoteEvtData PeekPrevMinNote()
+    public NoteEvtData PeekNextOldestNote()
     {
-        if (PrevMinIndex < 0) return null;
-        return _notes[PrevMinIndex];
+        if (NextOldestIndex < 0) return null;
+        return _notes[NextOldestIndex];
+    }
+
+    public void UnmanageOldestNote()
+    {
+        if (NextOldestIndex == _notes.Count) return;
+        var oldNote = ActiveNotes.First;
+        ActiveNotes.RemoveFirst();
+        Object.Destroy(oldNote.Value.Note);
+        NextOldestIndex++;
+    }
+
+    public void ManageNextOldestNote(Transform parent, GameObject notePreFab)
+    {
+        if (NextOldestIndex < 0) return;
+        var nextOldNote = Object.Instantiate(notePreFab, parent);
+        var wrapper = new NoteWrapper(nextOldNote, _notes[NextOldestIndex]);
+        ActiveNotes.AddFirst(wrapper);
+        NextOldestIndex--;
+    }
+
+    public void UnmanageYoungestNote()
+    {
+        if (NextYoungestIndex < 0) return;
+        var newestNote = ActiveNotes.Last;
+        ActiveNotes.RemoveLast();
+        Object.Destroy(newestNote.Value.Note);
+        NextYoungestIndex--;
+    }
+
+    public void ManageNextYoungestNote(Transform parent, GameObject notePreFab)
+    {
+        if (NextYoungestIndex == _notes.Count) return;
+        var nextNewestNote = Object.Instantiate(notePreFab, parent);
+        var wrapper = new NoteWrapper(nextNewestNote, _notes[NextYoungestIndex]);
+        ActiveNotes.AddLast(wrapper);
+        NextYoungestIndex++;
     }
 }
 
 public class Lane : MonoBehaviour
 {
-    readonly LinkedList<NoteWrapper> _activeNotes = new();
-    NotePlayList _notePlayList;
+    NoteListManager _notePlayList;
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
@@ -180,34 +219,29 @@ public class Lane : MonoBehaviour
     void UpdateActiveNoteList(float playbackTime)
     {
         // Add notes to the top.
-        while (NoteVisible(playbackTime, _notePlayList.PeekNextMaxNote()))
+        while (NoteVisible(playbackTime, _notePlayList.PeekNextYoungestNote()))
         {
-            var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList.GetNextMaxNote());
-            _activeNotes.AddLast(newNote);
+            _notePlayList.ManageNextYoungestNote(transform, NotePrefab);
         }
 
         // Add notes to the bottom.
-        while (NoteVisible(playbackTime, _notePlayList.PeekPrevMinNote()))
+        while (NoteVisible(playbackTime, _notePlayList.PeekNextOldestNote()))
         {
-            var newNote = new NoteWrapper(Instantiate(NotePrefab, transform), _notePlayList[_prevMinIndex]);
-            _prevMinIndex--;
-            _activeNotes.AddFirst(newNote);
+            _notePlayList.ManageNextOldestNote(transform, NotePrefab);
         }
     }
 
     void UnmanageNotesNotVisible(float playbackTime)
     {
         // Delete notes that are below floor.
-        while (_activeNotes.Count > 0)
+        while (_notePlayList.ActiveNoteCount > 0)
         {
             // Get top y pos of note.
-            var firstNote = _activeNotes.First.Value;
+            var oldestNote = _notePlayList.PeekCurrentOldestNote();
 
-            if (!NoteVisible(playbackTime, firstNote))
+            if (!NoteVisible(playbackTime, oldestNote))
             {
-                _activeNotes.RemoveFirst();
-                _prevMinIndex++;
-                Destroy(firstNote.Note);
+                _notePlayList.UnmanageOldestNote();
             }
             else
             {
@@ -216,16 +250,14 @@ public class Lane : MonoBehaviour
         }
 
         // Delete notes that are above ceiling.
-        while (_activeNotes.Count > 0)
+        while (_notePlayList.ActiveNoteCount > 0)
         {
             // Get bottom y pos of note.
-            var lastNote = _activeNotes.Last.Value;
+            var lastNote = _notePlayList.PeekCurrentYoungestNote();
 
             if (!NoteVisible(playbackTime, lastNote))
             {
-                _activeNotes.RemoveLast();
-                _nextMaxIndex--;
-                Destroy(lastNote.Note);
+                _notePlayList.UnmanageYoungestNote();
             }
             else
             {
@@ -237,7 +269,7 @@ public class Lane : MonoBehaviour
     void UpdateNotePositions(float playbackTime)
     {
         // Update positions for all managed notes.
-        foreach (var wrapper in _activeNotes)
+        foreach (var wrapper in _notePlayList.ActiveNotes)
         {
             // Get new scale.
             var newScale = new Vector3
@@ -319,7 +351,7 @@ public class Lane : MonoBehaviour
         print($"Current time: {time}");
 
         // Find next playable note time.
-        foreach (var note in _activeNotes)
+        foreach (var note in _notePlayList.ActiveNotes)
         {
             var noteTime = NoteOnEvent ? note.OnTime : note.OffTime;
 
