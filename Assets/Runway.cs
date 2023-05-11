@@ -1,4 +1,5 @@
 using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
 using System.Collections.Generic;
 using UnityEngine;
