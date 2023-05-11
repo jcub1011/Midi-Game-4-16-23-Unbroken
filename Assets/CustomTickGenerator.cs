@@ -7,7 +7,7 @@ public class CustomTickGenerator
     private double Tick = 0;
     private double TickIncrementFactor = 1;
     private bool Counting = false;
-    private double TickLength; // In Milliseconds..
+    private readonly double TickLength; // In Milliseconds..
     private double PlaybackSpeed = 1;
     private double Time = 0.0;
 

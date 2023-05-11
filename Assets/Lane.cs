@@ -1,10 +1,5 @@
-using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.MusicTheory;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using UnityEngine;
-using UnityEngine.UIElements;
-using Utils;
 
 struct LaneWrapper
 {
@@ -129,12 +124,18 @@ public class NoteListManager
 
 public class Lane : MonoBehaviour
 {
-    NoteListManager _notePlayList;
+    #region Properties
     float _width = 0f;
     float _height = 0f;
     float _unitsPerMs = 0f;
     float _timeToReachStrike = 0f;
     float _strikeHeight = 0f;
+    public GameObject StrikeKey;
+    public GameObject NotePrefab;
+    NoteListManager _notePlayList;
+    #endregion
+
+    #region Getters
     float TopY
     {
         get
@@ -149,52 +150,16 @@ public class Lane : MonoBehaviour
             return -_height / 2;
         }
     }
-    public GameObject StrikeKey;
-    public GameObject NotePrefab;
+    #endregion
 
+    #region Private Methods
     /// <summary>
-    /// Initalize lane.
+    /// Checks if a note is visible on the runway.
     /// </summary>
-    /// <param name="Dimensions">Width and height of lane.</param>
-    /// <param name="Strikeheight">Height of the strike area.</param>
-    /// <param name="xPos">X position of lane.</param>
-    /// <param name="timeToReachStrike">How long it takes a note to reach the strike.</param>
-    public void Init(float[] Dimensions, float Strikeheight, float xPos, float timeToReachStrike)
-    {
-        _timeToReachStrike = timeToReachStrike;
-        _strikeHeight = Strikeheight;
-
-        UpdateDimensions(Dimensions, xPos);
-    }
-
-    public void UpdateDimensions(float[] Dimensions, float xPos)
-    {
-        // Update width and height.
-        _width = Dimensions[0];
-        _height = Dimensions[1];
-
-        // Update units per ms.
-        _unitsPerMs = (_height - _strikeHeight) / _timeToReachStrike;
-
-        // Update x position.
-        transform.localPosition = new Vector3(xPos, 0, 0);
-
-        // Update strike range.
-        StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
-        StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
-    }
-    
-    public void AddNote(NoteEvtData newNote)
-    {
-        _notePlayList ??= new (); // Null coalescing operator.
-        _notePlayList.AddNewNote(newNote);
-    }
-
-    public void AddNotesList(List<NoteEvtData> notes)
-    {
-        _notePlayList.OverwriteNoteList(notes);
-    }
-
+    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="noteOnTime"></param>
+    /// <param name="noteOffTime"></param>
+    /// <returns>True if visible.</returns>
     bool NoteVisible(float playbackTime, float noteOnTime, float noteOffTime)
     {
         float runwayEnterTime = playbackTime - _timeToReachStrike;
@@ -204,18 +169,71 @@ public class Lane : MonoBehaviour
         return noteOnTime > runwayEnterTime && noteOffTime < runwayExitTime;
     }
 
+    /// <summary>
+    /// Checks if a note is visible on the runway.
+    /// </summary>
+    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="noteWrapper"></param>
+    /// <returns></returns>
     bool NoteVisible(float playbackTime, NoteWrapper noteWrapper)
     {
         if (noteWrapper == null) return false;
         return NoteVisible(playbackTime, noteWrapper.OnTime, noteWrapper.OffTime);
     }
 
+    /// <summary>
+    /// Checks if a note is visible on the runway.
+    /// </summary>
+    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="noteEvtData"></param>
+    /// <returns></returns>
     bool NoteVisible(float playbackTime, NoteEvtData noteEvtData)
     {
         if (noteEvtData == null) return false;
         return NoteVisible(playbackTime, noteEvtData.onTime, noteEvtData.offTime);
     }
-    
+
+    /// <summary>
+    /// Gets the accuracy of the note play.
+    /// </summary>
+    /// <param name="differenceMs">Difference between the actual note time and the played note time.</param>
+    /// <param name="forgiveness">Range of forgiveness in ms.</param>
+    /// <returns></returns>
+    float CalculateAccuracy(float differenceMs, float forgiveness)
+    {
+        if (differenceMs < 0f) differenceMs *= -1f; // Make it positive.
+
+        if (differenceMs == 0)
+        {
+            return 100f;
+        }
+
+        if (differenceMs > forgiveness)
+        {
+            return 0f;
+        }
+
+        float accuracy = 100f - (differenceMs / forgiveness) * 100f;
+
+        return accuracy;
+    }
+
+    /// <summary>
+    /// Checks if a number is between two other numbers.
+    /// </summary>
+    /// <param name="number">Number to check.</param>
+    /// <param name="rangeMin">Range min.</param>
+    /// <param name="rangeMax">Range max.</param>
+    /// <returns></returns>
+    bool InRange(float number, float rangeMin, float rangeMax)
+    {
+        return rangeMin <= number && number <= rangeMax;
+    }
+
+    /// <summary>
+    /// Updates the list of active notes.
+    /// </summary>
+    /// <param name="playbackTime"></param>
     void UpdateActiveNoteList(float playbackTime)
     {
         // Add notes to the top.
@@ -231,6 +249,10 @@ public class Lane : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Deletes the game objects for notes that aren't visible.
+    /// </summary>
+    /// <param name="playbackTime"></param>
     void UnmanageNotesNotVisible(float playbackTime)
     {
         // Delete notes that are below floor.
@@ -266,6 +288,10 @@ public class Lane : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Updates the note positions for all managed notes.
+    /// </summary>
+    /// <param name="playbackTime"></param>
     void UpdateNotePositions(float playbackTime)
     {
         // Update positions for all managed notes.
@@ -292,6 +318,65 @@ public class Lane : MonoBehaviour
             wrapper.Note.transform.localScale = newScale;
         }
     }
+    #endregion
+
+    #region Public Methods
+    /// <summary>
+    /// Initalize lane.
+    /// </summary>
+    /// <param name="Dimensions">Width and height of lane.</param>
+    /// <param name="Strikeheight">Height of the strike area.</param>
+    /// <param name="xPos">X position of lane.</param>
+    /// <param name="timeToReachStrike">How long it takes a note to reach the strike.</param>
+    public void Init(float[] Dimensions, float Strikeheight, float xPos, float timeToReachStrike)
+    {
+        _timeToReachStrike = timeToReachStrike;
+        _strikeHeight = Strikeheight;
+
+        UpdateDimensions(Dimensions, xPos);
+    }
+
+    /// <summary>
+    /// Updates the dimensions used by the lane to render notes.
+    /// </summary>
+    /// <param name="Dimensions">Width and height of a lane.</param>
+    /// <param name="xPos">X position of the center of the lane.</param>
+    public void UpdateDimensions(float[] Dimensions, float xPos)
+    {
+        // Update width and height.
+        _width = Dimensions[0];
+        _height = Dimensions[1];
+
+        // Update units per ms.
+        _unitsPerMs = (_height - _strikeHeight) / _timeToReachStrike;
+
+        // Update x position.
+        transform.localPosition = new Vector3(xPos, 0, 0);
+
+        // Update strike range.
+        StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
+        StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
+    }
+    
+    /// <summary>
+    /// Adds a note to the note play list.
+    /// </summary>
+    /// <param name="newNote"></param>
+    public void AddNote(NoteEvtData newNote)
+    {
+        _notePlayList ??= new (); // Null coalescing operator.
+        _notePlayList.AddNewNote(newNote);
+    }
+
+    /// <summary>
+    /// Replaces the note play list with a new note play list.
+    /// </summary>
+    /// <param name="notes"></param>
+    public void AddNotesList(List<NoteEvtData> notes)
+    {
+        _notePlayList ??= new ();
+        _notePlayList.OverwriteNoteList(notes);
+    }
 
     /// <summary>
     /// Updates the positions of each note and deletes notes no longer visible.
@@ -302,38 +387,6 @@ public class Lane : MonoBehaviour
         UpdateActiveNoteList(currentPlaybackTimeMs);
         UpdateNotePositions(currentPlaybackTimeMs);
         UnmanageNotesNotVisible(currentPlaybackTimeMs);
-    }
-
-    private float CalculateAccuracy(float differenceMs, float forgiveness)
-    {
-        if (differenceMs < 0f) differenceMs *= -1f; // Make it positive.
-
-        if (differenceMs == 0)
-        {
-            return 100f;
-        }
-
-        if (differenceMs > forgiveness)
-        {
-            return 0f;
-        }
-
-        float accuracy = 100f - (differenceMs / forgiveness) * 100f;
-
-        return accuracy;
-    }
-
-    float AbsTimeDiff(float time1, float time2)
-    {
-        var diff = time1 - time2;
-        if (diff < 0f) diff *= -1;
-        return diff;
-    }
-
-    bool InRange(float number, float rangeMin, float rangeMax)
-    {
-        if (rangeMin <= number && number <= rangeMax) return true;
-        return false;
     }
 
     /// <summary>
@@ -378,4 +431,5 @@ public class Lane : MonoBehaviour
 
         return accuracy;
     }
+    #endregion
 }

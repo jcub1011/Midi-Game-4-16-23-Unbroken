@@ -1,9 +1,13 @@
 using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Interaction;
-using Melanchall.DryWetMidi.MusicTheory;
+using Melanchall.DryWetMidi.Multimedia;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
+
+public class RunwayWrapper
+{
+    public GameObject Runway;
+    public Runway Script;
+}
 
 public class Runway : MonoBehaviour
 {
@@ -14,9 +18,13 @@ public class Runway : MonoBehaviour
     float _height; // In unity units.
     float _width; // In unity units.
     float _strikeBarHeight; // In unity units.
+    float _forgiveness; // In ms.
     LaneWrapper[] _lanes;
+    InputDevice _inputDevice = null;
+    CustomPlaybackEngine _playbackEngine = null;
     public GameObject StrikeBar;
     public GameObject LanePrefab;
+
 
     /// <summary>
     /// Initalizes a runway.
@@ -25,13 +33,20 @@ public class Runway : MonoBehaviour
     /// <param name="dimensions">Height and width of runway in unity units. [width, height]</param>
     /// <param name="strikeBarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
     /// <param name="msToReachStrikeBar">How long it takes to reach the strikebar.</param>
-    /// <param name="speedMulti">Multiplier of speed. 1 is normal speed.</param>
-    public void Init(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight, float msToReachStrikeBar, float speedMulti = 1)
+    /// <param name="forgiveness">Ms of forgiveness to apply.</param>
+    /// <param name="inputDevice">Input device to use.</param>
+    public void Init(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight, 
+        float msToReachStrikeBar, float forgiveness, InputDevice inputDevice)
     {
         // Init private members.
-        _noteRange = getNoteRange(notes);
+        _noteRange = GetNoteRange(notes);
         print($"Initalizing runway. Note Range: {_noteRange.Min} - {_noteRange.Max}");
         _strikeBarHeight = strikeBarHeight;
+        _forgiveness = forgiveness;
+        InitInputDevice(inputDevice);
+
+        // Get parent script.
+        _playbackEngine = gameObject.GetComponentInParent<CustomPlaybackEngine>();
 
         // Get notespeed.
         var DistToStrikebar = dimensions[1] - _strikeBarHeight;
@@ -47,8 +62,10 @@ public class Runway : MonoBehaviour
         for (int i = 0; i < _lanes.Length; i++)
         {
             // Create lane.
-            var newLane = new LaneWrapper();
-            newLane.Lane = Instantiate(LanePrefab, transform);
+            var newLane = new LaneWrapper
+            {
+                Lane = Instantiate(LanePrefab, transform)
+            };
             newLane.Script = newLane.Lane.transform.GetComponent<Lane>();
 
             // Lane position;
@@ -62,6 +79,35 @@ public class Runway : MonoBehaviour
         DistributeNotesToLanes(notes);
     }
 
+    void InitInputDevice(InputDevice device)
+    {
+        if (_inputDevice != null)
+        {
+            _inputDevice.Dispose();
+            _inputDevice = null;
+        }
+
+        _inputDevice = device;
+        _inputDevice.EventReceived += HandleInput;
+        _inputDevice.StartEventsListening();
+    }
+
+    void HandleInput(object sender, MidiEventReceivedEventArgs evt)
+    {
+        switch (evt.Event)
+        {
+            case NoteOnEvent noteOn:
+                _lanes[noteOn.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(
+                    _playbackEngine.PlaybackTime, _forgiveness, true);
+                break;
+
+            case NoteOffEvent noteOff:
+                _lanes[noteOff.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(
+                    _playbackEngine.PlaybackTime, _forgiveness, false);
+                break;
+        }
+    }
+
     void DistributeNotesToLanes(List<NoteEvtData> notes)
     {
         foreach (var note in notes)
@@ -73,11 +119,12 @@ public class Runway : MonoBehaviour
                 return;
             }
 
-            // Push note to corresponding lane.
+            // Push note to lane.
+            _lanes[note.number - _noteRange.Min].Script.AddNote(note);
         }
     }
 
-    IntRange getNoteRange(List<NoteEvtData> notes)
+    IntRange GetNoteRange(List<NoteEvtData> notes)
     {
         short min = short.MaxValue;
         short max = short.MinValue;
@@ -118,9 +165,16 @@ public class Runway : MonoBehaviour
 
         // Update inner strike bars.
         StrikeBar.transform.localScale = new Vector3(_width, GameData.Forgiveness * _distPerMs, 1);
+
         // Position outside strike bar.
         var barY = -_height / 2 + _strikeBarHeight;
         StrikeBar.transform.localPosition = new Vector3(0, barY, 1);
+
+        for (int i = 0; i < _lanes.Length; i++)
+        {
+            _lanes[i].Script.UpdateDimensions(new float[] { _noteWidth, _height }, 
+                _noteWidth * i + _noteWidth / 2f);
+        }
     }
 
     /// <summary>
@@ -129,54 +183,40 @@ public class Runway : MonoBehaviour
     /// <param name="note">The note a lane.</param>
     public void AddNoteToLane(NoteEvtData note)
     {
-        
-
         // Add to lane.
         _lanes[note.number - _noteRange.Min].Script.AddNote(note);
-    }
-
-    public void UpdateRunway(float playbackTime)
-    {
-        if (_lanes == null || _lanes.Length <= 0) return;
-
     }
 
     /// <summary>
     /// Updates each lane.
     /// </summary>
-    /// <param name="PlaybackTime">The time since the beginning of playback. (in miliseconds)</param>
-    public void UpdateLanes(float PlaybackTime)
+    /// <param name="playbackTime">The time since the beginning of playback. (in miliseconds)</param>
+    public void UpdateLanes(float playbackTime)
     {
         if (_lanes == null)
         {
             return;
         }
 
-        // Update indicies of playback.
-
-
-        for (var i = 0; i < _lanes.Length; i++)
+        foreach (var lane in _lanes)
         {
-            // Update each lane.
-            _lanes[i].Script.UpdateDimensions(new float[2] { _noteWidth, _height }, GetNoteXPos((short)(_noteRange.Min + i)));
-            _lanes[i].Script.UpdateLane(PlaybackTime);
+            lane.Script.UpdateLane(playbackTime);
         }
     }
 
-    public float GetNoteInputAccuracy(float PlaybackTime, float forgiveness, NoteOnEvent note)
+    public float GetNoteInputAccuracy(float playbackTime, NoteOnEvent note)
     {
-        return _lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(PlaybackTime, forgiveness, true);
+        return _lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(playbackTime, _forgiveness, true);
     }
 
-    public float GetNoteInputAccuracy(float PlaybackTime, float forgiveness, NoteOffEvent note)
+    public float GetNoteInputAccuracy(float playbackTime, NoteOffEvent note)
     {
-        return _lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(PlaybackTime, forgiveness, false);
+        return _lanes[note.NoteNumber - _noteRange.Min].Script.NoteEventAccuracy(playbackTime, _forgiveness, false);
     }
 
     private void Dispose()
     {
         _lanes = null;
-        _notes = null;
     }
 
     private void OnApplicationQuit()

@@ -1,10 +1,7 @@
 ﻿using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.Multimedia;
-using Melanchall.DryWetMidi.Tools;
 using System;
-using System.Diagnostics.Tracing;
-using UnityEditor;
 using UnityEngine;
 
 public class NoteEvtData
@@ -131,10 +128,7 @@ public class CustomPlaybackEngine
     private static PlaybackClock _ticker = null;
     private float _forgiveness = 400f;
     private OutputDevice _outputDevice = null;
-    #endregion
-
-    #region events
-    public event EventHandler<NoteDisplayArgs> NoteReachedRunway;
+    private RunwayWrapper[] _runways = null;
     #endregion
 
     #region GetterSetterMethods
@@ -152,6 +146,14 @@ public class CustomPlaybackEngine
             _ticker.SetIncrementMultiplier(value);
         }
     }
+    public float PlaybackTime
+    {
+        get
+        {
+            if (_ticker == null) return 0f;
+            return _ticker.CurrentTimeMs();
+        }
+    }
     #endregion
 
     #region Constructor
@@ -166,6 +168,8 @@ public class CustomPlaybackEngine
         InitTicker(midiFile.GetTempoMap(), qNoteLeadup);
 
         InitOutputDevice(outputDevice);
+
+        _forgiveness = forgiveness;
     }
     #endregion
 

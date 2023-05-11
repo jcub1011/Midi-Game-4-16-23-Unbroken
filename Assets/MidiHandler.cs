@@ -26,7 +26,6 @@ public class MidiHandler : MonoBehaviour
     private MidiFile _currentMidi = null;
     private string _midiBaseDirectory = $"{Directory.GetCurrentDirectory()}\\Assets\\MidiFiles";
     private float _playbackOffset = 0; // miliseconds.
-    private Queue<NoteData> _displayQueue = new();
     private CustomTickGenerator _introInterpolater; // For inserting notes before actual audio playback begins.
     private DisplayHandler _displayHandler = new();
     public GameObject Runway;
