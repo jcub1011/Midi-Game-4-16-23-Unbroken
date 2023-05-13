@@ -379,3 +379,16 @@ internal class EventPlaybackManager
     #endregion
 }
 
+public class ScrubbablePlaybackEngine
+{
+    #region Properties
+    EventPlaybackManager _autoPlayedNotes;
+    #endregion
+
+    #region Constructors
+    ScrubbablePlaybackEngine()
+    {
+
+    }
+    #endregion
+}
