@@ -4,7 +4,6 @@ using Melanchall.DryWetMidi.Multimedia;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 public class NoteEvtData
 {
@@ -14,13 +13,17 @@ public class NoteEvtData
     public float len;
 }
 
+public delegate void OnTimeInterval(float time);
+
 public class PlaybackClock
 {
     #region Properties
     private const float MAX_PRECISION = 16f;
     private readonly float _tickLength = 1f;
     private float _tickIncrementFactor = 1f;
-    private static System.Timers.Timer _intervalTimer = null;
+    private System.Timers.Timer _intervalTimer = null;
+    public event OnTimeInterval TickIncremented;
+    private readonly float _minTime;
     #endregion
 
     #region GetterSetters
@@ -33,6 +36,7 @@ public class PlaybackClock
         }
     }
     public float ClockSpeedFactor { get; private set; } = 1f;
+    public bool InReverse { get; set; } = false;
     #endregion
 
     #region Methods
@@ -64,7 +68,14 @@ public class PlaybackClock
 
     private void IncrementTicks(System.Object source, System.Timers.ElapsedEventArgs evt)
     {
-        CurrentTick += _tickIncrementFactor;
+        CurrentTick += _tickIncrementFactor * (InReverse ? -1f : 1f );
+
+        if (CurrentTick < _minTime / _tickLength)
+        {
+            CurrentTick = _minTime / _tickLength;
+        }
+
+        TickIncremented.Invoke(CurrentTick);
     }
 
     public void Start()
@@ -79,6 +90,13 @@ public class PlaybackClock
         _intervalTimer.Stop();
         _intervalTimer.AutoReset = false;
         _intervalTimer.Enabled = false;
+    }
+
+    public void OverwriteTime(float newTime)
+    {
+        float newTick = newTime / _tickLength;
+        CurrentTick = newTick;
+        TickIncremented.Invoke(newTick);
     }
 
     public void Dispose()
@@ -109,7 +127,8 @@ public class PlaybackClock
         _intervalTimer.Elapsed += IncrementTicks; // Set callback.
 
         // Set inital tick.
-        CurrentTick = initalTime / msInterval;
+        _minTime = initalTime;
+        CurrentTick = _minTime / msInterval;
     }
     #endregion
 }
@@ -233,53 +252,130 @@ class SongManagerSettings
     }
 }
 
-public class SongManager
+internal class EventPlaybackManager
 {
     #region Properties
+    Stack<TimedEvent> _eventsToPlay;
+    Stack<TimedEvent> _eventsPlayed;
     PlaybackClock _clock;
     OutputDevice _outputDevice;
-    List<Runway> _runways;
-    #endregion
-
-    #region Getters and Setters
-    public bool IsPlaying { get; private set; } = false;
+    readonly float _startTime;
     #endregion
 
     #region Constructors
-    SongManager(MidiFile midiFile, OutputDevice outputDevice, SongManagerSettings settings)
+    /// <summary>
+    /// Creates a new event playback manager.
+    /// </summary>
+    /// <param name="midiFile">File containing the midi events to play.</param>
+    /// <param name="outputDevice">Device to send midi events to.</param>
+    /// <param name="qNoteLeadup">How much leadup to give clock in quarter notes.</param>
+    /// <param name="playbackSpeed">How fast the clock ticks.</param>
+    public EventPlaybackManager(MidiFile midiFile, OutputDevice outputDevice, short qNoteLeadup, float playbackSpeed)
     {
-        var tracks = midiFile.GetTrackChunks().ToList();
-        var tracksForPlayers = settings.GetPlayerPlayedTracks().ToList();
-        var eventsAutoPlayList = new List<TrackChunk>();
+        // Get output device ready.
+        outputDevice.PrepareForEventsSending();
 
-        // Get list of events to auto play.
-        for (int i = 0; i < tracks.Count; i++)
+        Stack<TimedEvent> _temp = new();
+
+        // Get interval.
+        float msPerTick = (float)TimeConverter.ConvertTo<MetricTimeSpan>(1, midiFile.GetTempoMap()).TotalMilliseconds;
+        var qNote = TimeConverter.ConvertTo<MusicalTimeSpan>(4, midiFile.GetTempoMap());
+        float ticksPerQNote = TimeConverter.ConvertFrom(qNote * qNoteLeadup, midiFile.GetTempoMap());
+
+        // Init properties.
+        _eventsToPlay = new();
+        _eventsPlayed = new();
+        _startTime = - msPerTick * ticksPerQNote;
+        _clock = new(msPerTick, _startTime);
+        _clock.TickIncremented += TickUpdated;
+        _clock.SetIncrementMultiplier(playbackSpeed);
+
+        // For reversing list.
+        foreach (var evt in midiFile.GetTimedEvents())
         {
-            if (tracksForPlayers.Contains(i)) continue;
-            eventsAutoPlayList.Add(tracks[i]);
+            _temp.Push(evt);
         }
 
-        var autoPlayMidiFile = new MidiFile(eventsAutoPlayList);
-
-        // Get list of notes for players to play.
-        var notesForPlayers = new List<List<Note>>();
-        foreach (var trackIndicies in settings.PlayersAndTracks)
+        // Push reversed list to eventsToPlay.
+        while (_temp.Count > 0)
         {
-            var notesForPlayer = new List<Note>();
-
-            // Implement way of geting notes that each player has to play.
-            // notesForPlayers.Add();
+            _eventsToPlay.Push(_temp.Pop());
         }
-
-        float tickLen = (float)TimeConverter.ConvertTo<MetricTimeSpan>(1, midiFile.GetTempoMap()).TotalMilliseconds;
-        _clock = new PlaybackClock(tickLen);
     }
     #endregion
 
     #region Methods
-    void SendEventToOutput()
+    void TickUpdated(float newTick)
     {
+        // Update playhead.
+        while (newTick > _eventsToPlay.Peek().Time)
+        {
+            AdvancePlayHead();
+        }
 
+        while (newTick > _eventsToPlay.Peek().Time)
+        {
+            RegressPlayHead();
+        }
+    }
+
+    /// <summary>
+    /// Shifts playback head forwards one event.
+    /// </summary>
+    void AdvancePlayHead()
+    {
+        if (_eventsToPlay.Count < 1) return;
+        _eventsPlayed.Push(_eventsToPlay.Pop());
+        _outputDevice.SendEvent(_eventsPlayed.Peek().Event);
+    }
+
+    /// <summary>
+    /// Shifts playback head back one event.
+    /// </summary>
+    void RegressPlayHead()
+    {
+        if (_eventsPlayed.Count < 1) return;
+        _eventsToPlay.Push(_eventsPlayed.Pop());
+        _outputDevice.TurnAllNotesOff();
+    }
+
+    /// <summary>
+    /// Resumes playback.
+    /// </summary>
+    public void Start()
+    {
+        _clock.Start();
+    }
+
+    /// <summary>
+    /// Pauses playback.
+    /// </summary>
+    public void Pause()
+    {
+        _clock.Stop();
+        _outputDevice.TurnAllNotesOff();
+    }
+
+    /// <summary>
+    /// Resets playhead to beginning.
+    /// </summary>
+    public void Restart()
+    {
+        _clock.Stop();
+        _clock.OverwriteTime(_startTime);
+        _clock.Start();
+    }
+
+    /// <summary>
+    /// Releases resources.
+    /// </summary>
+    public void Dispose()
+    {
+        _clock.Dispose();
+        _outputDevice.Dispose();
+        _clock = null;
+        _outputDevice = null;
     }
     #endregion
 }
+
