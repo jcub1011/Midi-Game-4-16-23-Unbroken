@@ -8,7 +8,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>
+    </RootNamespace>
     <ProjectGuid>{470ADCE4-E484-A9B5-7D10-E7ABAF146358}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -57,7 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Events.cs" />
-    <Compile Include="Assets\CustomPlaybackEngine.cs" />
+    <Compile Include="Assets\BasePlaybackEngine.cs" />
     <Compile Include="Assets\PriorityQueuePort.cs" />
     <Compile Include="Assets\Runway.cs" />
     <Compile Include="Assets\UI Toolkit\MainUIScript.cs" />

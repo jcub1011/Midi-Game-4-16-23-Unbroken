@@ -141,12 +141,11 @@ public class NoteDisplayArgs : EventArgs
     public float Length { get; set; }
 }
 
-public class CustomPlaybackEngine
+public class BasePlaybackEngine
 {
     #region Properties
-    private static PlaybackClock _ticker = null;
+    EventPlaybackManager _eventPlaybackManager;
     private float _forgiveness = 400f;
-    private OutputDevice _outputDevice = null;
     private RunwayWrapper[] _runways = null;
     #endregion
 
@@ -154,38 +153,35 @@ public class CustomPlaybackEngine
     public bool IsPlaying { get; private set; } = false;
     public float PlaybackSpeed
     {
-        get 
+        get
         {
-            if (_ticker == null) return 0f;
-            return _ticker.ClockSpeedFactor;
+            return _eventPlaybackManager?.PlaybackSpeed ?? 0f;
         }
         set
         {
-            if (_ticker == null) return;
-            _ticker.SetIncrementMultiplier(value);
+            if (_eventPlaybackManager == null) return;
+            _eventPlaybackManager.PlaybackSpeed = value;
         }
     }
     public float PlaybackTime
     {
         get
         {
-            return _ticker.CurrentTime;
+            return _eventPlaybackManager.CurrentTime;
         }
     }
     #endregion
 
-    #region Constructor
-    public CustomPlaybackEngine(string songFilePath, OutputDevice outputDevice = null, float playbackSpeed = 1f, 
-        float forgiveness = 400f, int qNoteLeadup = 4, bool forScrubbing = false)
+    #region Init Methods
+    public void InitPrivateMembers(MidiFile midiFile, OutputDevice outputDevice, short qNoteLeadup,
+        float forgiveness, PlaybackSettings playbackSettings)
     {
-        if (forScrubbing) throw new System.NotImplementedException("Scrubbing method is not implemented yet.");
+        // Init eventPlaybackManager
+        _eventPlaybackManager = new(midiFile, outputDevice, qNoteLeadup, 1f);
 
-        // Read midi file.
-        var midiFile = MidiFile.Read(songFilePath);
 
-        InitTicker(midiFile.GetTempoMap(), qNoteLeadup);
 
-        InitOutputDevice(outputDevice);
+        
 
         _forgiveness = forgiveness;
     }
@@ -193,40 +189,9 @@ public class CustomPlaybackEngine
 
     #region Methods
     #endregion
-
-    #region Initalization Methods
-    private void InitOutputDevice(OutputDevice outputDevice)
-    {
-        if (outputDevice == null) return;
-        if (_outputDevice != null)
-        {
-            _outputDevice.Dispose();
-            _outputDevice = null;
-        }
-
-        _outputDevice = outputDevice;
-        _outputDevice.PrepareForEventsSending();
-
-    }
-
-    private void InitTicker(TempoMap tempoMap, int qNoteLeadup)
-    {
-        if (_ticker != null)
-        {
-            _ticker.Dispose();
-            _ticker = null;
-        }
-
-        var msPerTick = (float)TimeConverter.ConvertTo<MetricTimeSpan>(1, tempoMap).TotalMilliseconds;
-        var ticksPerQNote = TimeConverter.ConvertFrom(new MusicalTimeSpan(4), tempoMap);
-        var msLeadup = ticksPerQNote * qNoteLeadup * msPerTick;
-
-        _ticker = new PlaybackClock(msPerTick, -msLeadup);
-    }
-    #endregion
 }
 
-class SongManagerSettings
+public class PlaybackSettings
 {
     public List<List<int>> PlayersAndTracks { get; private set; } = null;
 
@@ -260,6 +225,33 @@ internal class EventPlaybackManager
     PlaybackClock _clock;
     OutputDevice _outputDevice;
     readonly float _startTime;
+    #endregion
+
+    #region Getter and Setter Methods
+    public float CurrentTick{
+        get
+        {
+            return _clock.CurrentTick;
+        }
+    }
+    public float CurrentTime
+    {
+        get 
+        {
+            return _clock.CurrentTime; 
+        }
+    }
+    public float PlaybackSpeed
+    {
+        get
+        {
+            return _clock.ClockSpeedFactor;
+        }
+        set
+        {
+            _clock.SetIncrementMultiplier(value);
+        }
+    }
     #endregion
 
     #region Constructors

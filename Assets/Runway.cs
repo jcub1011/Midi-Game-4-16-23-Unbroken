@@ -22,7 +22,7 @@ public class Runway : MonoBehaviour
     float _forgiveness; // In ms.
     LaneWrapper[] _lanes;
     InputDevice _inputDevice = null;
-    CustomPlaybackEngine _playbackEngine = null;
+    BasePlaybackEngine _playbackEngine = null;
     public GameObject StrikeBar;
     public GameObject LanePrefab;
 
@@ -47,7 +47,7 @@ public class Runway : MonoBehaviour
         InitInputDevice(inputDevice);
 
         // Get parent script.
-        _playbackEngine = gameObject.GetComponentInParent<CustomPlaybackEngine>();
+        _playbackEngine = gameObject.GetComponentInParent<BasePlaybackEngine>();
 
         // Get notespeed.
         var DistToStrikebar = dimensions[1] - _strikeBarHeight;
