@@ -133,8 +133,9 @@ public class SongList : StartMenu
 
     public void RefreshList(string _midiFolder)
     {
+        var scrollableList = visualElement.Q("SongList");
         // Remove old list.
-        foreach (var child in visualElement.Children())
+        foreach (var child in scrollableList.Children())
         {
             if (child.ClassListContains("song-list-button")) visualElement.Remove(child);
         }
@@ -146,7 +147,7 @@ public class SongList : StartMenu
             button.AddToClassList("song-list-button");
             button.text = song;
             button.RegisterCallback<ClickEvent, string>(OnSongSelect, song);
-            visualElement.Add(button);
+            scrollableList.Add(button);
         }
     }
 

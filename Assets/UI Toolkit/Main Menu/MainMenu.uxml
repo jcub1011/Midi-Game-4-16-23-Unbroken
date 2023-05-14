@@ -5,7 +5,8 @@
         <ui:Button text="Select Song" display-tooltip-when-elided="true" name="SelectSong" class="main-menu-button" />
         <ui:Button text="Settings" display-tooltip-when-elided="true" name="Settings" class="main-menu-button" />
     </ui:VisualElement>
-    <ui:VisualElement name="SongsBox" style="flex-grow: 1; background-color: rgb(97, 93, 108); -unity-text-outline-color: rgb(219, 249, 244);">
+    <ui:VisualElement name="SongsBox" style="flex-grow: 1; background-color: rgb(97, 93, 108); -unity-text-outline-color: rgb(219, 249, 244); overflow: visible;">
         <ui:Label text="Songs List" display-tooltip-when-elided="true" name="Header" style="-unity-text-align: middle-center; font-size: 30px; color: rgb(219, 249, 244); -unity-font-style: bold;" />
+        <ui:ScrollView name="SongList" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" style="flex-grow: 1; padding-left: 5px; padding-right: 5px; padding-top: 0; padding-bottom: 20px;" />
     </ui:VisualElement>
 </ui:UXML>

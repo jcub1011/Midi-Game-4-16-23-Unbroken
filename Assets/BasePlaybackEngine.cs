@@ -145,8 +145,7 @@ public class BasePlaybackEngine
 {
     #region Properties
     EventPlaybackManager _eventPlaybackManager;
-    private float _forgiveness = 400f;
-    private RunwayWrapper[] _runways = null;
+    private List<Runway> _runways = new();
     #endregion
 
     #region GetterSetterMethods
@@ -174,16 +173,34 @@ public class BasePlaybackEngine
 
     #region Init Methods
     public void InitPrivateMembers(MidiFile midiFile, OutputDevice outputDevice, short qNoteLeadup,
-        float forgiveness, PlaybackSettings playbackSettings)
+        PlaybackSettings playbackSettings = null)
     {
+        playbackSettings ??= new();
+        MidiFile autoPlayedNotes;
+        _runways.Clear();
+
+        var playerCount = playbackSettings.PlayersAndTracks.Count;
+
+        if (playerCount == 0)
+        {
+            autoPlayedNotes = midiFile;
+        }
+        else
+        {
+            var tracksToAutoPlay = new List<TrackChunk>();
+            var tracksList = midiFile.GetTrackChunks().ToList();
+            for (int i = 0; i < tracksList.Count; i++)
+            {
+                if (playbackSettings.GetPlayerPlayedTracks().Contains(i)) continue;
+
+                tracksToAutoPlay.Add(tracksList[i]);
+            }
+            autoPlayedNotes = new(tracksToAutoPlay);
+        }
+
         // Init eventPlaybackManager
-        _eventPlaybackManager = new(midiFile, outputDevice, qNoteLeadup, 1f);
-
-
-
+        _eventPlaybackManager = new(autoPlayedNotes, outputDevice, qNoteLeadup, 1f);
         
-
-        _forgiveness = forgiveness;
     }
     #endregion
 
@@ -214,6 +231,16 @@ public class PlaybackSettings
         }
 
         return tracks;
+    }
+
+    public PlaybackSettings()
+    {
+        PlayersAndTracks = new();
+    }
+
+    public PlaybackSettings(List<List<int>> playersAndTracks)
+    {
+        PlayersAndTracks = playersAndTracks;
     }
 }
 

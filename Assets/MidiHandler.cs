@@ -17,7 +17,7 @@ public struct NoteData
     public double Time;
     public short Channel;
 }
-
+/*
 public class MidiHandler : MonoBehaviour
 {
     private MIDI.Playback _playbackEngine = null;
@@ -376,3 +376,4 @@ public class MidiHandler : MonoBehaviour
         Dispose();
     }
 }
+*/

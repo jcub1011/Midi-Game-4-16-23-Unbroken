@@ -35,7 +35,7 @@ public class Runway : MonoBehaviour
     /// <param name="strikeBarHeight">Height of strikebar from the bottom of the runway in unity units.</param>
     /// <param name="msToReachStrikeBar">How long it takes to reach the strikebar.</param>
     /// <param name="forgiveness">Ms of forgiveness to apply.</param>
-    /// <param name="inputDevice">Input device to use.</param>
+    /// <param name="inputDevice">Input device to use. Make null for no input.</param>
     public void Init(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight, 
         float msToReachStrikeBar, float forgiveness, InputDevice inputDevice)
     {
@@ -87,6 +87,8 @@ public class Runway : MonoBehaviour
             _inputDevice.Dispose();
             _inputDevice = null;
         }
+
+        if (device == null) { return; }
 
         _inputDevice = device;
         _inputDevice.EventReceived += HandleInput;
