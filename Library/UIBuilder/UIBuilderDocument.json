@@ -13,55 +13,41 @@
         "m_CodePreviewVisible": true,
         "m_OpenUXMLFiles": [
             {
-                "m_OpenUSSFiles": [
-                    {
-                        "m_StyleSheet": {
-                            "fileID": 7433441132597879392,
-                            "guid": "63af78b874ef2e14c91b3a145bb96982",
-                            "type": 3
-                        },
-                        "m_BackupStyleSheet": {
-                            "instanceID": 0
-                        },
-                        "m_OldPath": "Assets/UI Toolkit/Main Menu/MainMenu.uss"
-                    }
-                ],
+                "m_OpenUSSFiles": [],
                 "m_VisualTreeAssetBackup": {
                     "instanceID": 0
                 },
-                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/MainMenu.uxml",
+                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Scrubbing Overlay/ScrubbingOverlay.uxml",
                 "m_VisualTreeAsset": {
                     "fileID": 9197481963319205126,
-                    "guid": "287887cafff0fbc4695de8b914cf76e5",
+                    "guid": "f8278f2ae3886cb46938ea6df2232f9c",
                     "type": 3
                 },
                 "m_ActiveStyleSheet": {
-                    "fileID": 7433441132597879392,
-                    "guid": "63af78b874ef2e14c91b3a145bb96982",
-                    "type": 3
+                    "instanceID": 0
                 },
                 "m_Settings": {
-                    "UxmlGuid": "287887cafff0fbc4695de8b914cf76e5",
-                    "UxmlPath": "Assets/UI Toolkit/Main Menu/MainMenu.uxml",
+                    "UxmlGuid": "f8278f2ae3886cb46938ea6df2232f9c",
+                    "UxmlPath": "Assets/UI Toolkit/Scrubbing Overlay/ScrubbingOverlay.uxml",
                     "CanvasX": 0,
                     "CanvasY": 0,
                     "CanvasWidth": 802,
                     "CanvasHeight": 451,
                     "MatchGameView": true,
-                    "ZoomScale": 0.75,
+                    "ZoomScale": 1.0,
                     "PanOffset": {
-                        "x": 148.83880615234376,
-                        "y": 267.8749084472656
+                        "x": 23.0,
+                        "y": 205.0
                     },
                     "ColorModeBackgroundOpacity": 1.0,
                     "ImageModeCanvasBackgroundOpacity": 1.0,
                     "CameraModeCanvasBackgroundOpacity": 1.0,
-                    "EnableCanvasBackground": true,
+                    "EnableCanvasBackground": false,
                     "CanvasBackgroundMode": 0,
                     "CanvasBackgroundColor": {
-                        "r": 0.3803921639919281,
-                        "g": 0.364705890417099,
-                        "b": 0.42352941632270815,
+                        "r": 0.0,
+                        "g": 0.0,
+                        "b": 0.0,
                         "a": 255.0
                     },
                     "CanvasBackgroundImage": {

@@ -72,6 +72,12 @@ MonoBehaviour:
   - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__unity-ui-builder-inspector__builder-inspector-attributes-inherited-styles-foldout__builder-inspector-matching-selectors-container-foldout__builder-inspector-rule-foldout__8__Unity.UI.Builder.PersistedFoldout
   - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__unity-ui-builder-inspector__builder-inspector-attributes-inherited-styles-foldout__builder-inspector-matching-selectors-container-foldout__builder-inspector-rule-foldout__9__Unity.UI.Builder.PersistedFoldout
   - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__unity-ui-builder-inspector__builder-inspector-attributes-inherited-styles-foldout__builder-inspector-matching-selectors-container-foldout__builder-inspector-rule-foldout__10__Unity.UI.Builder.PersistedFoldout
+  - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__viewport-preview-split-view__unity-builder-viewport__canvas__h__UnityEngine.UIElements.Slider
+  - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__viewport-preview-split-view__unity-builder-viewport__canvas__hg__UnityEngine.UIElements.Slider
+  - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__viewport-preview-split-view__unity-builder-viewport__canvas__hgf__UnityEngine.UIElements.Slider
+  - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__viewport-preview-split-view__unity-builder-viewport__canvas__hgfh__UnityEngine.UIElements.Slider
+  - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__viewport-preview-split-view__unity-builder-viewport__canvas__hgfhg__UnityEngine.UIElements.Slider
+  - __PanelContainer__rootVisualContainer__main-view-split-view__middle-right-split-view__viewport-preview-split-view__unity-builder-viewport__canvas__hgfhgf__UnityEngine.UIElements.Slider
   m_Values:
   - '{"m_FixedPaneDimension":402.0}'
   - '{"m_FixedPaneDimension":575.0}'
@@ -81,18 +87,18 @@ MonoBehaviour:
   - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":0.0}'
   - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":0.0}'
   - '{"m_ElementInfoVisibilityState":0}'
-  - '{"m_ExpandedItemIds":[1,-636389234,1869008178,-371319663,2,3]}'
+  - '{"m_ExpandedItemIds":[1]}'
   - '{"m_ShowAlternatingRowBackgrounds":0,"m_ScrollOffset":{"x":0.0,"y":0.0}}'
   - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":0.0}'
   - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":0.0}'
   - '{"m_ShowPackageTemplates":false,"m_ViewMode":0,"m_ActiveTab":0}'
-  - '{"m_SelectedItemId":-2090534668}'
+  - '{"m_SelectedItemId":-1150758546}'
   - '{"m_Value":27.0,"m_LowValue":0.0,"m_HighValue":27.0}'
   - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":0.0}'
-  - '{"m_FixedPaneDimension":356.0}'
+  - '{"m_FixedPaneDimension":358.0}'
   - '{"m_FixedPaneDimension":20.0}'
   - '{"m_FixedPaneDimension":200.0}'
-  - '{"m_CachedScrollPositionCount":5,"m_OldestScrollPositionIndex":3,"m_CachedContentHeights":[2616.0,2530.0,2642.0,2814.0,2756.0],"m_CachedScrollPositions":[{"scrollPosition":0.0,"maxScrollValue":1706.0},{"scrollPosition":0.0,"maxScrollValue":1620.0},{"scrollPosition":0.0,"maxScrollValue":1732.0},{"scrollPosition":1904.0,"maxScrollValue":1904.0},{"scrollPosition":0.0,"maxScrollValue":1846.0}]}'
+  - '{"m_CachedScrollPositionCount":5,"m_OldestScrollPositionIndex":0,"m_CachedContentHeights":[2616.0,2530.0,2642.0,2750.0,2836.0],"m_CachedScrollPositions":[{"scrollPosition":0.0,"maxScrollValue":1706.0},{"scrollPosition":0.0,"maxScrollValue":1620.0},{"scrollPosition":0.0,"maxScrollValue":1732.0},{"scrollPosition":0.0,"maxScrollValue":1840.0},{"scrollPosition":810.0,"maxScrollValue":1926.0}]}'
   - '{"m_Value":true}'
   - '{"m_Value":false}'
   - '{"m_Value":true}'
@@ -122,6 +128,9 @@ MonoBehaviour:
   - '{}'
   - '{}'
   - '{}'
+  - '{"m_Value":false}'
+  - '{"m_Value":false}'
+  - '{"m_Value":false}'
   - '{}'
   - '{}'
   - '{}'
@@ -129,6 +138,9 @@ MonoBehaviour:
   - '{}'
   - '{}'
   - '{}'
-  - '{}'
-  - '{}'
-  - '{}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'
+  - '{"m_Value":0.0,"m_LowValue":0.0,"m_HighValue":100.0}'

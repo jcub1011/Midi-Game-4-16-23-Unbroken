@@ -70,6 +70,7 @@
     <Compile Include="Assets\Lane.cs" />
     <Compile Include="Assets\UI Toolkit\Main Menu\MainMenu.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
+    <Compile Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -90,6 +91,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall.DryWetMidi.xml" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
+    <None Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.uxml" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall_DryWetMidi_Native32.dll" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
