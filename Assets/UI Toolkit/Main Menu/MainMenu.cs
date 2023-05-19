@@ -160,7 +160,6 @@ public class SongList : StartMenu
         GameData.SetForgiveness(400f);
         GameData.SetPlaybackSpeed(1f);
 
-        SceneManager.LoadSceneAsync(1, UnityEngine.SceneManagement.LoadSceneMode.Additive).completed += LoadSong;
         Hide();
     }
 

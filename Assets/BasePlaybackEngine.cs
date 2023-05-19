@@ -4,6 +4,7 @@ using Melanchall.DryWetMidi.Multimedia;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class NoteEvtData
 {
@@ -15,28 +16,28 @@ public class NoteEvtData
 
 public delegate void OnTimeInterval(float time);
 
-public class PlaybackClock
+public static class PlaybackClock
 {
     #region Properties
     private const float MAX_PRECISION = 16f;
-    private readonly float _tickLength = 1f;
-    private float _tickIncrementFactor = 1f;
-    private System.Timers.Timer _intervalTimer = null;
-    public event OnTimeInterval TickIncremented;
-    private readonly float _minTime;
+    private static float _tickLength = 1f;
+    private static float _tickIncrementFactor = 1f;
+    private static System.Timers.Timer _intervalTimer = null;
+    public static event OnTimeInterval TickIncremented;
+    private static float _minTime;
     #endregion
 
     #region GetterSetters
-    public float CurrentTick { get; private set; } = 0f;
-    public float CurrentTime
+    public static float CurrentTick { get; private set; } = 0f;
+    public static float CurrentTime
     {
         get
         {
             return _tickLength * CurrentTick;
         }
     }
-    public float ClockSpeedFactor { get; private set; } = 1f;
-    public bool InReverse { get; set; } = false;
+    public static float ClockSpeedFactor { get; private set; } = 1f;
+    public static bool InReverse { get; set; } = false;
     #endregion
 
     #region Methods
@@ -44,7 +45,7 @@ public class PlaybackClock
     /// Sets the speed mulitplier of the timer tick.
     /// </summary>
     /// <param name="tickSpeedMultiplicationFactor">Multiplication of tick speed.</param>
-    public void SetIncrementMultiplier(float tickSpeedMultiplicationFactor)
+    public static void SetIncrementMultiplier(float tickSpeedMultiplicationFactor)
     {
         if (_intervalTimer == null) return;
         ClockSpeedFactor = tickSpeedMultiplicationFactor;
@@ -66,7 +67,7 @@ public class PlaybackClock
         _intervalTimer.Interval = newInterval;
     }
 
-    private void IncrementTicks(System.Object source, System.Timers.ElapsedEventArgs evt)
+    private static void IncrementTicks(System.Object source, System.Timers.ElapsedEventArgs evt)
     {
         CurrentTick += _tickIncrementFactor * (InReverse ? -1f : 1f );
 
@@ -78,28 +79,28 @@ public class PlaybackClock
         TickIncremented.Invoke(CurrentTick);
     }
 
-    public void Start()
+    public static void Start()
     {
         _intervalTimer.Start();
         _intervalTimer.AutoReset = true;
         _intervalTimer.Enabled = true;
     }
 
-    public void Stop()
+    public static void Stop()
     {
         _intervalTimer.Stop();
         _intervalTimer.AutoReset = false;
         _intervalTimer.Enabled = false;
     }
 
-    public void OverwriteTime(float newTime)
+    public static void OverwriteTime(float newTime)
     {
         float newTick = newTime / _tickLength;
         CurrentTick = newTick;
         TickIncremented.Invoke(newTick);
     }
 
-    public void Dispose()
+    public static void Dispose()
     {
         Stop();
         _intervalTimer.Dispose();
@@ -107,19 +108,23 @@ public class PlaybackClock
     }
     #endregion
 
-    #region Constructors
+    #region Initalizers
     /// <summary>
     /// Creates a new playback clock.
     /// </summary>
     /// <param name="msInterval">Ms per tick.</param>
     /// <param name="initalTime">Inital time of clock in ms.</param>
     /// <exception cref="System.ArgumentOutOfRangeException">msInterval must be greater than 0.</exception>
-    public PlaybackClock (float msInterval, float initalTime = 0f)
+    public static void Initalize (float msInterval, float initalTime = 0f)
     {
         if (!(msInterval > 0f))
         {
             throw new System.ArgumentOutOfRangeException("msInterval must be greater than 0.");
         }
+        // Reset properties.
+        Dispose();
+        InReverse = false;
+        TickIncremented = null;
 
         _intervalTimer = new System.Timers.Timer();
         _tickLength = msInterval;
@@ -405,9 +410,10 @@ public class ScrubbablePlaybackEngine
     #endregion
 
     #region Constructors
-    ScrubbablePlaybackEngine()
+    ScrubbablePlaybackEngine(string songLocation, short qNoteLeadup, float forgiveness, float playbackSpeed)
     {
-
+        MidiFile midiFile = MidiFile.Read(songLocation);
+        var runway = UnityEngine.Object.Instantiate(Runway);
     }
     #endregion
 }

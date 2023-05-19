@@ -31,6 +31,7 @@ public class ScrubbingOverlay : MonoBehaviour
     private void Start()
     {
         GetElements();
+        Visible = false;
     }
 
     public void InitSlider(float minPlaybackTime, float maxPlaybackTime)

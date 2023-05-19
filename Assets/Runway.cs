@@ -4,12 +4,6 @@ using Melanchall.DryWetMidi.Multimedia;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RunwayWrapper
-{
-    public GameObject Runway;
-    public Runway Script;
-}
-
 public class Runway : MonoBehaviour
 {
     IntRange _noteRange;
