@@ -254,7 +254,6 @@ internal class EventPlaybackManager
     #region Properties
     Stack<TimedEvent> _eventsToPlay;
     Stack<TimedEvent> _eventsPlayed;
-    PlaybackClock _clock;
     OutputDevice _outputDevice;
     readonly float _startTime;
     #endregion
@@ -263,25 +262,25 @@ internal class EventPlaybackManager
     public float CurrentTick{
         get
         {
-            return _clock.CurrentTick;
+            return PlaybackClock.CurrentTick;
         }
     }
     public float CurrentTime
     {
         get 
         {
-            return _clock.CurrentTime; 
+            return PlaybackClock.CurrentTime; 
         }
     }
     public float PlaybackSpeed
     {
         get
         {
-            return _clock.ClockSpeedFactor;
+            return PlaybackClock.ClockSpeedFactor;
         }
         set
         {
-            _clock.SetIncrementMultiplier(value);
+            PlaybackClock.SetIncrementMultiplier(value);
         }
     }
     #endregion
@@ -310,9 +309,9 @@ internal class EventPlaybackManager
         _eventsToPlay = new();
         _eventsPlayed = new();
         _startTime = - msPerTick * ticksPerQNote;
-        _clock = new(msPerTick, _startTime);
-        _clock.TickIncremented += TickUpdated;
-        _clock.SetIncrementMultiplier(playbackSpeed);
+        PlaybackClock.Initalize(msPerTick, _startTime);
+        PlaybackClock.TickIncremented += TickUpdated;
+        PlaybackClock.SetIncrementMultiplier(playbackSpeed);
 
         // For reversing list.
         foreach (var evt in midiFile.GetTimedEvents())
@@ -368,7 +367,7 @@ internal class EventPlaybackManager
     /// </summary>
     public void Start()
     {
-        _clock.Start();
+        PlaybackClock.Start();
     }
 
     /// <summary>
@@ -376,7 +375,7 @@ internal class EventPlaybackManager
     /// </summary>
     public void Pause()
     {
-        _clock.Stop();
+        PlaybackClock.Stop();
         _outputDevice.TurnAllNotesOff();
     }
 
@@ -385,9 +384,9 @@ internal class EventPlaybackManager
     /// </summary>
     public void Restart()
     {
-        _clock.Stop();
-        _clock.OverwriteTime(_startTime);
-        _clock.Start();
+        PlaybackClock.Stop();
+        PlaybackClock.OverwriteTime(_startTime);
+        PlaybackClock.Start();
     }
 
     /// <summary>
@@ -395,9 +394,8 @@ internal class EventPlaybackManager
     /// </summary>
     public void Dispose()
     {
-        _clock.Dispose();
+        PlaybackClock.Dispose();
         _outputDevice.Dispose();
-        _clock = null;
         _outputDevice = null;
     }
     #endregion
@@ -413,7 +411,7 @@ public class ScrubbablePlaybackEngine
     ScrubbablePlaybackEngine(string songLocation, short qNoteLeadup, float forgiveness, float playbackSpeed)
     {
         MidiFile midiFile = MidiFile.Read(songLocation);
-        var runway = UnityEngine.Object.Instantiate(Runway);
+        //var runway = UnityEngine.Object.Instantiate(Runway);
     }
     #endregion
 }

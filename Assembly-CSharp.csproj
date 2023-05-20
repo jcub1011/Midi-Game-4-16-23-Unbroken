@@ -71,10 +71,13 @@
     <Compile Include="Assets\Lane.cs" />
     <Compile Include="Assets\UI Toolkit\Main Menu\MainMenu.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
+    <Compile Include="Assets\UI Toolkit\Start Menu\MainMenu\MainMenuScript.cs" />
+    <Compile Include="Assets\UI Toolkit\Start Menu\SongSelector\SongSelector.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
+    <None Include="Assets\UI Toolkit\Start Menu\MainMenu\Main Menu.uxml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\UI Toolkit\MainUI.uxml" />
     <None Include="Assets\UI Toolkit\Main Menu\MainMenu.uss" />
@@ -98,6 +101,7 @@
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall_DryWetMidi_Native64.dll" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
+    <None Include="Assets\UI Toolkit\Start Menu\SongSelector\SongSelector.uxml" />
     <None Include="Assets\Melanchall\DryWetMIDI\README.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />

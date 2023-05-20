@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="RootContainerMainMenu" style="flex-grow: 1; background-color: rgba(255, 255, 255, 255);">
+        <ui:Label text="My Midi Game" display-tooltip-when-elided="true" name="GameTitle" enable-rich-text="true" style="-unity-text-align: middle-center; font-size: 50px; -unity-font-style: bold; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
+        <ui:Button text="Start" display-tooltip-when-elided="true" name="StartButton" />
+        <ui:Button text="Settings" display-tooltip-when-elided="true" name="SettingsButton" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,13 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Xml.Schema;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.SceneManagement;
-using Unity.VisualScripting.FullSerializer;
 
 public class MainMenu : MonoBehaviour
 {
