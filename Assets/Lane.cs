@@ -354,8 +354,8 @@ public class Lane : MonoBehaviour
         transform.localPosition = new Vector3(xPos, 0, 0);
 
         // Update strike range.
-        StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
-        StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
+        //StrikeKey.transform.GetChild(0).localScale = new Vector3(_width, GameData.Forgiveness * _unitsPerMs, 1);
+        //StrikeKey.transform.localPosition = new Vector3(0, BottomY + GameData.Forgiveness * _unitsPerMs / 2, 1);
     }
     
     /// <summary>
@@ -398,7 +398,7 @@ public class Lane : MonoBehaviour
     /// <returns>Accuracy</returns>
     public float NoteEventAccuracy(float time, float forgiveness, bool NoteOnEvent)
     {
-        float eventTimeToCompareWith = 2f * GameData.Forgiveness;
+        //float eventTimeToCompareWith = 2f * GameData.Forgiveness;
         float evtTime = -10f;
 
         print($"Current time: {time}");
@@ -426,7 +426,7 @@ public class Lane : MonoBehaviour
         var msDist = evtTime - time;
         var accuracy = CalculateAccuracy(msDist, forgiveness);
         print($"Note event accuracy: {accuracy}%\n" +
-            $"Note time position: {eventTimeToCompareWith}ms\n" +
+            "Note time position: {eventTimeToCompareWith}ms\n" +
             $"Played note time distance: {msDist}ms");
 
         return accuracy;

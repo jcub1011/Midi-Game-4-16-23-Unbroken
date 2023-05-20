@@ -72,6 +72,7 @@ public class SongSelector : MonoBehaviour
             newButton.clicked += () =>
             {
                 print($"Song '{songName}' selected.");
+                SceneParameters.SetSongPath(song);
             };
 
             // Add to container.

@@ -161,7 +161,7 @@ public class Runway : MonoBehaviour
         _noteWidth = _width / _noteRange.Len;
 
         // Update inner strike bars.
-        StrikeBar.transform.localScale = new Vector3(_width, GameData.Forgiveness * _distPerMs, 1);
+        //StrikeBar.transform.localScale = new Vector3(_width, GameData.Forgiveness * _distPerMs, 1);
 
         // Position outside strike bar.
         var barY = -_height / 2 + _strikeBarHeight;

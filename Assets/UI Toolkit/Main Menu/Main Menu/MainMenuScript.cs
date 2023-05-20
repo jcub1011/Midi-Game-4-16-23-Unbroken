@@ -36,9 +36,9 @@ public class MainMenuScript : MonoBehaviour
     void OnStartClicked()
     {
         print("Start clicked.");
-        Visible = false;
         var midiFolder = Application.dataPath + "/MidiFiles";
         transform.GetComponentInChildren<SongSelector>().DisplaySongList(midiFolder);
+        Visible = false;
     }
 
     void OnSettingsClicked()
