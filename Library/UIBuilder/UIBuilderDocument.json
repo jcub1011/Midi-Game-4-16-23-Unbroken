@@ -17,18 +17,18 @@
                 "m_VisualTreeAssetBackup": {
                     "instanceID": 0
                 },
-                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/Start Menu/MainUIContainer.uxml",
+                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/Song Selector/SongSelector.uxml",
                 "m_VisualTreeAsset": {
                     "fileID": 9197481963319205126,
-                    "guid": "fe2cb5686bd894047816e11f846ccf28",
+                    "guid": "8d02a663a04d23f45bd1b5189f06a3a8",
                     "type": 3
                 },
                 "m_ActiveStyleSheet": {
                     "instanceID": 0
                 },
                 "m_Settings": {
-                    "UxmlGuid": "fe2cb5686bd894047816e11f846ccf28",
-                    "UxmlPath": "Assets/UI Toolkit/Main Menu/Start Menu/StartMenu.uxml",
+                    "UxmlGuid": "8d02a663a04d23f45bd1b5189f06a3a8",
+                    "UxmlPath": "Assets/UI Toolkit/Start Menu/SongSelector/SongSelector.uxml",
                     "CanvasX": 0,
                     "CanvasY": 0,
                     "CanvasWidth": 802,
@@ -45,9 +45,9 @@
                     "EnableCanvasBackground": false,
                     "CanvasBackgroundMode": 0,
                     "CanvasBackgroundColor": {
-                        "r": 0.0,
-                        "g": 0.0,
-                        "b": 0.0,
+                        "r": 1.0,
+                        "g": 1.0,
+                        "b": 1.0,
                         "a": 255.0
                     },
                     "CanvasBackgroundImage": {

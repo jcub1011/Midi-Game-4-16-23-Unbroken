@@ -56,13 +56,12 @@
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\UI Toolkit\Main Menu\Start Menu\MainUIContainerScript.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Start Menu\StartMenuScript.cs" />
     <Compile Include="Assets\Events.cs" />
     <Compile Include="Assets\BasePlaybackEngine.cs" />
     <Compile Include="Assets\PriorityQueuePort.cs" />
     <Compile Include="Assets\Runway.cs" />
-    <Compile Include="Assets\UI Toolkit\Main Menu\Main Menu\MainMenuScript.cs" />
-    <Compile Include="Assets\UI Toolkit\Main Menu\Song Selector\SongSelector.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Panels.cs" />
     <Compile Include="Assets\CustomTickGenerator.cs" />
     <Compile Include="Assets\MidiParser.cs" />
     <Compile Include="Assets\Range.cs" />
