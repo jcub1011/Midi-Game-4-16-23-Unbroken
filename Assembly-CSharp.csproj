@@ -56,6 +56,7 @@
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\UI Toolkit\Main Menu\Start Menu\MainUIContainerScript.cs" />
     <Compile Include="Assets\Events.cs" />
     <Compile Include="Assets\BasePlaybackEngine.cs" />
     <Compile Include="Assets\PriorityQueuePort.cs" />
@@ -72,7 +73,6 @@
     <Compile Include="Assets\MidiHandler.cs" />
     <Compile Include="Assets\Lane.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
-    <Compile Include="Assets\UI Toolkit\Main Menu\Start Menu\MainUIContainerScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

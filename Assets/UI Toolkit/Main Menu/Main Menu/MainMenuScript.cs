@@ -52,39 +52,53 @@ public class MainMenuScript : MonoBehaviour
 
 public delegate void ButtonClicked();
 
-public class MainMenu
+public class GameUIPanel
 {
     #region Properties
-    public ButtonClicked OnStartClicked;
-    public ButtonClicked OnSettingsClicked;
-    public VisualElement Root
-    {
-        get
-        {
-            return Root;
-        }
-        set
-        {
-            Root = value;
-        }
-    }
+    public VisualElement Root { get; protected set; }
     #endregion
 
+    #region Getters and Setters
     public bool Visible
     {
         get
         {
+            if (Root == null) return false;
             return Root.style.display == DisplayStyle.Flex;
         }
 
         set
         {
+            if (Root == null) return;
             Root.style.display = value ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
+    #endregion
+}
 
-    public void InitButtons()
+public class MainMenu : GameUIPanel
+{
+    #region Properties
+    public ButtonClicked OnStartClicked;
+    public ButtonClicked OnSettingsClicked;
+    #endregion
+
+    void StartButtonClicked()
     {
+        Debug.Log("Start button clicked.");
+        OnStartClicked?.Invoke();
+    }
+
+    void SettingsButtonClicked()
+    {
+        Debug.Log("Settings button clicked.");
+        OnSettingsClicked?.Invoke();
+    }
+
+    public MainMenu(VisualTreeAsset doc)
+    {
+        Root = doc.Instantiate();
+
         // Get element references.
         var startButton = Root.Q("StartButton") as Button;
         var settingsButton = Root.Q("SettingsButton") as Button;
@@ -92,17 +106,8 @@ public class MainMenu
         // Register click events.
         startButton.clicked += StartButtonClicked;
         settingsButton.clicked += SettingsButtonClicked;
-    }
 
-    void StartButtonClicked()
-    {
-        Debug.Log("Start button clicked.");
-        OnStartClicked.Invoke();
-    }
-
-    void SettingsButtonClicked()
-    {
-        Debug.Log("Settings button clicked.");
-        OnSettingsClicked.Invoke();
+        // Make it take the entire sceen.
+        Root.style.flexGrow = 1;
     }
 }

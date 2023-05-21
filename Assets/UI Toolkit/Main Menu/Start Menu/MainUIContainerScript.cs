@@ -12,12 +12,14 @@ public class MainUIContainerScript : MonoBehaviour
 
     void Start()
     {
+        var root = GetComponent<UIDocument>().rootVisualElement;
         // Get panels.
-        _mainMenu = new MainMenu { Root = MainMenuDoc.CloneTree()};
+        _mainMenu = new MainMenu(MainMenuDoc);
         //_songSelectMenu = root.Q(name:"SongSelector");
 
         // Init starting menu.
-        _mainMenu.Root.style.display = DisplayStyle.Flex;
+        _mainMenu.Visible = true;
+        root.Add(_mainMenu.Root);
         //_songSelectMenu.style.display = DisplayStyle.None;
     }
 }
