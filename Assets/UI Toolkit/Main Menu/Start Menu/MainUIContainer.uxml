@@ -1,0 +1,6 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Template name="Main Menu" src="project://database/Assets/UI%20Toolkit/Main%20Menu/Main%20Menu/Main%20Menu.uxml?fileID=9197481963319205126&amp;guid=b02a9d6d010338e4aaec0d0dc9a7d49d&amp;type=3#Main Menu" />
+    <ui:Template name="SongSelector" src="project://database/Assets/UI%20Toolkit/Main%20Menu/Song%20Selector/SongSelector.uxml?fileID=9197481963319205126&amp;guid=8d02a663a04d23f45bd1b5189f06a3a8&amp;type=3#SongSelector" />
+    <ui:Instance template="Main Menu" name="Main Menu" style="flex-grow: 1; display: flex;" />
+    <ui:Instance template="SongSelector" name="SongSelector" style="flex-grow: 1; display: none;" />
+</ui:UXML>

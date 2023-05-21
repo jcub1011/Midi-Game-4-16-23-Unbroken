@@ -72,6 +72,7 @@
     <Compile Include="Assets\MidiHandler.cs" />
     <Compile Include="Assets\Lane.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Start Menu\MainUIContainerScript.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
@@ -102,6 +103,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader" />
+    <None Include="Assets\UI Toolkit\Main Menu\Start Menu\MainUIContainer.uxml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Sprite.shader" />
   </ItemGroup>
   <ItemGroup>
