@@ -24,8 +24,15 @@ public class StartMenuScript : MonoBehaviour
         _panelManager.MakeActive("MainMenu");
 
         // Add button callbacks.
-        var temp = _panelManager.GetPanel("MainMenu") as MainMenu;
-        temp.OnStartClicked += SwitchToSongSelectMenu;
+        var main = _panelManager.GetPanel("MainMenu") as MainMenu;
+        main.OnStartClicked += SwitchToSongSelectMenu;
+        var selector = _panelManager.GetPanel("SongSelectMenu") as SongSelectorMenu;
+        selector.OnBackButtonPress += HandleBackButton;
+    }
+
+    void HandleBackButton()
+    {
+        _panelManager.PreviousPanel();
     }
 
     void SwitchToSongSelectMenu()

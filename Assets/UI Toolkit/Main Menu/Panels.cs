@@ -204,8 +204,20 @@ public class SongSelectorMenu : GameUIPanel
     private const string SONG_SELECTOR_CLASS_NAME = "Song-Select-Button";
     private const string SONG_LIST_CONTAINER_ID = "Song-List-Container";
     private const string SONG_SELECTOR_UI_CONTAINER = "SongSelectorContainer";
+    private const string BACK_BUTTON_ID = "BackButton";
 
-    public SongSelectorMenu(VisualTreeAsset doc) : base(doc) { }
+    public ButtonClicked OnBackButtonPress;
+
+    void BackButtonPressed()
+    {
+        Debug.Log("Back button pressed.");
+        OnBackButtonPress?.Invoke();
+    }
+
+    public SongSelectorMenu(VisualTreeAsset doc) : base(doc)
+    {
+        (Root.Q(BACK_BUTTON_ID) as Button).clicked += BackButtonPressed;
+    }
 
     public void RefreshSongsList(string songsFolderPath)
     {
@@ -217,7 +229,7 @@ public class SongSelectorMenu : GameUIPanel
 
         // Remove existing list container.
         var oldContainer = Root.Q(SONG_LIST_CONTAINER_ID);
-        if (oldContainer != null) Root.Remove(oldContainer);
+        if (oldContainer != null) rootContainer.Remove(oldContainer);
 
         // Create new list container.
         var songListContainer = new ScrollView
