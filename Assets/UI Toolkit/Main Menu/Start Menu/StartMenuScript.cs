@@ -8,31 +8,31 @@ public class StartMenuScript : MonoBehaviour
 {
     public VisualTreeAsset MainMenuDoc;
     public VisualTreeAsset SongSelectDoc;
-    private MainMenu _mainMenu;
-    private SongSelectorMenu _songSelectorMenu;
+    private PanelManager _panelManager;
 
     void Start()
     {
         var root = GetComponent<UIDocument>().rootVisualElement;
+        _panelManager = new();
+
         // Get panels.
-        _mainMenu = new MainMenu(MainMenuDoc);
-        _songSelectorMenu = new SongSelectorMenu(SongSelectDoc);
+        _panelManager.AddPanel("MainMenu", new MainMenu(MainMenuDoc));
+        _panelManager.AddPanel("SongSelectMenu", new SongSelectorMenu(SongSelectDoc));
 
         // Init starting menu.
-        _mainMenu.Visible = true;
-        _songSelectorMenu.Visible = false;
-        root.Add(_mainMenu.Root);
-        root.Add(_songSelectorMenu.Root);
+        foreach (var panelRoot in _panelManager.GetPanelRoots()) root.Add(panelRoot);
+        _panelManager.MakeActive("MainMenu");
 
         // Add button callbacks.
-        _mainMenu.OnStartClicked += SwitchToSongSelectMenu;
+        var temp = _panelManager.GetPanel("MainMenu") as MainMenu;
+        temp.OnStartClicked += SwitchToSongSelectMenu;
     }
 
     void SwitchToSongSelectMenu()
     {
         string midiFileLocation = Directory.GetCurrentDirectory() + "/Assets/MidiFiles";
-        _mainMenu.Visible = false;
-        _songSelectorMenu.Visible = true;
-        _songSelectorMenu.RefreshSongsList(midiFileLocation);
+        _panelManager.MakeActive("SongSelectMenu");
+        var temp = _panelManager.GetPanel("SongSelectMenu") as SongSelectorMenu;
+        temp.RefreshSongsList(midiFileLocation);
     }
 }

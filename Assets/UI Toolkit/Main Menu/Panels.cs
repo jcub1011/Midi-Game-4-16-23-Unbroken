@@ -40,6 +40,127 @@ abstract public class GameUIPanel
     #endregion
 }
 
+public class PanelManager
+{
+    #region Properties
+    private Dictionary<string, GameUIPanel> _panels;
+    private string _activePanel;
+    private Stack<string> _panelHistory;
+    #endregion
+
+    #region Methods
+    /// <summary>
+    /// Adds a panel to manage.
+    /// </summary>
+    /// <param name="panelName">Name to assign panel.</param>
+    /// <param name="panel">Panel to add.</param>
+    public void AddPanel(string panelName, GameUIPanel panel)
+    {
+        Debug.Log($"Adding panel '{panelName}'.");
+        panel.Visible = false;
+        _panels.Add(panelName, panel);
+    }
+
+    /// <summary>
+    /// Unmanages the given panel.
+    /// </summary>
+    /// <param name="panelName">Name of panel to remove.</param>
+    public void RemovePanel(string panelName)
+    {
+        Debug.Log($"Removing panel '{panelName}'.");
+        if (panelName == _activePanel)
+        {
+            _activePanel = null;
+        }
+
+        _panels.Remove(panelName);
+    }
+
+    /// <summary>
+    /// Gets a list of roots from all the managed panels.
+    /// </summary>
+    /// <returns>List of visual elements.</returns>
+    public List<VisualElement> GetPanelRoots()
+    {
+        var roots = new List<VisualElement>();
+
+        foreach (var panel in _panels.Values)
+        {
+            roots.Add(panel.Root);
+        }
+
+        return roots;
+    }
+
+    /// <summary>
+    /// Returns the given panel.
+    /// </summary>
+    /// <param name="panelName">Name of panel to get.</param>
+    /// <returns>The panel.</returns>
+    public GameUIPanel GetPanel(string panelName)
+    {
+        return _panels[panelName];
+    }
+
+    /// <summary>
+    /// Replaces the currently active panel with the given panel.
+    /// </summary>
+    /// <param name="panelName">Name of panel to make active.</param>
+    public void MakeActive(string panelName)
+    {
+        Debug.Log($"Making panel active '{panelName}'.");
+        if (_activePanel == panelName) return;
+        _panels[panelName].Visible = true;
+
+        if (_activePanel != null)
+        {
+            _panels[_activePanel].Visible = false;
+            _panelHistory.Push(_activePanel);
+        }
+
+        _activePanel = panelName;
+    }
+
+    /// <summary>
+    /// Makes the previous panel active again.
+    /// </summary>
+    /// <returns>If there is a previous panel to return to.</returns>
+    public bool PreviousPanel()
+    {
+        Debug.Log($"Returning to previous panel.");
+
+        // Remove panels that no longer exist.
+        while (!_panels.ContainsKey(_panelHistory.Peek()))
+        {
+            _panelHistory.Pop();
+        }
+
+        if (_panelHistory.Count == 0) return false;
+        _panels[_panelHistory.Peek()].Visible = true;
+        _panels[_activePanel].Visible = false;
+        _activePanel = _panelHistory.Pop();
+        return true;
+    }
+
+    /// <summary>
+    /// Clears the panel history.
+    /// </summary>
+    public void ClearHistory()
+    {
+        Debug.Log($"Clearing panel history.");
+        _panelHistory.Clear();
+    }
+    #endregion
+
+    #region Constructors
+    public PanelManager()
+    {
+        _panels = new();
+        _activePanel = null;
+        _panelHistory = new();
+    }
+    #endregion
+}
 public class MainMenu : GameUIPanel
 {
     #region Properties

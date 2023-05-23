@@ -12,4 +12,10 @@ public static class SceneParameters
         Debug.Log("Setting song path.");
         SongPath = path;
     }
+
+    public static string GetSongPath()
+    {
+        Debug.Log("Retrieving song path.");
+        return SongPath;
+    }
 }
