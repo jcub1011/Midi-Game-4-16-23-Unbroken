@@ -186,6 +186,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MainMenuDoc: {fileID: 9197481963319205126, guid: b02a9d6d010338e4aaec0d0dc9a7d49d, type: 3}
   SongSelectDoc: {fileID: 9197481963319205126, guid: 8d02a663a04d23f45bd1b5189f06a3a8, type: 3}
+  SongSettingsDoc: {fileID: 9197481963319205126, guid: a38d9c966fc209b43b7d576a5cbf8e07, type: 3}
 --- !u!1 &1160096505
 GameObject:
   m_ObjectHideFlags: 0

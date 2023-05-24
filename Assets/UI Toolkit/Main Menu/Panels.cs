@@ -1,3 +1,6 @@
+using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
+using Melanchall.DryWetMidi.Tools;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,11 +11,13 @@ using UnityEngine.UIElements;
 
 // Delegates
 public delegate void ButtonClicked();
+public delegate void SongButtonClicked(string midiPath);
 
 abstract public class GameUIPanel
 {
     #region Properties
     public VisualElement Root { get; protected set; }
+    public ButtonClicked OnBackButtonPress;
     #endregion
 
     #region Getters and Setters
@@ -206,7 +211,7 @@ public class SongSelectorMenu : GameUIPanel
     private const string SONG_SELECTOR_UI_CONTAINER = "SongSelectorContainer";
     private const string BACK_BUTTON_ID = "BackButton";
 
-    public ButtonClicked OnBackButtonPress;
+    public SongButtonClicked OnSongClicked;
 
     void BackButtonPressed()
     {
@@ -228,7 +233,7 @@ public class SongSelectorMenu : GameUIPanel
         Debug.Log($"Files in midi directory: {songList.Count}");
 
         // Remove existing list container.
-        var oldContainer = Root.Q(SONG_LIST_CONTAINER_ID);
+        var oldContainer = rootContainer.Q(SONG_LIST_CONTAINER_ID);
         if (oldContainer != null) rootContainer.Remove(oldContainer);
 
         // Create new list container.
@@ -262,7 +267,7 @@ public class SongSelectorMenu : GameUIPanel
             newButton.clicked += () =>
             {
                 Debug.Log($"Song '{songName}' selected.");
-                SceneParameters.SetSongPath(song);
+                OnSongClicked?.Invoke(song);
             };
 
             // Add to container.
@@ -271,4 +276,77 @@ public class SongSelectorMenu : GameUIPanel
 
         rootContainer.Add(songListContainer);
     }
+}
+
+public class SongAdjustMenu : GameUIPanel
+{
+    #region Constants
+    const string SETTINGS_CONTAINER_ID = "SettingsContainer";
+    const string TITLE_ID = "SongNameSettings";
+    const string PLAYBACK_DROPDOWN_ID = "PlaybackSpeed";
+    const string TRACK_SELECT_CONTAINER_ID = "TrackSelectContainer";
+    const string PLAY_BUTTON_ID = "PlayButton";
+    const string BACK_BUTTON_ID = "BackButton";
+    #endregion
+
+    #region Constructors
+    public SongAdjustMenu(VisualTreeAsset doc) : base(doc) 
+    {
+        var temp = Root.Q(BACK_BUTTON_ID) as Button;
+        temp.clicked += () => OnBackButtonPress.Invoke();
+    }
+    #endregion
+
+    #region Public Methods
+    public void LoadSongSettings(string midiPath)
+    {
+        MidiFile midiFile = MidiFile.Read(midiPath);
+        ClearSettings();
+
+        // Init playback speed dropdown.
+        List<string> playbackSpeeds = new();
+
+        for (float i = 0f; i <= 10f; i += 0.25f)
+        {
+            playbackSpeeds.Add(i.ToString("0.##") + "x");
+        }
+
+        (Root.Q(PLAYBACK_DROPDOWN_ID) as DropdownField).choices = playbackSpeeds;
+
+        // Init track select container.
+        var trackSelectContainer = Root.Q(TRACK_SELECT_CONTAINER_ID);
+
+        var trackNames = new List<string>();
+        var trackCount = midiFile.GetTrackChunks().Count();
+
+        foreach (var evt in midiFile.GetTrackChunks())
+        {
+            var names = evt.Events.OfType<SequenceTrackNameEvent>();
+            if (names.Count() > 0) trackNames.Add(names.First().Text);
+            else trackNames.Add("Untitled track.");
+        }
+
+        for (int i = 0; i < trackCount; i++)
+        {
+            var newToggle = new Toggle();
+            newToggle.text = $"{i + 1}: {trackNames[i]}";
+            trackSelectContainer.Add(newToggle);
+        }
+    }
+    #endregion
+
+    #region Private methods
+    void ClearSettings()
+    {
+        if (Root.Q(TITLE_ID) is Label title) title.text = null;
+        if (Root.Q(PLAYBACK_DROPDOWN_ID) is DropdownField dropdown)
+        {
+            dropdown.choices = null;
+        }
+        if (Root.Q(TRACK_SELECT_CONTAINER_ID) is VisualElement container)
+        {
+            container.Clear();
+        }
+    }
+    #endregion
 }
