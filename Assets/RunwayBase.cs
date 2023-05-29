@@ -74,7 +74,7 @@ public class RunwayBase
     #region Properties
     IntRange _noteRange;
     RunwayDisplayInfo _displayInfo;
-    MyLane[] _lanes;
+    NoteLane[] _lanes;
     GameObject _lanePrefab;
     #endregion
 
@@ -84,14 +84,19 @@ public class RunwayBase
     {
         _noteRange = GetNoteRange(notes);
         _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange);
-        _lanes = new MyLane[_noteRange.Len];
+        _lanes = new NoteLane[_noteRange.Len];
+
+        // Calculate time offsets.
+        float runwayEnterOffset = msToReachStrikeBar;
+        float runwayExitOffset = _displayInfo.RunwayHeight * strikeBarHeight / _displayInfo.UnitsPerMs;
 
         for (int i = 0; i < _lanes.Length; i++)
         {
             var newLane = UnityEngine.Object.Instantiate(_lanePrefab, lanesParent);
-            _lanes[i] = newLane.GetComponent<MyLane>();
+            _lanes[i] = newLane.GetComponent<NoteLane>();
             _lanes[i].Width = _displayInfo.NoteWidth;
             _lanes[i].XPos = _displayInfo.GetNoteXPos(i);
+            _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
         }
     }
     #endregion
@@ -109,6 +114,29 @@ public class RunwayBase
         }
 
         return new IntRange(min, max);
+    }
+
+    protected void DistributeNotes(List<NoteEvtData> notes)
+    {
+        foreach (var note in notes)
+        {
+            var index = note.number - _noteRange.Min;
+            _lanes[index].AddNote(note);
+        }
+    }
+
+    protected void UpdateRunway(float playbackTime)
+    {
+        foreach (var lane in _lanes)
+        {
+            lane.UpdateLane(playbackTime, _displayInfo.UnitsPerMs);
+        }
+    }
+
+    protected void UpdateRunwayDimensions(float width, float height)
+    {
+        _displayInfo.RunwayWidth = width;
+        _displayInfo.RunwayHeight = height;
     }
     #endregion
 }
