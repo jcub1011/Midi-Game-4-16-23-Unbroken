@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 struct LaneWrapper
@@ -122,6 +123,106 @@ public class NoteListManager
     }
 }
 
+public class MyLane : MonoBehaviour
+{
+    #region Properties
+    public GameObject StrikeKey;
+    public GameObject NotePrefab;
+    NoteListManager _notePlayList;
+    #endregion
+
+    #region Private Methods
+    /// <summary>
+    /// Checks if a note is visible on the runway.
+    /// </summary>
+    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="noteOnTime"></param>
+    /// <param name="noteOffTime"></param>
+    /// <returns>True if visible.</returns>
+    bool NoteVisible(float playbackTime, float noteOnTime, float noteOffTime)
+    {
+        float runwayEnterTime = playbackTime - _timeToReachStrike;
+        float runwayExitTime = playbackTime + _unitsPerMs * _timeToReachStrike;
+
+        // Check if either end is within the lane bounds.
+        return noteOnTime > runwayEnterTime && noteOffTime < runwayExitTime;
+    }
+
+    /// <summary>
+    /// Checks if a note is visible on the runway.
+    /// </summary>
+    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="noteWrapper"></param>
+    /// <returns></returns>
+    bool NoteVisible(float playbackTime, NoteWrapper noteWrapper)
+    {
+        if (noteWrapper == null) return false;
+        return NoteVisible(playbackTime, noteWrapper.OnTime, noteWrapper.OffTime);
+    }
+
+    /// <summary>
+    /// Checks if a note is visible on the runway.
+    /// </summary>
+    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="noteEvtData"></param>
+    /// <returns></returns>
+    bool NoteVisible(float playbackTime, NoteEvtData noteEvtData)
+    {
+        if (noteEvtData == null) return false;
+        return NoteVisible(playbackTime, noteEvtData.onTime, noteEvtData.offTime);
+    }
+
+    /// <summary>
+    /// Updates the list of active notes.
+    /// </summary>
+    /// <param name="playbackTime"></param>
+    void UpdateActiveNoteList(float playbackTime)
+    {
+        // Add notes to the top.
+        while (NoteVisible(playbackTime, _notePlayList.PeekNextYoungestNote()))
+        {
+            _notePlayList.ManageNextYoungestNote(transform, NotePrefab);
+        }
+
+        // Add notes to the bottom.
+        while (NoteVisible(playbackTime, _notePlayList.PeekNextOldestNote()))
+        {
+            _notePlayList.ManageNextOldestNote(transform, NotePrefab);
+        }
+    }
+    #endregion
+
+    #region Getter Setter Methods
+    private float _width;
+    public float Width
+    {
+        get { return _width; }
+        set
+        {
+            _width = value;
+            transform.localScale = new Vector3(_width, 1f, 1f);
+        }
+    }
+    private float _xPos;
+    public float XPos
+    {
+        get { return _xPos; }
+        set
+        {
+            _xPos = value;
+            transform.localPosition = new Vector3(_xPos, 0f, 0f);
+        }
+    }
+    #endregion
+
+    #region Methods
+    public void UpdateLane(float playbackTime, float unitsPerMs)
+    {
+        UpdateActiveNoteList(playbackTime);
+    }
+    #endregion
+}
+
 public class Lane : MonoBehaviour
 {
     #region Properties
@@ -133,23 +234,6 @@ public class Lane : MonoBehaviour
     public GameObject StrikeKey;
     public GameObject NotePrefab;
     NoteListManager _notePlayList;
-    #endregion
-
-    #region Getters
-    float TopY
-    {
-        get
-        {
-            return _height / 2;
-        }
-    }
-    float BottomY
-    {
-        get
-        {
-            return -_height / 2;
-        }
-    }
     #endregion
 
     #region Private Methods

@@ -6,9 +6,9 @@ using UnityEngine;
 internal class RunwayDisplayInfo
 {
     #region Properties
-    readonly int _range; // Range of notes.
+    readonly IntRange _range; // Range of notes.
     readonly float _msToReachRunway;
-    readonly float _strikeBarHeightPercent; // Percent of screen from bottom.
+    public readonly float _strikeBarHeightPercent; // Percent of screen from bottom.
     #endregion
 
     #region Getter Setter Methods
@@ -32,7 +32,7 @@ internal class RunwayDisplayInfo
         set
         {
             _runwayWidth = value;
-            NoteWidth = RunwayWidth / _range;
+            NoteWidth = RunwayWidth / _range.Len;
         }
     }
     #endregion
@@ -44,8 +44,8 @@ internal class RunwayDisplayInfo
     /// <param name="runwayDimensions">Inital dimensions of the runway.</param>
     /// <param name="strikeBarHeight">Height of the strike bar as a percent where 1 = 100%.</param>
     /// <param name="msLeadup">Time before the first note hits the strike bar.</param>
-    /// <param name="numNotes">Number of notes to display.</param>
-    public RunwayDisplayInfo(float[] runwayDimensions, float strikeBarHeight, float msLeadup, int numNotes)
+    /// <param name="range">Range of notes to display.</param>
+    public RunwayDisplayInfo(float[] runwayDimensions, float strikeBarHeight, float msLeadup, IntRange range)
     {
         // Readonly properties.
         if (strikeBarHeight < 0f || strikeBarHeight > 1f)
@@ -54,10 +54,17 @@ internal class RunwayDisplayInfo
         }
         _strikeBarHeightPercent = strikeBarHeight;
         _msToReachRunway = msLeadup;
-        _range = numNotes;
+        _range = range;
 
         RunwayWidth = runwayDimensions[0];
         RunwayHeight = runwayDimensions[1];
+    }
+    #endregion
+
+    #region Methods
+    public float GetNoteXPos(int noteNum)
+    {
+        return (_range.Min - noteNum) * NoteWidth;
     }
     #endregion
 }
@@ -67,22 +74,29 @@ public class RunwayBase
     #region Properties
     IntRange _noteRange;
     RunwayDisplayInfo _displayInfo;
-    Lane[] _lanes;
+    MyLane[] _lanes;
     GameObject _lanePrefab;
     #endregion
 
     #region Constructors
     public RunwayBase(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight,
-        float msToReachStrikeBar)
+        float msToReachStrikeBar, Transform lanesParent)
     {
         _noteRange = GetNoteRange(notes);
-        _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange.Len);
+        _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange);
+        _lanes = new MyLane[_noteRange.Len];
+
+        for (int i = 0; i < _lanes.Length; i++)
+        {
+            var newLane = UnityEngine.Object.Instantiate(_lanePrefab, lanesParent);
+            _lanes[i] = newLane.GetComponent<MyLane>();
+            _lanes[i].Width = _displayInfo.NoteWidth;
+            _lanes[i].XPos = _displayInfo.GetNoteXPos(i);
+        }
     }
     #endregion
 
     #region Methods
-
-
     IntRange GetNoteRange(List<NoteEvtData> notes)
     {
         short min = short.MaxValue;
