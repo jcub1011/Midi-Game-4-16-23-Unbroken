@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +10,8 @@ public class StartMenuScript : MonoBehaviour
     public VisualTreeAsset MainMenuDoc;
     public VisualTreeAsset SongSelectDoc;
     public VisualTreeAsset SongSettingsDoc;
+    public VisualTreeAsset PreviewPanelDoc;
+    public Camera previewCamera;
     private PanelManager _panelManager;
 
     // Constants
@@ -24,7 +27,7 @@ public class StartMenuScript : MonoBehaviour
         // Get panels.
         _panelManager.AddPanel(MAIN_MENU, new MainMenu(MainMenuDoc));
         _panelManager.AddPanel(SELECT_MENU, new SongSelectorMenu(SongSelectDoc));
-        _panelManager.AddPanel(SONG_SETTINGS_MENU, new SongAdjustMenu(SongSettingsDoc));
+        _panelManager.AddPanel(SONG_SETTINGS_MENU, new SongAdjustMenu(SongSettingsDoc, PreviewPanelDoc));
 
         // Init starting menu.
         foreach (var panelRoot in _panelManager.GetPanelRoots()) root.Add(panelRoot);

@@ -8,6 +8,7 @@ using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Video;
 
 // Delegates
 public delegate void ButtonClicked();
@@ -41,6 +42,7 @@ abstract public class GameUIPanel
     protected GameUIPanel(VisualTreeAsset doc)
     {
         Root = doc.Instantiate();
+        Visible = false;
     }
     #endregion
 }
@@ -286,14 +288,33 @@ public class SongAdjustMenu : GameUIPanel
     const string PLAYBACK_DROPDOWN_ID = "PlaybackSpeed";
     const string TRACK_SELECT_CONTAINER_ID = "TrackSelectContainer";
     const string PLAY_BUTTON_ID = "PlayButton";
+    const string PREVIEW_BUTTON_ID = "PreviewButton";
     const string BACK_BUTTON_ID = "BackButton";
     #endregion
 
+    #region Properties
+    PreviewUI _preview;
+    #endregion
+
     #region Constructors
-    public SongAdjustMenu(VisualTreeAsset doc) : base(doc) 
+    public SongAdjustMenu(VisualTreeAsset settingsDoc, VisualTreeAsset previewDoc) : base(settingsDoc) 
     {
+        // Init back button.
         var temp = Root.Q(BACK_BUTTON_ID) as Button;
         temp.clicked += () => OnBackButtonPress.Invoke();
+
+        // Init preview button.
+        temp = Root.Q(PREVIEW_BUTTON_ID) as Button;
+        temp.clicked += ShowPreview;
+
+        // Init play button.
+        temp = Root.Q(PLAY_BUTTON_ID) as Button;
+        temp.clicked += () => { Debug.Log("Play button clicked."); };
+
+        // Init preview UI.
+        _preview = new PreviewUI(previewDoc);
+        Root.Add(_preview.Root);
+        _preview.OnBackButtonPress += HidePreview;
     }
     #endregion
 
@@ -333,6 +354,18 @@ public class SongAdjustMenu : GameUIPanel
             trackSelectContainer.Add(newToggle);
         }
     }
+
+    void ShowPreview()
+    {
+        Debug.Log("Preview button clicked.");
+        Root.Q(SETTINGS_CONTAINER_ID).visible = false;
+        _preview.Show();
+    }
+
+    void HidePreview()
+    {
+        Root.Q(SETTINGS_CONTAINER_ID).visible = true;
+    }
     #endregion
 
     #region Private methods
@@ -347,6 +380,55 @@ public class SongAdjustMenu : GameUIPanel
         {
             container.Clear();
         }
+    }
+    #endregion
+}
+
+public class PreviewUI : GameUIPanel
+{
+    #region Constants
+    const string SLIDER = "TimeSlider";
+    const string BACK_BUTTON = "BackButton";
+    #endregion
+
+    #region Events
+    public ButtonClicked BackButtonClicked;
+    #endregion
+
+    #region Properties
+    float _currentTimeMs;
+    #endregion
+
+    #region Methods
+    void UpdatePlaybackTime(ChangeEvent<float> evt)
+    {
+        Debug.Log($"New Time: {evt.newValue}");
+    }
+
+    public void Show(float time = 0f)
+    {
+        Debug.Log("Displaying preview UI.");
+        Visible = true;
+        _currentTimeMs = time;
+        Debug.Log(_currentTimeMs);
+    }
+
+    void OnBackButtonClick()
+    {
+        Visible = false;
+        BackButtonClicked?.Invoke();
+    }
+    #endregion
+
+    #region Constructors
+    public PreviewUI(VisualTreeAsset doc) : base(doc)
+    {
+        var slider = Root.Q(SLIDER) as Slider;
+        var backButton = Root.Q(BACK_BUTTON) as Button;
+        _currentTimeMs = 0f;
+
+        slider.RegisterValueChangedCallback(UpdatePlaybackTime);
+        backButton.clicked += OnBackButtonClick;
     }
     #endregion
 }
