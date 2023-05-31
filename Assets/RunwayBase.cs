@@ -1,19 +1,23 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 internal class RunwayDisplayInfo
 {
     #region Properties
+    const float WHITE_NOTE_WIDTH_FACTOR = 1.0f;
+    const float BLACK_NOTE_WIDTH_FACTOR = 0.8f;
+
     readonly IntRange _range; // Range of notes.
     readonly float _msToReachRunway;
     public readonly float _strikeBarHeightPercent; // Percent of screen from bottom.
+    float[] _laneWidth;
+    float _whiteNoteWidth; // In unity units.
+    int _widthInWhiteNotes;
     #endregion
 
     #region Getter Setter Methods
     public float UnitsPerMs { get; private set; } // How far the note moves per milisecond.
-    public float NoteWidth { get; private set; } // In unity units.
     private float _runwayHeight;
     public float RunwayHeight
     {
@@ -32,7 +36,7 @@ internal class RunwayDisplayInfo
         set
         {
             _runwayWidth = value;
-            NoteWidth = RunwayWidth / _range.Len;
+            _whiteNoteWidth = RunwayWidth / _widthInWhiteNotes;
         }
     }
     #endregion
@@ -56,15 +60,67 @@ internal class RunwayDisplayInfo
         _msToReachRunway = msLeadup;
         _range = range;
 
+        InitLaneWidthArray();
         RunwayWidth = runwayDimensions[0];
         RunwayHeight = runwayDimensions[1];
     }
     #endregion
 
     #region Methods
-    public float GetNoteXPos(int noteNum)
+    void InitLaneWidthArray()
     {
-        return (_range.Min - noteNum) * NoteWidth;
+        // Create array of lanes for each note number.
+        _laneWidth = new float[_range.Len];
+        _widthInWhiteNotes = 0;
+
+        // Init dict for each note width factor.
+        Dictionary<int, float> widthFactor = new()
+        {
+            { 0, WHITE_NOTE_WIDTH_FACTOR },
+            { 1, BLACK_NOTE_WIDTH_FACTOR },
+            { 2, WHITE_NOTE_WIDTH_FACTOR },
+            { 3, BLACK_NOTE_WIDTH_FACTOR },
+            { 4, WHITE_NOTE_WIDTH_FACTOR },
+            { 5, WHITE_NOTE_WIDTH_FACTOR },
+            { 6, BLACK_NOTE_WIDTH_FACTOR },
+            { 7, WHITE_NOTE_WIDTH_FACTOR },
+            { 8, BLACK_NOTE_WIDTH_FACTOR },
+            { 9, WHITE_NOTE_WIDTH_FACTOR },
+            { 10, BLACK_NOTE_WIDTH_FACTOR },
+            { 11, WHITE_NOTE_WIDTH_FACTOR }
+        };
+
+        // Init multiplication factors for each lane.
+        for (int i = 0; i < _laneWidth.Length; i++)
+        {
+            // Middle c is note number 60. 12 is number of notes in an octave.
+            var noteNum = i + _range.Min;
+            var normalizedNum = noteNum % 12;
+
+            _widthInWhiteNotes += (int)widthFactor[normalizedNum];
+            // Only full size notes will add to the count.
+
+            _laneWidth[i] = widthFactor[normalizedNum];
+        }
+    }
+
+    public float GetLaneXPos(int laneIndex)
+    {
+        var noteOffset = _laneWidth[laneIndex] / 2f;
+        var whiteNotesToTheLeft = 0;
+        
+        // Count number of white notes to the left of the current note.
+        for (int i = 0; i < laneIndex; i++)
+        {
+            whiteNotesToTheLeft += (int)_laneWidth[i];
+        }
+
+        return whiteNotesToTheLeft * _whiteNoteWidth + noteOffset;
+    }
+
+    public float GetLaneWidth(int laneIndex)
+    {
+        return _laneWidth[laneIndex] * _whiteNoteWidth;
     }
     #endregion
 }
@@ -94,8 +150,8 @@ public class RunwayBase
         {
             var newLane = UnityEngine.Object.Instantiate(_lanePrefab, lanesParent);
             _lanes[i] = newLane.GetComponent<NoteLane>();
-            _lanes[i].Width = _displayInfo.NoteWidth;
-            _lanes[i].XPos = _displayInfo.GetNoteXPos(i);
+            _lanes[i].Width = _displayInfo.GetLaneWidth(i);
+            _lanes[i].XPos = _displayInfo.GetLaneXPos(i);
             _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
         }
     }

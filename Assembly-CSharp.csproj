@@ -59,6 +59,7 @@
     <Compile Include="Assets\UI Toolkit\Main Menu\Start Menu\StartMenuScript.cs" />
     <Compile Include="Assets\RunwayBase.cs" />
     <Compile Include="Assets\Events.cs" />
+    <Compile Include="Assets\NoteLane.cs" />
     <Compile Include="Assets\BasePlaybackEngine.cs" />
     <Compile Include="Assets\PriorityQueuePort.cs" />
     <Compile Include="Assets\Runway.cs" />
@@ -73,7 +74,6 @@
     <Compile Include="Assets\MidiHandler.cs" />
     <Compile Include="Assets\Lane.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
-    <Compile Include="Assets\NoteLane.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
