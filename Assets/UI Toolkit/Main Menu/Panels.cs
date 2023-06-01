@@ -1,5 +1,6 @@
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
+using Melanchall.DryWetMidi.MusicTheory;
 using Melanchall.DryWetMidi.Tools;
 using System.Collections.Generic;
 using System.IO;
@@ -283,7 +284,7 @@ public class SongSelectorMenu : GameUIPanel
 public class SongAdjustMenu : GameUIPanel
 {
     #region Constants
-    const string SETTINGS_CONTAINER_ID = "SettingsContainer";
+    const string SETTINGS_SCROLLER_ID = "SettingsScroller";
     const string TITLE_ID = "SongNameSettings";
     const string PLAYBACK_DROPDOWN_ID = "PlaybackSpeed";
     const string TRACK_SELECT_CONTAINER_ID = "TrackSelectContainer";
@@ -323,6 +324,8 @@ public class SongAdjustMenu : GameUIPanel
     {
         MidiFile midiFile = MidiFile.Read(midiPath);
         ClearSettings();
+        // Init title.
+        var title = Root.Q(TITLE_ID) as Label;
 
         // Init playback speed dropdown.
         List<string> playbackSpeeds = new();
@@ -343,28 +346,49 @@ public class SongAdjustMenu : GameUIPanel
         foreach (var evt in midiFile.GetTrackChunks())
         {
             var names = evt.Events.OfType<SequenceTrackNameEvent>();
+            Debug.Log($"Name count: {names.Count()}");
             if (names.Count() > 0) trackNames.Add(names.First().Text);
-            else trackNames.Add("Untitled track.");
+            else trackNames.Add("Untitled Track");
         }
 
-        for (int i = 0; i < trackCount; i++)
+        // First name is name of sequence so skip that.
+        for (int i = 1; i < trackCount; i++)
         {
             var newToggle = new Toggle();
-            newToggle.text = $"{i + 1}: {trackNames[i]}";
+            newToggle.text = $"{i}: {trackNames[i]}";
             trackSelectContainer.Add(newToggle);
         }
+
+        // Set settings title.
+        if (trackNames.Count() > 0)
+        {
+            var defaultNames = new List<string>()
+            {
+                "Untitled Track",
+                "",
+                " "
+            };
+
+            if (defaultNames.Contains(trackNames[0]))
+            {
+                title.text = $"{Path.GetFileNameWithoutExtension(midiPath)} Settings";
+            }
+            else title.text = $"{trackNames[0]} Settings";
+        }
+        else title.text = "Song Settings";
     }
 
     void ShowPreview()
     {
         Debug.Log("Preview button clicked.");
-        Root.Q(SETTINGS_CONTAINER_ID).visible = false;
+        Root.Q(SETTINGS_SCROLLER_ID).style.display = DisplayStyle.None;
         _preview.Show();
     }
 
     void HidePreview()
     {
-        Root.Q(SETTINGS_CONTAINER_ID).visible = true;
+        Debug.Log("Hide preview pressed.");
+        Root.Q(SETTINGS_SCROLLER_ID).style.display = DisplayStyle.Flex;
     }
     #endregion
 
@@ -391,10 +415,6 @@ public class PreviewUI : GameUIPanel
     const string BACK_BUTTON = "BackButton";
     #endregion
 
-    #region Events
-    public ButtonClicked BackButtonClicked;
-    #endregion
-
     #region Properties
     float _currentTimeMs;
     #endregion
@@ -415,8 +435,8 @@ public class PreviewUI : GameUIPanel
 
     void OnBackButtonClick()
     {
+        OnBackButtonPress?.Invoke();
         Visible = false;
-        BackButtonClicked?.Invoke();
     }
     #endregion
 

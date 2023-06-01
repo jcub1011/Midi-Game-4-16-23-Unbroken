@@ -17,27 +17,27 @@
                 "m_VisualTreeAssetBackup": {
                     "instanceID": 0
                 },
-                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/Song Selector/SongSettings.uxml",
+                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/Song Selector/PreviewUI.uxml",
                 "m_VisualTreeAsset": {
                     "fileID": 9197481963319205126,
-                    "guid": "a38d9c966fc209b43b7d576a5cbf8e07",
+                    "guid": "9483dba166c08a94f8f9107b3d6fe6e2",
                     "type": 3
                 },
                 "m_ActiveStyleSheet": {
                     "instanceID": 0
                 },
                 "m_Settings": {
-                    "UxmlGuid": "a38d9c966fc209b43b7d576a5cbf8e07",
-                    "UxmlPath": "Assets/UI Toolkit/Main Menu/Song Selector/SongSettings.uxml",
+                    "UxmlGuid": "9483dba166c08a94f8f9107b3d6fe6e2",
+                    "UxmlPath": "Assets/UI Toolkit/Main Menu/Song Selector/PreviewScreen.uxml",
                     "CanvasX": 0,
                     "CanvasY": 0,
-                    "CanvasWidth": 692,
-                    "CanvasHeight": 389,
+                    "CanvasWidth": 872,
+                    "CanvasHeight": 490,
                     "MatchGameView": true,
                     "ZoomScale": 0.75,
                     "PanOffset": {
-                        "x": 38.25,
-                        "y": 183.625
+                        "x": 53.0,
+                        "y": 119.125
                     },
                     "ColorModeBackgroundOpacity": 1.0,
                     "ImageModeCanvasBackgroundOpacity": 1.0,
@@ -54,7 +54,7 @@
                         "instanceID": 0
                     },
                     "CanvasBackgroundImageScaleMode": 1,
-                    "CanvasBackgroundCameraName": ""
+                    "CanvasBackgroundCameraName": "Preview Camera"
                 },
                 "m_OpenSubDocumentParentIndex": -1,
                 "m_OpenSubDocumentParentSourceTemplateAssetIndex": -1

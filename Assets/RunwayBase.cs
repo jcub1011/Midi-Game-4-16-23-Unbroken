@@ -150,10 +150,10 @@ public class RunwayBase
         {
             var newLane = UnityEngine.Object.Instantiate(_lanePrefab, lanesParent);
             _lanes[i] = newLane.GetComponent<NoteLane>();
-            _lanes[i].Width = _displayInfo.GetLaneWidth(i);
-            _lanes[i].XPos = _displayInfo.GetLaneXPos(i);
             _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
         }
+
+        UpdateLaneDimensions();
     }
     #endregion
 
@@ -170,6 +170,15 @@ public class RunwayBase
         }
 
         return new IntRange(min, max);
+    }
+
+    private void UpdateLaneDimensions()
+    {
+        for (int i = 0; i< _lanes.Length; ++i)
+        {
+            _lanes[i].Width = _displayInfo.GetLaneWidth(i);
+            _lanes[i].XPos = _displayInfo.GetLaneXPos(i);
+        }
     }
 
     protected void DistributeNotes(List<NoteEvtData> notes)
@@ -193,6 +202,8 @@ public class RunwayBase
     {
         _displayInfo.RunwayWidth = width;
         _displayInfo.RunwayHeight = height;
+
+        UpdateLaneDimensions();
     }
     #endregion
 }
