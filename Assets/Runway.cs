@@ -4,6 +4,7 @@ using Melanchall.DryWetMidi.Multimedia;
 using System.Collections.Generic;
 using UnityEngine;
 
+/*
 public class Runway : MonoBehaviour
 {
     IntRange _noteRange;
@@ -226,3 +227,4 @@ public class Runway : MonoBehaviour
         Dispose();
     }
 }
+*/

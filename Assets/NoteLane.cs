@@ -150,7 +150,6 @@ public class DisposableNoteListManager : IDisposable
 public class NoteLane : MonoBehaviour
 {
     #region Properies
-    public GameObject StrikeKey;
     public GameObject NotePrefab;
     float _laneEnterOffset;
     float _laneExitOffset;

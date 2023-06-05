@@ -131,12 +131,11 @@ public class RunwayBase
     IntRange _noteRange;
     RunwayDisplayInfo _displayInfo;
     NoteLane[] _lanes;
-    GameObject _lanePrefab;
     #endregion
 
     #region Constructors
     public RunwayBase(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight,
-        float msToReachStrikeBar, Transform lanesParent)
+        float msToReachStrikeBar, Transform lanesParent, GameObject lanePrefab)
     {
         _noteRange = GetNoteRange(notes);
         _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange);
@@ -148,7 +147,7 @@ public class RunwayBase
 
         for (int i = 0; i < _lanes.Length; i++)
         {
-            var newLane = UnityEngine.Object.Instantiate(_lanePrefab, lanesParent);
+            var newLane = UnityEngine.Object.Instantiate(lanePrefab, lanesParent);
             _lanes[i] = newLane.GetComponent<NoteLane>();
             _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
         }
@@ -181,7 +180,7 @@ public class RunwayBase
         }
     }
 
-    protected void DistributeNotes(List<NoteEvtData> notes)
+    private void DistributeNotes(List<NoteEvtData> notes)
     {
         foreach (var note in notes)
         {
@@ -190,7 +189,7 @@ public class RunwayBase
         }
     }
 
-    protected void UpdateRunway(float playbackTime)
+    public void UpdateRunway(float playbackTime)
     {
         foreach (var lane in _lanes)
         {
@@ -198,12 +197,24 @@ public class RunwayBase
         }
     }
 
-    protected void UpdateRunwayDimensions(float width, float height)
+    public void UpdateRunwayDimensions(float width, float height)
     {
         _displayInfo.RunwayWidth = width;
         _displayInfo.RunwayHeight = height;
 
         UpdateLaneDimensions();
     }
+
+    public void Clear()
+    {
+        foreach(var lane in _lanes)
+        {
+            UnityEngine.Object.Destroy(lane.gameObject);
+        }
+
+        _lanes = null;
+        _displayInfo = null;
+        _noteRange = null;
+    } 
     #endregion
 }

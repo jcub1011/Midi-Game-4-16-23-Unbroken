@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
+/*
 struct LaneWrapper
 {
     public GameObject Lane;
     public Lane Script;
-}
+}*/
 
 public class NoteListManager
 {
@@ -213,6 +214,7 @@ public class MyLane : MonoBehaviour
     #endregion
 }
 
+/*
 public class Lane : MonoBehaviour
 {
     #region Properties
@@ -506,4 +508,4 @@ public class Lane : MonoBehaviour
         return accuracy;
     }
     #endregion
-}
+}*/

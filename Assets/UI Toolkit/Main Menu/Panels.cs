@@ -430,7 +430,7 @@ public class PreviewUI : GameUIPanel
         Debug.Log("Displaying preview UI.");
         Visible = true;
         _currentTimeMs = time;
-        Debug.Log(_currentTimeMs);
+        Debug.Log($"Playback started @ {_currentTimeMs}ms");
     }
 
     void OnBackButtonClick()
