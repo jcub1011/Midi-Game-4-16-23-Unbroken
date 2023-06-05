@@ -67,7 +67,6 @@
     <Compile Include="Assets\Range.cs" />
     <Compile Include="Assets\Scripts\SceneParameters.cs" />
     <Compile Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.cs" />
-    <Compile Include="Assets\DisplayManager.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
     <Compile Include="Assets\UI Toolkit\Main Menu\Song Selector\PreviewRunway.cs" />
