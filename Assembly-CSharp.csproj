@@ -60,9 +60,7 @@
     <Compile Include="Assets\RunwayBase.cs" />
     <Compile Include="Assets\Events.cs" />
     <Compile Include="Assets\NoteLane.cs" />
-    <Compile Include="Assets\BasePlaybackEngine.cs" />
     <Compile Include="Assets\PriorityQueuePort.cs" />
-    <Compile Include="Assets\Runway.cs" />
     <Compile Include="Assets\UI Toolkit\Main Menu\Panels.cs" />
     <Compile Include="Assets\CustomTickGenerator.cs" />
     <Compile Include="Assets\MidiParser.cs" />
@@ -71,8 +69,6 @@
     <Compile Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.cs" />
     <Compile Include="Assets\DisplayManager.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
-    <Compile Include="Assets\MidiHandler.cs" />
-    <Compile Include="Assets\Lane.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
     <Compile Include="Assets\UI Toolkit\Main Menu\Song Selector\PreviewRunway.cs" />
   </ItemGroup>

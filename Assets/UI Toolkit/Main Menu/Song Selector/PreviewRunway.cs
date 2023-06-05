@@ -20,5 +20,10 @@ public class PreviewRunway : MonoBehaviour
         _runway = new(notes, dimensions, strikeBarHeight, 
             msToReachStrikeBar, transform, LanePrefab);
     }
+
+    public void Unload()
+    {
+        _runway?.Clear();
+    }
     #endregion
 }

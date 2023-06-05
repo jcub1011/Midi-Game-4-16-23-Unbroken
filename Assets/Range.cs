@@ -1,7 +1,4 @@
-﻿using Unity.VisualScripting;
-using UnityEditor;
-using UnityEngine;
-
+﻿
 public class IntRange
 {
     public int Min { get; private set; }

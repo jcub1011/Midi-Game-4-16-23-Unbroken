@@ -28,7 +28,15 @@ public class NoteWrapper
     }
 }
 
-public class DisposableNoteListManager : IDisposable
+public class NoteEvtData
+{
+    public short number;
+    public float onTime;
+    public float offTime;
+    public float len;
+}
+
+public class NoteListManager
 {
     List<NoteEvtData> _notes = new();
     public LinkedList<NoteWrapper> ActiveNotes = new();
@@ -43,35 +51,10 @@ public class DisposableNoteListManager : IDisposable
         get { return _notes.Count; }
     }
 
-    #region Interface
-    ~DisposableNoteListManager()
+    public void ClearNoteList()
     {
-        Dispose(false);
+        _notes.Clear();
     }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    protected void Dispose(bool disposing)
-    {
-
-        if (disposing)
-        {
-            // Clean managed resources.
-            _notes = null;
-        }
-
-        // Clean unmanaged resources.
-        foreach (var note in ActiveNotes)
-        {
-            UnityEngine.Object.Destroy(note.Note);
-        }
-        ActiveNotes.Clear();
-    }
-    #endregion
 
     public void AddNewNote(NoteEvtData noteEvtData)
     {
@@ -80,10 +63,7 @@ public class DisposableNoteListManager : IDisposable
 
     public void OverwriteNoteList(List<NoteEvtData> notes)
     {
-        Dispose(true);
         _notes = notes;
-        NextYoungestIndex = 0;
-        NextOldestIndex = -1;
     }
 
     public NoteWrapper PeekCurrentYoungestNote()
