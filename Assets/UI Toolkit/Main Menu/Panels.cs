@@ -5,6 +5,7 @@ using Melanchall.DryWetMidi.Tools;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
@@ -295,6 +296,9 @@ public class SongAdjustMenu : GameUIPanel
 
     #region Properties
     PreviewUI _preview;
+    TrackChunk[] _tracksToPlay;
+    List<TrackChunk> _tracks;
+    TempoMap _tempoMap;
     #endregion
 
     #region Constructors
@@ -323,6 +327,7 @@ public class SongAdjustMenu : GameUIPanel
     public void LoadSongSettings(string midiPath)
     {
         MidiFile midiFile = MidiFile.Read(midiPath);
+        _tempoMap = midiFile.GetTempoMap();
         ClearSettings();
         // Init title.
         var title = Root.Q(TITLE_ID) as Label;
@@ -341,20 +346,22 @@ public class SongAdjustMenu : GameUIPanel
         var trackSelectContainer = Root.Q(TRACK_SELECT_CONTAINER_ID);
 
         var trackNames = new List<string>();
-        var trackCount = midiFile.GetTrackChunks().Count();
-
-        foreach (var evt in midiFile.GetTrackChunks())
+        _tracks = midiFile.GetTrackChunks().ToList();
+        _tracksToPlay = new TrackChunk[_tracks.Count];
+        
+        foreach (var track in _tracks)
         {
-            var names = evt.Events.OfType<SequenceTrackNameEvent>();
+            var names = track.Events.OfType<SequenceTrackNameEvent>();
             Debug.Log($"Name count: {names.Count()}");
             if (names.Count() > 0) trackNames.Add(names.First().Text);
             else trackNames.Add("Untitled Track");
         }
 
         // First name is name of sequence so skip that.
-        for (int i = 1; i < trackCount; i++)
+        for (int i = 1; i < _tracks.Count; i++)
         {
             var newToggle = new Toggle();
+            newToggle.RegisterCallback<ChangeEvent<bool>, int>(AdjustTrackPlayList, i);
             newToggle.text = $"{i}: {trackNames[i]}";
             trackSelectContainer.Add(newToggle);
         }
@@ -378,11 +385,43 @@ public class SongAdjustMenu : GameUIPanel
         else title.text = "Song Settings";
     }
 
+    void AdjustTrackPlayList(ChangeEvent<bool> evt, int index)
+    {
+        Debug.Log($"Toggle {index} changed to {evt.newValue}.");
+        // Add or remove the track.
+        _tracksToPlay[index] = evt.newValue ? _tracks[index] : null;
+    }
+
     void ShowPreview()
     {
         Debug.Log("Preview button clicked.");
         Root.Q(SETTINGS_SCROLLER_ID).style.display = DisplayStyle.None;
-        _preview.Show();
+
+        // Get notes to display.
+        var tracks = new List<TrackChunk>();
+        var notes = new List<NoteEvtData>();
+        MidiFile tempMidi;
+
+        foreach (var track in _tracksToPlay)
+        {
+            if (track == null) continue;
+            tracks.Add(track);
+        }
+
+        tempMidi = new MidiFile(tracks); // For sorting notes appropriately.
+
+        foreach(var note in tempMidi.GetNotes())
+        {
+            var temp = new NoteEvtData();
+            temp.Number = note.NoteNumber;
+            temp.OnTime = (float)note.TimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
+            temp.Length = (float)note.LengthAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
+
+            notes.Add(temp);
+        }
+
+
+        _preview.Show(notes);
     }
 
     void HidePreview()
@@ -413,29 +452,32 @@ public class PreviewUI : GameUIPanel
     #region Constants
     const string SLIDER = "TimeSlider";
     const string BACK_BUTTON = "BackButton";
+    const string PREVIEW_RUNWAY_NAME = "PreviewRunway";
     #endregion
 
     #region Properties
-    float _currentTimeMs;
+    PreviewRunway _runway;
     #endregion
 
     #region Methods
     void UpdatePlaybackTime(ChangeEvent<float> evt)
     {
         Debug.Log($"New Time: {evt.newValue}");
+        _runway.UpdateTime(evt.newValue);
     }
 
-    public void Show(float time = 0f)
+    public void Show(List<NoteEvtData> notes, float time = 0f)
     {
         Debug.Log("Displaying preview UI.");
         Visible = true;
-        _currentTimeMs = time;
-        Debug.Log($"Playback started @ {_currentTimeMs}ms");
+        _runway.Initalize(notes, 5f, 4000f, time);
+        Debug.Log($"Playback started @ {time}ms");
     }
 
     void OnBackButtonClick()
     {
         OnBackButtonPress?.Invoke();
+        _runway.Unload();
         Visible = false;
     }
     #endregion
@@ -445,10 +487,12 @@ public class PreviewUI : GameUIPanel
     {
         var slider = Root.Q(SLIDER) as Slider;
         var backButton = Root.Q(BACK_BUTTON) as Button;
-        _currentTimeMs = 0f;
 
         slider.RegisterValueChangedCallback(UpdatePlaybackTime);
         backButton.clicked += OnBackButtonClick;
+
+        // Init Preview Runway.
+        _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
     }
     #endregion
 }

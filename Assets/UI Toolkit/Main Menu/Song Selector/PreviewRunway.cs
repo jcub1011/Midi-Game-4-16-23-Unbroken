@@ -10,8 +10,11 @@ public class PreviewRunway : MonoBehaviour
     #endregion
 
     #region Methods
-    public void Initalize(List<NoteEvtData> notes, float strikeBarHeight, float msToReachStrikeBar)
+    public void Initalize(List<NoteEvtData> notes, float strikeBarHeight, float msToReachStrikeBar,
+        float startTime)
     {
+        UpdateTime(startTime);
+
         _runway?.Clear();
         float height = Camera.main.orthographicSize * 2f;
         float width = height * Camera.main.aspect;
@@ -24,6 +27,11 @@ public class PreviewRunway : MonoBehaviour
     public void Unload()
     {
         _runway?.Clear();
+    }
+
+    public void UpdateTime(float playbackTime)
+    {
+        _runway?.UpdateRunway(playbackTime);
     }
     #endregion
 }

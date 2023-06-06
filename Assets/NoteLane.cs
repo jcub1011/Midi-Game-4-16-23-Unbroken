@@ -22,18 +22,54 @@ public class NoteWrapper
     public NoteWrapper(GameObject note, NoteEvtData data)
     {
         Note = note;
-        Length = data.len;
-        OnTime = data.onTime;
-        OffTime = data.offTime;
+        Length = data.Length;
+        OnTime = data.OnTime;
+        OffTime = data.OffTime;
     }
 }
 
 public class NoteEvtData
 {
-    public short number;
-    public float onTime;
-    public float offTime;
-    public float len;
+    public short Number;
+    public float OnTime;
+
+    #region Getter Setter
+    private float _offTime;
+    /// <summary>
+    /// Automatically sets the length.
+    /// </summary>
+    public float OffTime
+    {
+        get
+        {
+            return _offTime;
+        }
+
+        set
+        {
+            _offTime = value;
+            Length = value - OnTime;
+        }
+    }
+
+    private float _length;
+    /// <summary>
+    /// Automatically sets the off time.
+    /// </summary>
+    public float Length
+    {
+        get
+        {
+            return _length;
+        }
+
+        set
+        {
+            _length = value;
+            OffTime = OnTime + value;
+        }
+    }
+    #endregion
 }
 
 public class NoteListManager
@@ -103,6 +139,7 @@ public class NoteListManager
     {
         if (NextOldestIndex < 0) return;
         var nextOldNote = UnityEngine.Object.Instantiate(notePreFab, parent);
+        nextOldNote.GetComponent<SpriteRenderer>().enabled = true;
         var wrapper = new NoteWrapper(nextOldNote, _notes[NextOldestIndex]);
         ActiveNotes.AddFirst(wrapper);
         NextOldestIndex--;
@@ -121,6 +158,7 @@ public class NoteListManager
     {
         if (NextYoungestIndex == _notes.Count) return;
         var nextNewestNote = UnityEngine.Object.Instantiate(notePreFab, parent);
+        nextNewestNote.GetComponent<SpriteRenderer>().enabled = true;
         var wrapper = new NoteWrapper(nextNewestNote, _notes[NextYoungestIndex]);
         ActiveNotes.AddLast(wrapper);
         NextYoungestIndex++;
@@ -173,7 +211,7 @@ public class NoteLane : MonoBehaviour
     bool NoteVisible(float playbackTime, NoteEvtData noteEvtData)
     {
         if (noteEvtData == null) return false;
-        return NoteVisible(playbackTime, noteEvtData.onTime, noteEvtData.offTime);
+        return NoteVisible(playbackTime, noteEvtData.OnTime, noteEvtData.OffTime);
     }
 
     /// <summary>

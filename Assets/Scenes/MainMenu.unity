@@ -168,7 +168,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffef7e6bcb79eca4da539606e621a82f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StrikeKey: {fileID: 0}
   NotePrefab: {fileID: 1475100287}
 --- !u!1 &718186790
 GameObject:
@@ -552,4 +551,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e0ccf61014510d4ea5e728b256d3a7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LanePrefab: {fileID: 0}
+  LanePrefab: {fileID: 568848277}

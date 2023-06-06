@@ -164,8 +164,8 @@ public class RunwayBase
 
         foreach (var note in notes)
         {
-            if (note.number < min) min = note.number;
-            if (note.number > max) max = note.number;
+            if (note.Number < min) min = note.Number;
+            if (note.Number > max) max = note.Number;
         }
 
         return new IntRange(min, max);
@@ -177,15 +177,6 @@ public class RunwayBase
         {
             _lanes[i].Width = _displayInfo.GetLaneWidth(i);
             _lanes[i].XPos = _displayInfo.GetLaneXPos(i);
-        }
-    }
-
-    private void DistributeNotes(List<NoteEvtData> notes)
-    {
-        foreach (var note in notes)
-        {
-            var index = note.number - _noteRange.Min;
-            _lanes[index].AddNote(note);
         }
     }
 
