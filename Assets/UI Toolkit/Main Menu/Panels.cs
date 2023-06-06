@@ -415,6 +415,7 @@ public class SongAdjustMenu : GameUIPanel
             var temp = new NoteEvtData();
             temp.Number = note.NoteNumber;
             temp.OnTime = (float)note.TimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
+            temp.OffTime = (float)note.EndTimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
             temp.Length = (float)note.LengthAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
 
             notes.Add(temp);
@@ -466,11 +467,12 @@ public class PreviewUI : GameUIPanel
         _runway.UpdateTime(evt.newValue);
     }
 
-    public void Show(List<NoteEvtData> notes, float time = 0f)
+    public void Show(List<NoteEvtData> notes, float strikeBarHeight = 0.2f, 
+        float msLeadup = 4000f, float time = 0f)
     {
         Debug.Log("Displaying preview UI.");
         Visible = true;
-        _runway.Initalize(notes, 5f, 4000f, time);
+        _runway.Initalize(notes, strikeBarHeight, msLeadup, time);
         Debug.Log($"Playback started @ {time}ms");
     }
 

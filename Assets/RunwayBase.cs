@@ -46,7 +46,8 @@ internal class RunwayDisplayInfo
     /// Creates a runway display info manager class.
     /// </summary>
     /// <param name="runwayDimensions">Inital dimensions of the runway.</param>
-    /// <param name="strikeBarHeight">Height of the strike bar as a percent where 1 = 100%.</param>
+    /// <param name="strikeBarHeight">Height of the strike bar as a percent of runway from the bottom
+    /// where 1 = 100%.</param>
     /// <param name="msLeadup">Time before the first note hits the strike bar.</param>
     /// <param name="range">Range of notes to display.</param>
     public RunwayDisplayInfo(float[] runwayDimensions, float strikeBarHeight, float msLeadup, IntRange range)
@@ -141,15 +142,24 @@ public class RunwayBase
         _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange);
         _lanes = new NoteLane[_noteRange.Len];
 
+        Debug.Log($"Range of notes {_noteRange.Len}.");
+
         // Calculate time offsets.
         float runwayEnterOffset = msToReachStrikeBar;
         float runwayExitOffset = _displayInfo.RunwayHeight * strikeBarHeight / _displayInfo.UnitsPerMs;
 
+        // Initalize lanes.
         for (int i = 0; i < _lanes.Length; i++)
         {
             var newLane = UnityEngine.Object.Instantiate(lanePrefab, lanesParent);
             _lanes[i] = newLane.GetComponent<NoteLane>();
             _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
+        }
+
+        // Distribute notes.
+        foreach (var note in notes)
+        {
+            _lanes[note.Number - _noteRange.Min].AddNote(note);
         }
 
         UpdateLaneDimensions();
@@ -182,6 +192,7 @@ public class RunwayBase
 
     public void UpdateRunway(float playbackTime)
     {
+        if (_lanes == null) return;
         foreach (var lane in _lanes)
         {
             lane.UpdateLane(playbackTime, _displayInfo.UnitsPerMs);
@@ -198,9 +209,12 @@ public class RunwayBase
 
     public void Clear()
     {
-        foreach(var lane in _lanes)
+        if (_lanes != null)
         {
-            UnityEngine.Object.Destroy(lane.gameObject);
+            foreach(var lane in _lanes)
+            {
+                UnityEngine.Object.Destroy(lane.gameObject);
+            }
         }
 
         _lanes = null;

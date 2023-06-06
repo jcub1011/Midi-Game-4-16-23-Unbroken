@@ -32,44 +32,8 @@ public class NoteEvtData
 {
     public short Number;
     public float OnTime;
-
-    #region Getter Setter
-    private float _offTime;
-    /// <summary>
-    /// Automatically sets the length.
-    /// </summary>
-    public float OffTime
-    {
-        get
-        {
-            return _offTime;
-        }
-
-        set
-        {
-            _offTime = value;
-            Length = value - OnTime;
-        }
-    }
-
-    private float _length;
-    /// <summary>
-    /// Automatically sets the off time.
-    /// </summary>
-    public float Length
-    {
-        get
-        {
-            return _length;
-        }
-
-        set
-        {
-            _length = value;
-            OffTime = OnTime + value;
-        }
-    }
-    #endregion
+    public float OffTime;
+    public float Length;
 }
 
 public class NoteListManager
@@ -345,6 +309,12 @@ public class NoteLane : MonoBehaviour
     #region Public Methods
     public void UpdateLane(float playbackTime, float unitsPerMs)
     {
+        if (_notePlayList == null)
+        {
+            Debug.Log($"Lane has no notes.");
+            return;
+        }
+
         UpdateActiveNoteList(playbackTime);
         UpdateNotePositions(playbackTime, unitsPerMs);
         UnmanageNotesNotVisible(playbackTime);
