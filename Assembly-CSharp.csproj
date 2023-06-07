@@ -70,18 +70,21 @@
     <Compile Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
     <Compile Include="Assets\PlaybackManager.cs" />
-    <Compile Include="Assets\UI Toolkit\Main Menu\Main Menu\MainMenuDocumentManager.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Main Menu\MainStartMenu.cs" />
     <Compile Include="Assets\UI Toolkit\Main Menu\Main Menu\StartMenu.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Song Selector\SongSelector.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Song Settings\SongSettings.cs" />
+    <Compile Include="Assets\UI Toolkit\Main Menu\Preview\Preview.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\UI Toolkit\Main Menu\Main Menu\Main Menu.uxml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
-    <None Include="Assets\UI Toolkit\Main Menu\SongSettings.uxml" />
+    <None Include="Assets\UI Toolkit\Main Menu\Song Settings\SongSettings.uxml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
-    <None Include="Assets\UI Toolkit\Main Menu\PreviewUI.uxml" />
+    <None Include="Assets\UI Toolkit\Main Menu\Preview\PreviewUI.uxml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall.DryWetMidi.dll" />
@@ -98,7 +101,7 @@
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall_DryWetMidi_Native64.dll" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
-    <None Include="Assets\UI Toolkit\Main Menu\SongSelector.uxml" />
+    <None Include="Assets\UI Toolkit\Main Menu\Song Selector\SongSelector.uxml" />
     <None Include="Assets\Melanchall\DryWetMIDI\README.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />

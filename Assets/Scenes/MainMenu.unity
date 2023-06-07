@@ -133,6 +133,7 @@ GameObject:
   m_Component:
   - component: {fileID: 517922481}
   - component: {fileID: 517922482}
+  - component: {fileID: 517922483}
   m_Layer: 0
   m_Name: Preview
   m_TagString: Untagged
@@ -171,6 +172,18 @@ MonoBehaviour:
   m_ParentUI: {fileID: 1092695812}
   sourceAsset: {fileID: 9197481963319205126, guid: 9483dba166c08a94f8f9107b3d6fe6e2, type: 3}
   m_SortingOrder: 0
+--- !u!114 &517922483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 517922480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c4289c899d6b2a47880224f7d47331d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &568848277
 GameObject:
   m_ObjectHideFlags: 0
@@ -378,6 +391,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1017783334}
   - component: {fileID: 1017783335}
+  - component: {fileID: 1017783336}
   m_Layer: 0
   m_Name: SongSelector
   m_TagString: Untagged
@@ -416,6 +430,18 @@ MonoBehaviour:
   m_ParentUI: {fileID: 1092695812}
   sourceAsset: {fileID: 9197481963319205126, guid: 8d02a663a04d23f45bd1b5189f06a3a8, type: 3}
   m_SortingOrder: 0
+--- !u!114 &1017783336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1017783333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13460ef6e17ca52428fe494248e9a3ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1092695811
 GameObject:
   m_ObjectHideFlags: 0
@@ -688,6 +714,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1715320199}
   - component: {fileID: 1715320200}
+  - component: {fileID: 1715320201}
   m_Layer: 0
   m_Name: SongSettings
   m_TagString: Untagged
@@ -726,3 +753,15 @@ MonoBehaviour:
   m_ParentUI: {fileID: 1092695812}
   sourceAsset: {fileID: 9197481963319205126, guid: a38d9c966fc209b43b7d576a5cbf8e07, type: 3}
   m_SortingOrder: 0
+--- !u!114 &1715320201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1715320198}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12554019919a85642ae19acd9b2fa992, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
