@@ -12,10 +12,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
 
-// Delegates
-public delegate void ButtonClicked();
-public delegate void SongButtonClicked(string midiPath);
-
 abstract public class GameUIPanel
 {
     #region Properties
@@ -318,6 +314,8 @@ public class SongAdjustMenu : GameUIPanel
 
         // Init preview UI.
         _preview = new PreviewUI(previewDoc);
+        _preview.Root.style.width = Length.Percent(100f);
+        _preview.Root.style.height = Length.Percent(100f);
         Root.Add(_preview.Root);
         _preview.OnBackButtonPress += HidePreview;
     }

@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="PreviewContainer" style="flex-grow: 1;">
+        <ui:Button text="Close Preview" display-tooltip-when-elided="true" name="BackButton" focusable="false" style="position: absolute; right: 0; top: 0; margin-left: 6px; margin-right: 6px; margin-top: 6px; margin-bottom: 6px; align-items: stretch;" />
+        <ui:VisualElement name="TimeInterface" style="align-items: auto; justify-content: flex-start; flex-direction: row; flex-wrap: nowrap; overflow: visible; max-width: 100%; position: absolute; transform-origin: left bottom; bottom: 0; left: 0; visibility: visible; display: flex;">
+            <ui:Label text="Start Time" display-tooltip-when-elided="true" name="StartTime" style="align-items: auto; width: 150px; flex-grow: 1; -unity-text-align: upper-center;" />
+            <ui:Slider value="0" high-value="100" name="TimeSlider" focusable="true" style="align-items: stretch; flex-direction: row; justify-content: flex-start; flex-wrap: nowrap; flex-shrink: 1; flex-grow: 1; -unity-text-align: upper-left; white-space: normal;" />
+            <ui:Label text="End Time" display-tooltip-when-elided="true" name="EndTime" style="width: 150px; flex-grow: 1; -unity-text-align: upper-center;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
