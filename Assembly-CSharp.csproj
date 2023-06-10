@@ -63,13 +63,12 @@
     <Compile Include="Assets\PriorityQueuePort.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Panels.cs" />
     <Compile Include="Assets\CustomTickGenerator.cs" />
-    <Compile Include="Assets\UI Toolkit\StartMenu\Main Menu\MainStartMenu.cs" />
+    <Compile Include="Assets\UI Toolkit\StartMenu\DocHandler.cs" />
     <Compile Include="Assets\MidiParser.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Preview\Preview.cs" />
     <Compile Include="Assets\Range.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\PreviewRunway.cs" />
     <Compile Include="Assets\Scripts\SceneParameters.cs" />
-    <Compile Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Song Settings\SongSettings.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Song Selector\SongSelector.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
@@ -93,7 +92,6 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall.DryWetMidi.xml" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
-    <None Include="Assets\UI Toolkit\Scrubbing Overlay\ScrubbingOverlay.uxml" />
     <None Include="Assets\Melanchall\DryWetMIDI\Melanchall_DryWetMidi_Native32.dll" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
