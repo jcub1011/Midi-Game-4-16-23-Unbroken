@@ -19,6 +19,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
     public void OnShow()
     {
         Debug.Log("Displaying song selector.");
+        (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) as Button).clicked += BackButtonPressed;
         RefreshSongsList(Directory.GetCurrentDirectory() + "/Assets/MidiFiles");
     }
 
@@ -30,8 +31,6 @@ public class SongSelector : MonoBehaviour, IDocHandler
     public void OnDocAdd()
     {
         Debug.Log("Song selector panel added.");
-        (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) 
-            as Button).clicked += BackButtonPressed;
     }
 
     public void OnDocRemove()
@@ -50,6 +49,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
     void DisplaySongSettings(string song)
     {
         Debug.Log($"Displaying settings for {song}");
+        DocHandler.DisplayDoc(Documents.SongSetts, song);
     }
 
     void RefreshSongsList(string songsFolderPath)
@@ -77,6 +77,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
         songListContainer.style.marginRight = 10;
 
         // Add songs to list container.
+        string songs = "";
         foreach (var song in songList)
         {
             // Skip if not a midi file.
@@ -84,7 +85,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
 
             var songName = Path.GetFileNameWithoutExtension(song);
             var newButton = new Button();
-            Debug.Log($"Found song: {songName}");
+            songs += $"{songName}\n";
 
 
             // Modify button values.
@@ -101,6 +102,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
             // Add to container.
             songListContainer.Add(newButton);
         }
+        Debug.Log($"Midi files found:\n{songs}");
 
         rootContainer.Add(songListContainer);
     }

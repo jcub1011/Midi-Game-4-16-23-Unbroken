@@ -24,6 +24,15 @@ namespace MainStartMenu
         public void OnDocRemove();
     }
 
+    public interface IFileInput
+    {
+        /// <summary>
+        /// Called when document is made visible.
+        /// </summary>
+        /// <param name="filePath">Path of file.</param>
+        public void OnShow(string filePath);
+    }
+
     public static class Documents
     {
         public static string Main = "Main";
@@ -151,6 +160,19 @@ namespace MainStartMenu
             if (_docHistory.Count > 0) Hide(_docHistory.Peek());
             Show(name);
             _docHistory.Push(name);
+        }
+
+        /// <summary>
+        /// Hides the currently visible document and unhides the specified document.
+        /// </summary>
+        /// <param name="name">Name of document to display.</param>
+        /// <param name="filePath">Path of file to pass to document being shown.</param>
+        /// <exception cref="System.MethodAccessException"></exception>
+        static public void DisplayDoc(string name, string filePath)
+        {
+            DisplayDoc(name);
+            var script = _documents[name].Script as IFileInput ?? throw new System.MethodAccessException($"'{name}' cannot take a file path argument.");
+            script.OnShow(filePath);
         }
 
         /// <summary>
