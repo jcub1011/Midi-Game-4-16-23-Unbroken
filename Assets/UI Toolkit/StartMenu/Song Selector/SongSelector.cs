@@ -1,10 +1,10 @@
 using MainStartMenu;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Directory = System.IO.Directory;
 
 public class SongSelector : MonoBehaviour, IDocHandler
 {
@@ -19,18 +19,26 @@ public class SongSelector : MonoBehaviour, IDocHandler
     public void OnShow()
     {
         Debug.Log("Displaying song selector.");
+        RefreshSongsList(Directory.GetCurrentDirectory() + "/Assets/MidiFiles");
     }
+
     public void OnHide()
     {
         Debug.Log("Hiding song selector.");
     }
-    #endregion
 
-    void Start()
+    public void OnPanelAdd()
     {
+        Debug.Log("Song selector panel added.");
         (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) 
             as Button).clicked += BackButtonPressed;
     }
+
+    public void OnPanelRemove()
+    {
+        Debug.Log("Song selector panel removed.");
+    }
+    #endregion
 
     #region Methods
     void BackButtonPressed()

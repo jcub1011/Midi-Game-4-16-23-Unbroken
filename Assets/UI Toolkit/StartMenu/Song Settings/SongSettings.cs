@@ -10,9 +10,20 @@ public class SongSettings : MonoBehaviour, IDocHandler
     {
         Debug.Log("Displaying song settings.");
     }
+
     public void OnHide()
     {
         Debug.Log("Hiding song settings.");
+    }
+
+    public void OnPanelAdd()
+    {
+        Debug.Log("Song settings panel added.");
+    }
+
+    public void OnPanelRemove()
+    {
+        Debug.Log("Song settings panel removed.");
     }
     #endregion
 }

@@ -8,6 +8,8 @@ namespace MainStartMenu
     {
         public void OnShow();
         public void OnHide();
+        public void OnPanelAdd();
+        public void OnPanelRemove();
     }
 
     public static class Documents
@@ -28,8 +30,8 @@ namespace MainStartMenu
     public static class DocHandler
     {
         #region Properties
-        static Dictionary<string, DocScriptBundle> _documents = new();
-        static Stack<string> _docHistory = new();
+        static readonly Dictionary<string, DocScriptBundle> _documents = new();
+        static readonly Stack<string> _docHistory = new();
         #endregion
 
         #region Methods
@@ -42,6 +44,7 @@ namespace MainStartMenu
         {
             document.rootVisualElement.style.display = DisplayStyle.None;
             _documents.Add(name, new DocScriptBundle { Doc = document, Script = script });
+            script.OnPanelAdd();
         }
 
         /// <summary>
@@ -115,16 +118,27 @@ namespace MainStartMenu
             return rootDict;
         }
 
+        static private void Show(string name)
+        {
+            GetRoot(name).style.display = DisplayStyle.Flex;
+            _documents[name].Script.OnShow();
+        }
+
+        static private void Hide(string name)
+        {
+            GetRoot(name).style.display = DisplayStyle.None;
+            _documents[name].Script.OnHide();
+        }
+
         /// <summary>
         /// Hides the currently visible document and unhides the specified document.
         /// </summary>
         /// <param name="name">Name of document to display.</param>
-        static public void Show(string name)
+        static public void DisplayDoc(string name)
         {
-            if (_docHistory.Count > 0) GetRoot(_docHistory.Peek()).style.display = DisplayStyle.None;
-            GetRoot(name).style.display = DisplayStyle.Flex;
+            if (_docHistory.Count > 0) Hide(_docHistory.Peek());
+            Show(name);
             _docHistory.Push(name);
-            _documents[name].Script.OnShow();
         }
 
         /// <summary>
@@ -136,14 +150,11 @@ namespace MainStartMenu
             if (_docHistory.Count < 2) throw new System.IndexOutOfRangeException(
                 "There is no previous document to return to.");
 
-            var previous = _docHistory.Pop();
-            var next = _docHistory.Peek();
+            var current = _docHistory.Pop();
+            var previous = _docHistory.Peek();
 
-            GetRoot(previous).style.display = DisplayStyle.None;
-            _documents[previous].Script.OnHide();
-
-            GetRoot(next).style.display = DisplayStyle.Flex;
-            _documents[next].Script.OnShow();
+            Hide(current);
+            Show(previous);
         }
         #endregion
     }

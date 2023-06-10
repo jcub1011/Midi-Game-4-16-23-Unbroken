@@ -410,11 +410,13 @@ public class SongAdjustMenu : GameUIPanel
 
         foreach(var note in tempMidi.GetNotes())
         {
-            var temp = new NoteEvtData();
-            temp.Number = note.NoteNumber;
-            temp.OnTime = (float)note.TimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
-            temp.OffTime = (float)note.EndTimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
-            temp.Length = (float)note.LengthAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds;
+            var temp = new NoteEvtData
+            {
+                Number = note.NoteNumber,
+                OnTime = (float)note.TimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds,
+                OffTime = (float)note.EndTimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds,
+                Length = (float)note.LengthAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds
+            };
 
             notes.Add(temp);
         }

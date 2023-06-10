@@ -16,9 +16,20 @@ public class StartMenu : MonoBehaviour, IDocHandler
     {
         Debug.Log("Displaying main menu.");
     }
+
     public void OnHide()
     {
         Debug.Log("Hiding main menu.");
+    }
+
+    public void OnPanelAdd()
+    {
+        Debug.Log("Start menu panel added.");
+    }
+
+    public void OnPanelRemove()
+    {
+        Debug.Log("Start menu panel removed.");
     }
     #endregion
 
@@ -39,7 +50,7 @@ public class StartMenu : MonoBehaviour, IDocHandler
             transform.GetChild(2).GetComponent<Preview>());
 
         // Show Main.
-        DocHandler.Show(Documents.Main);
+        DocHandler.DisplayDoc(Documents.Main);
 
         // Register Buttons.
         var mainMenu = DocHandler.GetRoot(Documents.Main);
@@ -56,6 +67,7 @@ public class StartMenu : MonoBehaviour, IDocHandler
     void StartButtonPressed()
     {
         Debug.Log("Start button pressed.");
+        DocHandler.DisplayDoc(Documents.SongSelect);
     }
 
     void SettingsButtonPressed()

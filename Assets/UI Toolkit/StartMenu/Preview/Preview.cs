@@ -15,5 +15,15 @@ public class Preview : MonoBehaviour, IDocHandler
     {
         Debug.Log("Hiding preview.");
     }
+
+    public void OnPanelAdd()
+    {
+        Debug.Log("Preview panel added.");
+    }
+
+    public void OnPanelRemove()
+    {
+        Debug.Log("Preview panel removed.");
+    }
     #endregion
 }

@@ -17,27 +17,27 @@
                 "m_VisualTreeAssetBackup": {
                     "instanceID": 0
                 },
-                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/SongSelector.uxml",
+                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/Main Menu/Start Menu/MainUIContainer.uxml",
                 "m_VisualTreeAsset": {
                     "fileID": 9197481963319205126,
-                    "guid": "8d02a663a04d23f45bd1b5189f06a3a8",
+                    "guid": "fe2cb5686bd894047816e11f846ccf28",
                     "type": 3
                 },
                 "m_ActiveStyleSheet": {
                     "instanceID": 0
                 },
                 "m_Settings": {
-                    "UxmlGuid": "8d02a663a04d23f45bd1b5189f06a3a8",
-                    "UxmlPath": "Assets/UI Toolkit/Start Menu/SongSelector/SongSelector.uxml",
+                    "UxmlGuid": "fe2cb5686bd894047816e11f846ccf28",
+                    "UxmlPath": "Assets/UI Toolkit/Main Menu/Start Menu/StartMenu.uxml",
                     "CanvasX": 0,
                     "CanvasY": 0,
-                    "CanvasWidth": 692,
-                    "CanvasHeight": 389,
+                    "CanvasWidth": 856,
+                    "CanvasHeight": 482,
                     "MatchGameView": true,
-                    "ZoomScale": 0.75,
+                    "ZoomScale": 1.0,
                     "PanOffset": {
-                        "x": 105.0,
-                        "y": 124.74993896484375
+                        "x": 20.0,
+                        "y": 20.0
                     },
                     "ColorModeBackgroundOpacity": 1.0,
                     "ImageModeCanvasBackgroundOpacity": 1.0,
@@ -45,9 +45,9 @@
                     "EnableCanvasBackground": false,
                     "CanvasBackgroundMode": 0,
                     "CanvasBackgroundColor": {
-                        "r": 1.0,
-                        "g": 1.0,
-                        "b": 1.0,
+                        "r": 0.0,
+                        "g": 0.0,
+                        "b": 0.0,
                         "a": 255.0
                     },
                     "CanvasBackgroundImage": {
