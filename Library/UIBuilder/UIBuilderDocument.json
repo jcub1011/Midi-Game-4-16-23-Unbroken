@@ -17,27 +17,27 @@
                 "m_VisualTreeAssetBackup": {
                     "instanceID": 0
                 },
-                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/StartMenu/Main Menu/Main Menu.uxml",
+                "m_OpenendVisualTreeAssetOldPath": "Assets/UI Toolkit/StartMenu/Song Selector/SongSelector.uxml",
                 "m_VisualTreeAsset": {
                     "fileID": 9197481963319205126,
-                    "guid": "b02a9d6d010338e4aaec0d0dc9a7d49d",
+                    "guid": "8d02a663a04d23f45bd1b5189f06a3a8",
                     "type": 3
                 },
                 "m_ActiveStyleSheet": {
                     "instanceID": 0
                 },
                 "m_Settings": {
-                    "UxmlGuid": "b02a9d6d010338e4aaec0d0dc9a7d49d",
-                    "UxmlPath": "Assets/UI Toolkit/Start Menu/Main Menu.uxml",
+                    "UxmlGuid": "8d02a663a04d23f45bd1b5189f06a3a8",
+                    "UxmlPath": "Assets/UI Toolkit/Start Menu/SongSelector/SongSelector.uxml",
                     "CanvasX": 0,
                     "CanvasY": 0,
-                    "CanvasWidth": 784,
-                    "CanvasHeight": 441,
+                    "CanvasWidth": 692,
+                    "CanvasHeight": 389,
                     "MatchGameView": true,
                     "ZoomScale": 0.75,
                     "PanOffset": {
-                        "x": 79.5,
-                        "y": 194.625
+                        "x": 105.0,
+                        "y": 124.74993896484375
                     },
                     "ColorModeBackgroundOpacity": 1.0,
                     "ImageModeCanvasBackgroundOpacity": 1.0,

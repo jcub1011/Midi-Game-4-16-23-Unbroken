@@ -6,10 +6,22 @@ namespace MainStartMenu
 {
     public interface IDocHandler
     {
+        /// <summary>
+        /// Called when the document is made visible.
+        /// </summary>
         public void OnShow();
+        /// <summary>
+        /// Called when the documnet is no longer visible.
+        /// </summary>
         public void OnHide();
-        public void OnPanelAdd();
-        public void OnPanelRemove();
+        /// <summary>
+        /// Called when the document is first being created.
+        /// </summary>
+        public void OnDocAdd();
+        /// <summary>
+        /// Called when the document is being destroyed.
+        /// </summary>
+        public void OnDocRemove();
     }
 
     public static class Documents
@@ -42,9 +54,9 @@ namespace MainStartMenu
         /// <param name="document">Document to register.</param>
         static public void Add(string name, UIDocument document, IDocHandler script)
         {
-            document.rootVisualElement.style.display = DisplayStyle.None;
             _documents.Add(name, new DocScriptBundle { Doc = document, Script = script });
-            script.OnPanelAdd();
+            script.OnDocAdd();
+            document.enabled = false;
         }
 
         /// <summary>
@@ -120,13 +132,13 @@ namespace MainStartMenu
 
         static private void Show(string name)
         {
-            GetRoot(name).style.display = DisplayStyle.Flex;
+            GetDoc(name).enabled = true;
             _documents[name].Script.OnShow();
         }
 
         static private void Hide(string name)
         {
-            GetRoot(name).style.display = DisplayStyle.None;
+            GetDoc(name).enabled = false;
             _documents[name].Script.OnHide();
         }
 

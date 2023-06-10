@@ -27,14 +27,14 @@ public class SongSelector : MonoBehaviour, IDocHandler
         Debug.Log("Hiding song selector.");
     }
 
-    public void OnPanelAdd()
+    public void OnDocAdd()
     {
         Debug.Log("Song selector panel added.");
         (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) 
             as Button).clicked += BackButtonPressed;
     }
 
-    public void OnPanelRemove()
+    public void OnDocRemove()
     {
         Debug.Log("Song selector panel removed.");
     }

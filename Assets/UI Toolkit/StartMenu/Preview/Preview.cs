@@ -16,12 +16,12 @@ public class Preview : MonoBehaviour, IDocHandler
         Debug.Log("Hiding preview.");
     }
 
-    public void OnPanelAdd()
+    public void OnDocAdd()
     {
         Debug.Log("Preview panel added.");
     }
 
-    public void OnPanelRemove()
+    public void OnDocRemove()
     {
         Debug.Log("Preview panel removed.");
     }

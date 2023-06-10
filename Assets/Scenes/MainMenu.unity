@@ -133,6 +133,7 @@ GameObject:
   m_Component:
   - component: {fileID: 396156719}
   - component: {fileID: 396156720}
+  - component: {fileID: 396156721}
   m_Layer: 0
   m_Name: MainMenu
   m_TagString: Untagged
@@ -168,9 +169,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_PanelSettings: {fileID: 11400000, guid: e7100252ccc617c43a1f70f1b446b5ef, type: 2}
-  m_ParentUI: {fileID: 1092695812}
-  sourceAsset: {fileID: 0}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: b02a9d6d010338e4aaec0d0dc9a7d49d, type: 3}
   m_SortingOrder: 0
+--- !u!114 &396156721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 396156718}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f56fa837f918b54fa07e90d72c3a923, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &517922480
 GameObject:
   m_ObjectHideFlags: 0
@@ -217,7 +230,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_PanelSettings: {fileID: 11400000, guid: e7100252ccc617c43a1f70f1b446b5ef, type: 2}
-  m_ParentUI: {fileID: 1092695812}
+  m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: 9483dba166c08a94f8f9107b3d6fe6e2, type: 3}
   m_SortingOrder: 0
 --- !u!114 &517922483
@@ -475,7 +488,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_PanelSettings: {fileID: 11400000, guid: e7100252ccc617c43a1f70f1b446b5ef, type: 2}
-  m_ParentUI: {fileID: 1092695812}
+  m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: 8d02a663a04d23f45bd1b5189f06a3a8, type: 3}
   m_SortingOrder: 0
 --- !u!114 &1017783336
@@ -499,7 +512,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1092695813}
-  - component: {fileID: 1092695812}
   - component: {fileID: 1092695814}
   m_Layer: 0
   m_Name: StartMenu
@@ -508,22 +520,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1092695812
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1092695811}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_PanelSettings: {fileID: 11400000, guid: e7100252ccc617c43a1f70f1b446b5ef, type: 2}
-  m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: b02a9d6d010338e4aaec0d0dc9a7d49d, type: 3}
-  m_SortingOrder: 0
 --- !u!4 &1092695813
 Transform:
   m_ObjectHideFlags: 0
@@ -553,7 +549,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1092695811}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8f56fa837f918b54fa07e90d72c3a923, type: 3}
+  m_Script: {fileID: 11500000, guid: f931d71701afff74f8c88fdd510822bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1160096505
@@ -799,7 +795,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_PanelSettings: {fileID: 11400000, guid: e7100252ccc617c43a1f70f1b446b5ef, type: 2}
-  m_ParentUI: {fileID: 1092695812}
+  m_ParentUI: {fileID: 0}
   sourceAsset: {fileID: 9197481963319205126, guid: a38d9c966fc209b43b7d576a5cbf8e07, type: 3}
   m_SortingOrder: 0
 --- !u!114 &1715320201
