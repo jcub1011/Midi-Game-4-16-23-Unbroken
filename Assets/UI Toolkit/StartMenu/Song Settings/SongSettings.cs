@@ -33,6 +33,7 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     {
         Debug.Log("Displaying song settings.");
         _root = DocHandler.GetRoot(Documents.SongSetts);
+        DocHandler.SetScrollSpeed(_root.Q<ScrollView>(SETTINGS_SCROLLER_ID));
 
         // Register buttons.
         var temp = _root.Q(BACK_BUTTON_ID) as Button;

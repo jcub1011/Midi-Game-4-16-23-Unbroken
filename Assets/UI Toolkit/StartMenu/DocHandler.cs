@@ -191,6 +191,17 @@ namespace MainStartMenu
             Show(previous);
         }
         #endregion
+
+        #region Utilities
+        public static void SetScrollSpeed(ScrollView scrollingElement, float ScrollSpeed = 500f)
+        {
+            scrollingElement.RegisterCallback<WheelEvent>((evt) =>
+            {
+                scrollingElement.scrollOffset = new UnityEngine.Vector2(0, scrollingElement.scrollOffset.y + ScrollSpeed * evt.delta.y);
+                evt.StopPropagation();
+            });
+        }
+        #endregion
     }
 
 }

@@ -78,6 +78,7 @@
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
+    <None Include="Assets\UI Toolkit\UnityThemes\ScrollSpeedOverride.uss" />
     <None Include="Assets\UI Toolkit\StartMenu\Main Menu\Main Menu.uxml" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\UI Toolkit\StartMenu\Song Settings\SongSettings.uxml" />

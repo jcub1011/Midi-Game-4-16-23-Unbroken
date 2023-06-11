@@ -1,4 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI%20Toolkit/UnityThemes/ScrollSpeedOverride.uss?fileID=7433441132597879392&amp;guid=a04b7046be03c524cabf22c1ec35642d&amp;type=3#ScrollSpeedOverride" />
     <ui:VisualElement name="RootContainerMainMenu" style="flex-grow: 1; background-color: rgb(255, 255, 255);">
         <ui:Label text="My Midi Game" display-tooltip-when-elided="true" name="GameTitle" enable-rich-text="true" style="-unity-text-align: middle-center; font-size: 50px; -unity-font-style: bold; padding-left: 20px; padding-right: 20px; padding-top: 20px; padding-bottom: 20px; margin-left: 0; margin-right: 0; margin-top: 0; margin-bottom: 0;" />
         <ui:Button text="Start" display-tooltip-when-elided="true" name="StartButton" />

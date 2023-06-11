@@ -3,13 +3,13 @@
     "UxmlPath": "Assets/UI Toolkit/Main Menu/Song Selector/SongSettings.uxml",
     "CanvasX": 0,
     "CanvasY": 0,
-    "CanvasWidth": 784,
-    "CanvasHeight": 441,
+    "CanvasWidth": 890,
+    "CanvasHeight": 501,
     "MatchGameView": true,
-    "ZoomScale": 0.75,
+    "ZoomScale": 1.0,
     "PanOffset": {
-        "x": 92.99984741210938,
-        "y": 164.87493896484376
+        "x": -84.53366088867188,
+        "y": -78.82395935058594
     },
     "ColorModeBackgroundOpacity": 1.0,
     "ImageModeCanvasBackgroundOpacity": 1.0,

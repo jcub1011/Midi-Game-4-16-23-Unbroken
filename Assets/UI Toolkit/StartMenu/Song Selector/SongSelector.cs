@@ -39,6 +39,9 @@ public class SongSelector : MonoBehaviour, IDocHandler
     }
     #endregion
 
+    #region Properties
+    #endregion
+
     #region Methods
     void BackButtonPressed()
     {
@@ -75,6 +78,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
         songListContainer.style.marginBottom = 10;
         songListContainer.style.marginLeft = 10;
         songListContainer.style.marginRight = 10;
+        DocHandler.SetScrollSpeed(songListContainer);
 
         // Add songs to list container.
         string songs = "";
