@@ -1,3 +1,4 @@
+using Melanchall.DryWetMidi.Core;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using UnityEngine.UIElements;
@@ -33,6 +34,20 @@ namespace MainStartMenu
         public void OnShow(string filePath);
     }
 
+    public interface IRunwayParamsInput
+    {
+        /// <summary>
+        /// Called when document is made visible.
+        /// </summary>
+        /// <param name="notes">List of notes to display.</param>
+        /// <param name="endTime">Time of the end of the last note.</param>
+        /// <param name="strikeBarHeight">Height of strike bar from bottom as a percent. (1.0 = 100%)</param>
+        /// <param name="msLeadup">Miliseconds before first note hits the strike bar.</param>
+        /// <param name="time">Time to begin playback at.</param>
+        public void OnShow(List<NoteEvtData> notes, float endTime,
+            float strikeBarHeight = 0.2f, float msLeadup = 4000f, float time = 0f);
+    }
+
     public static class Documents
     {
         public static string Main = "Main";
@@ -65,7 +80,7 @@ namespace MainStartMenu
         {
             _documents.Add(name, new DocScriptBundle { Doc = document, Script = script });
             script.OnDocAdd();
-            document.enabled = false;
+            document.rootVisualElement.visible = false;
         }
 
         /// <summary>
@@ -141,13 +156,13 @@ namespace MainStartMenu
 
         static private void Show(string name)
         {
-            GetDoc(name).enabled = true;
+            GetDoc(name).rootVisualElement.visible = true;
             _documents[name].Script.OnShow();
         }
 
         static private void Hide(string name)
         {
-            GetDoc(name).enabled = false;
+            GetDoc(name).rootVisualElement.visible = false;
             _documents[name].Script.OnHide();
         }
 
@@ -173,6 +188,24 @@ namespace MainStartMenu
             DisplayDoc(name);
             var script = _documents[name].Script as IFileInput ?? throw new System.MethodAccessException($"'{name}' cannot take a file path argument.");
             script.OnShow(filePath);
+        }
+
+        /// <summary>
+        /// Hides the currently visible document and unhides the specified document.
+        /// </summary>
+        /// <param name="name">Name of document to display.</param>
+        /// <param name="notes">Notes to show in preview.</param>
+        /// <param name="endTime">End time of last note.</param>
+        /// <param name="strikeBarHeight">Height of strike bar from bottom of runway as percent of runway. (1.0 = 100%)</param>
+        /// <param name="msLeadup">Ms before first note touches strike bar.</param>
+        /// <param name="time">Time to begin preview at.</param>
+        /// <exception cref="System.MethodAccessException"></exception>
+        static public void DisplayDoc(string name, List<NoteEvtData> notes, float endTime, float strikeBarHeight = 0.2f,
+        float msLeadup = 4000f, float time = 0f)
+        {
+            DisplayDoc(name);
+            var script = _documents[name].Script as IRunwayParamsInput ?? throw new System.MethodAccessException($"'{name}' cannot take runway arguments.");
+            script.OnShow(notes, endTime, strikeBarHeight, msLeadup, time);
         }
 
         /// <summary>

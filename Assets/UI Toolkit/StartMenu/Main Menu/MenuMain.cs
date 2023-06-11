@@ -15,14 +15,6 @@ public class MenuMain : MonoBehaviour, IDocHandler
     public void OnShow()
     {
         Debug.Log("Displaying main menu.");
-
-        // Register Buttons.
-        var mainMenu = DocHandler.GetRoot(Documents.Main);
-        var start = mainMenu.Q(STRT_BTN) as Button;
-        var settings = mainMenu.Q(SETTN_BTN) as Button;
-
-        start.clicked += StartButtonPressed;
-        settings.clicked += SettingsButtonPressed;
     }
 
     public void OnHide()
@@ -33,6 +25,14 @@ public class MenuMain : MonoBehaviour, IDocHandler
     public void OnDocAdd()
     {
         Debug.Log("Main menu panel added.");
+
+        // Register Buttons.
+        var mainMenu = DocHandler.GetRoot(Documents.Main);
+        var start = mainMenu.Q(STRT_BTN) as Button;
+        var settings = mainMenu.Q(SETTN_BTN) as Button;
+
+        start.clicked += StartButtonPressed;
+        settings.clicked += SettingsButtonPressed;
     }
 
     public void OnDocRemove()

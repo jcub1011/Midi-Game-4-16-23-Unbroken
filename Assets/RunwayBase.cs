@@ -107,7 +107,7 @@ internal class RunwayDisplayInfo
 
     public float GetLaneXPos(int laneIndex)
     {
-        var noteOffset = _laneWidth[laneIndex] / 2f;
+        var noteOffset = _laneWidth[laneIndex] / 2f - RunwayWidth / 2f;
         var whiteNotesToTheLeft = 0;
         
         // Count number of white notes to the left of the current note.

@@ -19,7 +19,6 @@ public class SongSelector : MonoBehaviour, IDocHandler
     public void OnShow()
     {
         Debug.Log("Displaying song selector.");
-        (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) as Button).clicked += BackButtonPressed;
         RefreshSongsList(Directory.GetCurrentDirectory() + "/Assets/MidiFiles");
     }
 
@@ -31,6 +30,7 @@ public class SongSelector : MonoBehaviour, IDocHandler
     public void OnDocAdd()
     {
         Debug.Log("Song selector panel added.");
+        (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) as Button).clicked += BackButtonPressed;
     }
 
     public void OnDocRemove()

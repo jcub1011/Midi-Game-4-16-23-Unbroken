@@ -32,18 +32,6 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     public void OnShow()
     {
         Debug.Log("Displaying song settings.");
-        _root = DocHandler.GetRoot(Documents.SongSetts);
-        DocHandler.SetScrollSpeed(_root.Q<ScrollView>(SETTINGS_SCROLLER_ID));
-
-        // Register buttons.
-        var temp = _root.Q(BACK_BUTTON_ID) as Button;
-        temp.clicked += DocHandler.ReturnToPrev;
-
-        temp = _root.Q(PREVIEW_BUTTON_ID) as Button;
-        temp.clicked += OnPreviewButtonClick;
-
-        temp = _root.Q(PLAY_BUTTON_ID) as Button;
-        temp.clicked += OnPlayButtonClick;
     }
 
     public void OnShow(string filePath)
@@ -60,6 +48,18 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     public void OnDocAdd()
     {
         Debug.Log("Song settings panel added.");
+        _root = DocHandler.GetRoot(Documents.SongSetts);
+        DocHandler.SetScrollSpeed(_root.Q<ScrollView>(SETTINGS_SCROLLER_ID));
+
+        // Register buttons.
+        var temp = _root.Q(BACK_BUTTON_ID) as Button;
+        temp.clicked += DocHandler.ReturnToPrev;
+
+        temp = _root.Q(PREVIEW_BUTTON_ID) as Button;
+        temp.clicked += OnPreviewButtonClick;
+
+        temp = _root.Q(PLAY_BUTTON_ID) as Button;
+        temp.clicked += OnPlayButtonClick;
     }
 
     public void OnDocRemove()
@@ -73,7 +73,37 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     {
         Debug.Log("Preview button clicked.");
 
+        // Get notes to display.
+        var tracks = new List<TrackChunk>();
+        var notes = new List<NoteEvtData>();
+        float endTime = 0f;
+        MidiFile tempMidi;
 
+        foreach (var track in _tracksToPlay)
+        {
+            if (track == null) continue;
+            tracks.Add(track);
+        }
+
+        tempMidi = new MidiFile(tracks); // For sorting notes appropriately.
+
+        foreach (var note in tempMidi.GetNotes())
+        {
+            var temp = new NoteEvtData
+            {
+                Number = note.NoteNumber,
+                OnTime = (float)note.TimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds,
+                OffTime = (float)note.EndTimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds,
+                Length = (float)note.LengthAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds
+            };
+
+            if (temp.OffTime > endTime) endTime = temp.OffTime;
+
+            notes.Add(temp);
+        }
+
+
+        DocHandler.DisplayDoc(Documents.Preview, notes, endTime);
     }
 
     void OnPlayButtonClick()
