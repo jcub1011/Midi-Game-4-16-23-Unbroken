@@ -5,8 +5,8 @@ using UnityEngine;
 internal class RunwayDisplayInfo
 {
     #region Properties
-    const float WHITE_NOTE_WIDTH_FACTOR = 1.0f;
-    const float BLACK_NOTE_WIDTH_FACTOR = 0.8f;
+    const float WHITE_NOTE_WIDTH_FACTOR = 0.95f;
+    const float BLACK_NOTE_WIDTH_FACTOR = 0.75f;
 
     public static readonly IntRange FourtyNineKeyKeyboard = new(36, 84);
     public static readonly IntRange SixtyOneKeyKeyboard = new(36, 96);
@@ -19,7 +19,7 @@ internal class RunwayDisplayInfo
     public readonly float _strikeBarHeightPercent; // Percent of screen from bottom.
     float[] _laneWidth;
     float _whiteNoteWidth; // In unity units.
-    int _widthInWhiteNotes;
+    int _numWhiteNoteLanes;
     #endregion
 
     #region Getter Setter Methods
@@ -42,7 +42,7 @@ internal class RunwayDisplayInfo
         set
         {
             _runwayWidth = value;
-            _whiteNoteWidth = RunwayWidth / _widthInWhiteNotes;
+            _whiteNoteWidth = RunwayWidth / _numWhiteNoteLanes;
         }
     }
     #endregion
@@ -100,11 +100,16 @@ internal class RunwayDisplayInfo
         return IsWhiteNote(laneIndex + _range.Min);
     }
 
+    float GetLaneWidthFactor(int laneIndex)
+    {
+        return IsWhiteNoteLane(laneIndex) ? WHITE_NOTE_WIDTH_FACTOR : BLACK_NOTE_WIDTH_FACTOR;
+    }
+
     void InitLaneWidthArray()
     {
         // Create array of lanes for each note number.
         _laneWidth = new float[_range.Len];
-        _widthInWhiteNotes = 0;
+        _numWhiteNoteLanes = 0;
 
         // Init multiplication factors for each lane.
         for (int i = 0; i < _laneWidth.Length; i++)
@@ -113,30 +118,37 @@ internal class RunwayDisplayInfo
             var noteNum = i + _range.Min;
             var normalizedNum = noteNum % 12;
 
-            _widthInWhiteNotes += IsWhiteNote(normalizedNum) ? 1 : 0;
+            _numWhiteNoteLanes += IsWhiteNote(normalizedNum) ? 1 : 0;
             // Only full size notes will add to the count.
 
             _laneWidth[i] = IsWhiteNote(normalizedNum) ? WHITE_NOTE_WIDTH_FACTOR : BLACK_NOTE_WIDTH_FACTOR;
         }
+
+        Debug.Log($"Width in white notes: {_numWhiteNoteLanes}");
+    }
+
+    public float GetNumWhiteLanesToLeft(int laneIndex)
+    {
+        var count = 0;
+
+        for (int i = 0; i < laneIndex; i++)
+        {
+            if (IsWhiteNoteLane(i)) count++;
+        }
+
+        return count;
     }
 
     public float GetLaneXPos(int laneIndex)
     {
-        var noteOffset = _laneWidth[laneIndex] / 2f - RunwayWidth / 2f;
-        var whiteNotesToTheLeft = 0;
-        
-        // Count number of white notes to the left of the current note.
-        for (int i = 0; i < laneIndex; i++)
-        {
-            whiteNotesToTheLeft += (int)_laneWidth[i];
-        }
-
-        return whiteNotesToTheLeft * _whiteNoteWidth + noteOffset;
+        float whiteNoteAdditionalOffset = (IsWhiteNoteLane(laneIndex) ? _whiteNoteWidth / 2f : 0f);
+        float originOffset = -RunwayWidth / 2f;
+        return GetNumWhiteLanesToLeft(laneIndex) * _whiteNoteWidth + originOffset + whiteNoteAdditionalOffset;
     }
 
     public float GetLaneWidth(int laneIndex)
     {
-        return _laneWidth[laneIndex] * _whiteNoteWidth;
+        return GetLaneWidthFactor(laneIndex) * _whiteNoteWidth;
     }
     #endregion
 }

@@ -55,6 +55,7 @@ public class NoteListUnmanaged
     {
         Debug.Log($"Adding note {noteEvtData.Number} @ time {noteEvtData.OnTime}");
         var wrappedData = new NoteWrapper(UnityEngine.Object.Instantiate(prefab, parent), noteEvtData);
+        wrappedData.Note.GetComponent<SpriteRenderer>().enabled = true;
         ActiveNotes.AddLast(wrappedData);
     }
 }
@@ -160,7 +161,7 @@ public class NoteLane : MonoBehaviour
     GameObject NotePrefab;
     float _laneEnterOffset;
     float _laneExitOffset;
-    NoteListManager _notePlayList;
+    NoteListUnmanaged _notePlayList;
     float _zPos;
     float _xPos;
     #endregion
@@ -211,6 +212,7 @@ public class NoteLane : MonoBehaviour
     /// <param name="playbackTime"></param>
     void UpdateActiveNoteList(float playbackTime)
     {
+        /*
         // Add notes to the top.
         while (NoteVisible(playbackTime, _notePlayList.PeekNextYoungestNote()))
         {
@@ -221,7 +223,7 @@ public class NoteLane : MonoBehaviour
         while (NoteVisible(playbackTime, _notePlayList.PeekNextOldestNote()))
         {
             _notePlayList.ManageNextOldestNote(transform, NotePrefab);
-        }
+        }*/
     }
 
     /// <summary>
@@ -267,6 +269,7 @@ public class NoteLane : MonoBehaviour
     /// <param name="playbackTime"></param>
     void UnmanageNotesNotVisible(float playbackTime)
     {
+        /*
         // Delete notes that are below floor.
         while (_notePlayList.ActiveNoteCount > 0)
         {
@@ -297,7 +300,7 @@ public class NoteLane : MonoBehaviour
             {
                 break;
             }
-        }
+        }*/
     }
 
     /// <summary>
@@ -313,7 +316,7 @@ public class NoteLane : MonoBehaviour
             // Get new scale.
             var newScale = new Vector3
             {
-                x = _width,
+                x = 1,
                 y = wrapper.Length * unitsPerMs,
                 z = 1
             };
@@ -359,7 +362,7 @@ public class NoteLane : MonoBehaviour
     public void AddNote(NoteEvtData newNote)
     {
         _notePlayList ??= new(); // Null coalescing operator.
-        _notePlayList.AddNewNote(newNote);
+        _notePlayList.AddNewNote(newNote, transform, NotePrefab);
     }
 
     /// <summary>
@@ -369,7 +372,11 @@ public class NoteLane : MonoBehaviour
     public void AddNotesList(List<NoteEvtData> notes)
     {
         _notePlayList ??= new();
-        _notePlayList.OverwriteNoteList(notes);
+        //_notePlayList.OverwriteNoteList(notes);
+        foreach (var note in notes)
+        {
+            _notePlayList.AddNewNote(note, transform, NotePrefab);
+        }
     }
 
     /// <summary>

@@ -32,7 +32,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         var slider = root.Q(SLIDER) as Slider;
         slider.value = time;
         slider.lowValue = 0;
-        slider.highValue = endTime;
+        slider.highValue = endTime + msLeadup;
 
         slider.RegisterValueChangedCallback(UpdatePlaybackTime);
 
