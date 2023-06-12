@@ -19,6 +19,8 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     const string PLAY_BUTTON_ID = "PlayButton";
     const string PREVIEW_BUTTON_ID = "PreviewButton";
     const string BACK_BUTTON_ID = "BackButton";
+    const string ENABLE_ALL_ID = "EnableTracks";
+    const string DISABLE_ALL_ID = "DisableTracks";
     #endregion
 
     #region Properties
@@ -52,14 +54,20 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
         DocHandler.SetScrollSpeed(_root.Q<ScrollView>(SETTINGS_SCROLLER_ID));
 
         // Register buttons.
-        var temp = _root.Q(BACK_BUTTON_ID) as Button;
+        var temp = _root.Q<Button>(BACK_BUTTON_ID);
         temp.clicked += DocHandler.ReturnToPrev;
 
-        temp = _root.Q(PREVIEW_BUTTON_ID) as Button;
+        temp = _root.Q<Button>(PREVIEW_BUTTON_ID);
         temp.clicked += OnPreviewButtonClick;
 
-        temp = _root.Q(PLAY_BUTTON_ID) as Button;
+        temp = _root.Q<Button>(PLAY_BUTTON_ID);
         temp.clicked += OnPlayButtonClick;
+
+        temp = _root.Q<Button>(ENABLE_ALL_ID);
+        temp.clicked += () => SetAllTracks(true);
+
+        temp = _root.Q<Button>(DISABLE_ALL_ID);
+        temp.clicked += () => SetAllTracks(false);
     }
 
     public void OnDocRemove()
@@ -69,6 +77,21 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     #endregion
 
     #region Methods
+    void SetAllTracks(bool value)
+    {
+        Debug.Log($"Changing all tracks to {value}.");
+        var trackSelectContainer = _root.Q(TRACK_SELECT_CONTAINER_ID);
+
+        // Edit all toggles.
+        foreach(var child in trackSelectContainer.Children())
+        {
+            var toggle = child as Toggle;
+            if (toggle == null) continue;
+
+            toggle.value = value;
+        }
+    }
+
     void OnPreviewButtonClick()
     {
         Debug.Log("Preview button clicked.");

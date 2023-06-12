@@ -8,6 +8,12 @@ internal class RunwayDisplayInfo
     const float WHITE_NOTE_WIDTH_FACTOR = 1.0f;
     const float BLACK_NOTE_WIDTH_FACTOR = 0.8f;
 
+    public static readonly IntRange FourtyNineKeyKeyboard = new(36, 84);
+    public static readonly IntRange SixtyOneKeyKeyboard = new(36, 96);
+    public static readonly IntRange SeventySixKeyKeyboard = new(28, 103);
+    public static readonly IntRange EightyEightKeyKeyboard = new(21, 108);
+    public static readonly IntRange MaxKeyKeyboard = new(0, 127);
+
     readonly IntRange _range; // Range of notes.
     readonly float _msToReachRunway;
     public readonly float _strikeBarHeightPercent; // Percent of screen from bottom.
@@ -68,28 +74,37 @@ internal class RunwayDisplayInfo
     #endregion
 
     #region Methods
+    bool IsWhiteNote(int noteNum)
+    {
+        // Note pattern repeats every 12 notes.
+        return (noteNum % 12) switch
+        {
+            0 => true,
+            1 => false,
+            2 => true,
+            3 => false,
+            4 => true,
+            5 => true,
+            6 => false,
+            7 => true,
+            8 => false,
+            9 => true,
+            10 => false,
+            11 => true,
+            _ => false,
+        };
+    }
+
+    public bool IsWhiteNoteLane(int laneIndex)
+    {
+        return IsWhiteNote(laneIndex + _range.Min);
+    }
+
     void InitLaneWidthArray()
     {
         // Create array of lanes for each note number.
         _laneWidth = new float[_range.Len];
         _widthInWhiteNotes = 0;
-
-        // Init dict for each note width factor.
-        Dictionary<int, float> widthFactor = new()
-        {
-            { 0, WHITE_NOTE_WIDTH_FACTOR },
-            { 1, BLACK_NOTE_WIDTH_FACTOR },
-            { 2, WHITE_NOTE_WIDTH_FACTOR },
-            { 3, BLACK_NOTE_WIDTH_FACTOR },
-            { 4, WHITE_NOTE_WIDTH_FACTOR },
-            { 5, WHITE_NOTE_WIDTH_FACTOR },
-            { 6, BLACK_NOTE_WIDTH_FACTOR },
-            { 7, WHITE_NOTE_WIDTH_FACTOR },
-            { 8, BLACK_NOTE_WIDTH_FACTOR },
-            { 9, WHITE_NOTE_WIDTH_FACTOR },
-            { 10, BLACK_NOTE_WIDTH_FACTOR },
-            { 11, WHITE_NOTE_WIDTH_FACTOR }
-        };
 
         // Init multiplication factors for each lane.
         for (int i = 0; i < _laneWidth.Length; i++)
@@ -98,10 +113,10 @@ internal class RunwayDisplayInfo
             var noteNum = i + _range.Min;
             var normalizedNum = noteNum % 12;
 
-            _widthInWhiteNotes += (int)widthFactor[normalizedNum];
+            _widthInWhiteNotes += IsWhiteNote(normalizedNum) ? 1 : 0;
             // Only full size notes will add to the count.
 
-            _laneWidth[i] = widthFactor[normalizedNum];
+            _laneWidth[i] = IsWhiteNote(normalizedNum) ? WHITE_NOTE_WIDTH_FACTOR : BLACK_NOTE_WIDTH_FACTOR;
         }
     }
 
@@ -136,7 +151,8 @@ public class RunwayBase
 
     #region Constructors
     public RunwayBase(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight,
-        float msToReachStrikeBar, Transform lanesParent, GameObject lanePrefab)
+        float msToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
+        GameObject whiteNotePrefab, GameObject blackNotePrefab)
     {
         _noteRange = GetNoteRange(notes);
         _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange);
@@ -154,6 +170,8 @@ public class RunwayBase
             var newLane = UnityEngine.Object.Instantiate(lanePrefab, lanesParent);
             _lanes[i] = newLane.GetComponent<NoteLane>();
             _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
+            _lanes[i].SetNotePrefab(_displayInfo.IsWhiteNoteLane(i) ? whiteNotePrefab : blackNotePrefab);
+            _lanes[i].SetPosition(_displayInfo.GetLaneXPos(i), _displayInfo.IsWhiteNoteLane(i) ? 1 : 0);
         }
 
         // Distribute notes.
@@ -167,6 +185,7 @@ public class RunwayBase
     #endregion
 
     #region Methods
+
     IntRange GetNoteRange(List<NoteEvtData> notes)
     {
         short min = short.MaxValue;
@@ -178,7 +197,40 @@ public class RunwayBase
             if (note.Number > max) max = note.Number;
         }
 
-        return new IntRange(min, max);
+        Debug.Log($"Note range: {min} - {max}");
+
+        var noteRange = new IntRange(min, max);
+        IntRange rangeToReturn;
+
+        if (RunwayDisplayInfo.FourtyNineKeyKeyboard.InRange(noteRange))
+        {
+            rangeToReturn = RunwayDisplayInfo.FourtyNineKeyKeyboard;
+            UnityEngine.GameObject.Find("49KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else if (RunwayDisplayInfo.SixtyOneKeyKeyboard.InRange(noteRange))
+        {
+            rangeToReturn = RunwayDisplayInfo.SixtyOneKeyKeyboard;
+            UnityEngine.GameObject.Find("61KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else if (RunwayDisplayInfo.SeventySixKeyKeyboard.InRange(noteRange))
+        {
+            rangeToReturn = RunwayDisplayInfo.SeventySixKeyKeyboard;
+            UnityEngine.GameObject.Find("76KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else if (RunwayDisplayInfo.EightyEightKeyKeyboard.InRange(noteRange))
+        {
+            rangeToReturn = RunwayDisplayInfo.EightyEightKeyKeyboard;
+            UnityEngine.GameObject.Find("88KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else
+        {
+            rangeToReturn = RunwayDisplayInfo.MaxKeyKeyboard;
+            UnityEngine.GameObject.Find("128KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+        }
+
+
+
+        return rangeToReturn;
     }
 
     private void UpdateLaneDimensions()
@@ -186,7 +238,7 @@ public class RunwayBase
         for (int i = 0; i< _lanes.Length; ++i)
         {
             _lanes[i].Width = _displayInfo.GetLaneWidth(i);
-            _lanes[i].XPos = _displayInfo.GetLaneXPos(i);
+            _lanes[i].SetPosition(_displayInfo.GetLaneXPos(i));
         }
     }
 

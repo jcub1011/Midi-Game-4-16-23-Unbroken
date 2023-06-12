@@ -132,10 +132,12 @@ public class NoteListManager
 public class NoteLane : MonoBehaviour
 {
     #region Properies
-    public GameObject NotePrefab;
+    GameObject NotePrefab;
     float _laneEnterOffset;
     float _laneExitOffset;
     NoteListManager _notePlayList;
+    float _zPos;
+    float _xPos;
     #endregion
 
     #region Utility Methods
@@ -307,6 +309,11 @@ public class NoteLane : MonoBehaviour
     #endregion
 
     #region Public Methods
+    public void SetNotePrefab(GameObject notePrefab)
+    {
+        NotePrefab = notePrefab;
+    }
+
     public void UpdateLane(float playbackTime, float unitsPerMs)
     {
         if (_notePlayList == null)
@@ -389,6 +396,18 @@ public class NoteLane : MonoBehaviour
         _laneEnterOffset = laneEnterOffset;
         _laneExitOffset = laneExitOffset;
     }
+
+    public void SetPosition(float xPos, float zPos)
+    {
+        _xPos = xPos;
+        _zPos = zPos;
+        transform.localPosition = new Vector3(_xPos, 0, _zPos);
+    }
+
+    public void SetPosition(float xPos)
+    {
+        SetPosition(xPos, _zPos);
+    }
     #endregion
 
     #region Getter Setter Methods
@@ -400,16 +419,6 @@ public class NoteLane : MonoBehaviour
         {
             _width = value;
             transform.localScale = new Vector3(_width, 1f, 1f);
-        }
-    }
-    private float _xPos;
-    public float XPos
-    {
-        get { return _xPos; }
-        set
-        {
-            _xPos = value;
-            transform.localPosition = new Vector3(_xPos, 0f, 0f);
         }
     }
     #endregion

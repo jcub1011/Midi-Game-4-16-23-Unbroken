@@ -6,21 +6,28 @@ using UnityEngine.UIElements;
 
 public class StartMenuInitalizer : MonoBehaviour
 {
+    #region Documents
+    public GameObject TheMainMenu;
+    public GameObject TheSongSelector;
+    public GameObject TheSongSettings;
+    public GameObject ThePreview;
+    #endregion
+
     void Start()
     {
         // Get Documents
         DocHandler.Add(Documents.Main,
-            transform.GetChild(0).GetComponent<UIDocument>(),
-            transform.GetChild(0).GetComponent<MenuMain>());
+            TheMainMenu.GetComponent<UIDocument>(),
+            TheMainMenu.GetComponent<MenuMain>());
         DocHandler.Add(Documents.SongSelect,
-            transform.GetChild(1).GetComponent<UIDocument>(),
-            transform.GetChild(1).GetComponent<SongSelector>());
+            TheSongSelector.GetComponent<UIDocument>(),
+            TheSongSelector.GetComponent<SongSelector>());
         DocHandler.Add(Documents.SongSetts,
-            transform.GetChild(2).GetComponent<UIDocument>(),
-            transform.GetChild(2).GetComponent<SongSettings>());
+            TheSongSettings.GetComponent<UIDocument>(),
+            TheSongSettings.GetComponent<SongSettings>());
         DocHandler.Add(Documents.Preview,
-            transform.GetChild(3).GetComponent<UIDocument>(),
-            transform.GetChild(3).GetComponent<Preview>());
+            ThePreview.GetComponent<UIDocument>(),
+            ThePreview.GetComponent<Preview>());
 
         // Show Main.
         DocHandler.DisplayDoc(Documents.Main);

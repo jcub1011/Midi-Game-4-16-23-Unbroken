@@ -7,6 +7,8 @@ public class PreviewRunway : MonoBehaviour
     #region Properties
     RunwayBase _runway;
     public GameObject LanePrefab;
+    public GameObject WhiteNotePrefab;
+    public GameObject BlackNotePrefab;
     #endregion
 
     #region Methods
@@ -23,7 +25,7 @@ public class PreviewRunway : MonoBehaviour
         float[] dimensions = new float[2] { width, height };
 
         _runway = new(notes, dimensions, strikeBarHeight, 
-            msToReachStrikeBar, transform, LanePrefab);
+            msToReachStrikeBar, transform, LanePrefab, WhiteNotePrefab, BlackNotePrefab);
     }
 
     public void Unload()
