@@ -36,6 +36,29 @@ public class NoteEvtData
     public float Length;
 }
 
+public class NoteListUnmanaged
+{
+    List<NoteEvtData> _notes = new();
+    public LinkedList<NoteWrapper> ActiveNotes = new();
+    public int NextYoungestIndex { get; private set; } = 0;
+    public int NextOldestIndex { get; private set; } = -1;
+    public int ActiveNoteCount
+    {
+        get { return ActiveNotes.Count; }
+    }
+    public int TotalNoteCount
+    {
+        get { return _notes.Count; }
+    }
+
+    public void AddNewNote(NoteEvtData noteEvtData, Transform parent, GameObject prefab)
+    {
+        Debug.Log($"Adding note {noteEvtData.Number} @ time {noteEvtData.OnTime}");
+        var wrappedData = new NoteWrapper(UnityEngine.Object.Instantiate(prefab, parent), noteEvtData);
+        ActiveNotes.AddLast(wrappedData);
+    }
+}
+
 public class NoteListManager
 {
     List<NoteEvtData> _notes = new();
@@ -58,6 +81,7 @@ public class NoteListManager
 
     public void AddNewNote(NoteEvtData noteEvtData)
     {
+        Debug.Log($"Adding note {noteEvtData.Number} @ time {noteEvtData.OnTime}");
         _notes.Add(noteEvtData);
     }
 
@@ -107,6 +131,7 @@ public class NoteListManager
         var wrapper = new NoteWrapper(nextOldNote, _notes[NextOldestIndex]);
         ActiveNotes.AddFirst(wrapper);
         NextOldestIndex--;
+        Debug.Log($"Managing note");
     }
 
     public void UnmanageYoungestNote()
