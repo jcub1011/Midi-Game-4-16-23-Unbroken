@@ -8,58 +8,38 @@ public class NoteObject
 {
     public GameObject Note { get; private set; }
     public Note Data { get; private set; }
+    public bool Played;
 
-    public NoteObject(GameObject note, Note data)
+    public NoteObject(GameObject notePrefab, Note data)
     {
-        Note = note;
+        Note = notePrefab;
         Data = data;
-    }
-}
-
-public class NoteListUnmanaged
-{
-    List<Note> _notes;
-    public LinkedList<NoteObject> ActiveNotes;
-    public int NextYoungestIndex { get; private set; }
-    public int NextOldestIndex { get; private set; }
-    public int ActiveNoteCount
-    {
-        get { return ActiveNotes.Count; }
-    }
-    public int TotalNoteCount
-    {
-        get { return _notes.Count; }
+        Played = false;
     }
 
-    public void AddNewNote(Note noteData, Transform parent, GameObject prefab)
+    /// <summary>
+    /// Updates the position and scale of the GameObject.
+    /// </summary>
+    /// <param name="playbackTick">Current tick of playback.</param>
+    /// <param name="unitsPerTick">Units per tick.</param>
+    /// <param name="runwayTopY">Y position of the top of the runway.</param>
+    public void UpdateGameObject(long playbackTick, float unitsPerTick, float runwayTopY)
     {
-        Debug.Log($"Adding note {noteData.NoteName} @ time {noteData.Time}");
-        var wrappedData = new NoteObject(UnityEngine.Object.Instantiate(prefab, parent), noteData);
-        wrappedData.Note.GetComponent<SpriteRenderer>().enabled = true;
-        ActiveNotes.AddLast(wrappedData);
-    }
-
-    public NoteListUnmanaged()
-    {
-        _notes = new();
-        ActiveNotes = new();
-        NextYoungestIndex = 0;
-        NextOldestIndex = -1;
+        Note.transform.localScale = new Vector3(1, Data.Length * unitsPerTick, 1);
+        Note.transform.localPosition = new Vector3(1, runwayTopY + Note.transform.localScale.y / 2f - playbackTick * unitsPerTick, 0);
     }
 }
 
 public class NoteLane : MonoBehaviour
 {
     #region Properies
-    GameObject NotePrefab;
-    long _laneEnterOffset;
-    long _laneExitOffset;
-    NoteListUnmanaged _notePlayList;
+    public LinkedList<NoteObject> Notes { get; private set; }
     float _zPos;
     float _xPos;
     #endregion
 
     #region Utility Methods
+    /*
     /// <summary>
     /// Checks if a note is visible on the runway.
     /// </summary>
@@ -91,15 +71,7 @@ public class NoteLane : MonoBehaviour
     {
         if (noteData == null) return false;
         return NoteVisible(playbackTick, noteData.Time, noteData.EndTime);
-    }
-
-    /// <summary>
-    /// Updates the list of active notes.
-    /// </summary>
-    /// <param name="playbackTick">Current tick of playback.</param>
-    void UpdateActiveNoteList(long playbackTick)
-    {
-    }
+    }*/
 
     /// <summary>
     /// Gets the accuracy of the note play.
@@ -125,7 +97,7 @@ public class NoteLane : MonoBehaviour
 
         return accuracy;
     }
-
+    
     /// <summary>
     /// Checks if a number is between two other numbers.
     /// </summary>
@@ -133,29 +105,19 @@ public class NoteLane : MonoBehaviour
     /// <param name="rangeMin">Range min.</param>
     /// <param name="rangeMax">Range max.</param>
     /// <returns></returns>
-    bool InRange(float number, float rangeMin, float rangeMax)
+    bool InRange(long number, long rangeMin, long rangeMax)
     {
         return rangeMin <= number && number <= rangeMax;
-    }
-
-    /// <summary>
-    /// Deletes the game objects for notes that aren't visible.
-    /// </summary>
-    /// <param name="playbackTick"></param>
-    void UnmanageNotesNotVisible(float playbackTick)
-    {
     }
 
     /// <summary>
     /// Updates the note positions for all managed notes.
     /// </summary>
     /// <param name="playbackTick">Time in ticks.</param>
-    void UpdateNotePositions(long playbackTick, float unitsPerTick)
+    void UpdateNotePositions(long playbackTick, float unitsPerTick, float topYPos)
     {
-        var halfRunwayHeight = (_laneEnterOffset + _laneExitOffset) * unitsPerTick / 2f;
-
         // Update positions for all managed notes.
-        foreach (var noteObject in _notePlayList.ActiveNotes)
+        foreach (var noteObject in Notes)
         {
             // Get new scale.
             var newScale = new Vector3
@@ -169,7 +131,7 @@ public class NoteLane : MonoBehaviour
             var newPosition = new Vector3
             {
                 x = 0,
-                y = halfRunwayHeight - (unitsPerTick * (playbackTick - noteObject.Data.Time)) + newScale.y / 2,
+                y = topYPos - (unitsPerTick * (playbackTick - noteObject.Data.Time)) + newScale.y / 2,
                 z = 0
             };
 
@@ -181,67 +143,63 @@ public class NoteLane : MonoBehaviour
     #endregion
 
     #region Public Methods
-    public void SetNotePrefab(GameObject notePrefab)
+    /// <summary>
+    /// Updates the scale and position of all the notes in the lane.
+    /// </summary>
+    /// <param name="playbackTick"></param>
+    /// <param name="unitsPerTick"></param>
+    /// <param name="topYPos"></param>
+    public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
     {
-        NotePrefab = notePrefab;
-    }
-
-    public void UpdateLane(long playbackTick, float unitsPerMs)
-    {
-        if (_notePlayList == null)
+        if (Notes == null || Notes.Count == 0)
         {
             Debug.Log($"Lane has no notes.");
             return;
         }
 
-        UpdateActiveNoteList(playbackTick);
-        UpdateNotePositions(playbackTick, unitsPerMs);
-        UnmanageNotesNotVisible(playbackTick);
+        UpdateNotePositions(playbackTick, unitsPerTick, topYPos);
     }
 
     /// <summary>
-    /// Adds a note to the note play list.
+    /// Adds note to end of list.
     /// </summary>
-    /// <param name="newNote"></param>
-    public void AddNote(Note newNote)
+    /// <param name="noteData">Data for note.</param>
+    /// <param name="notePrefab">Prefab to use for note.</param>
+    public void AddNoteLast(Note noteData, GameObject notePrefab)
     {
-        _notePlayList ??= new(); // Null coalescing operator.
-        _notePlayList.AddNewNote(newNote, transform, NotePrefab);
+        var obj = new NoteObject(notePrefab, noteData);
+        Notes.AddLast(obj);
     }
 
     /// <summary>
-    /// Replaces the note play list with a new note play list.
+    /// Adds note to front of list.
     /// </summary>
-    /// <param name="notes"></param>
-    public void AddNotesList(List<Note> notes)
+    /// <param name="noteData">Data for note.</param>
+    /// <param name="notePrefab">Prefab to use for note.</param>
+    public void AddNoteFront(Note noteData, GameObject notePrefab)
     {
-        _notePlayList ??= new();
-
-        //_notePlayList.OverwriteNoteList(notes);
-        foreach (var note in notes)
-        {
-            _notePlayList.AddNewNote(note, transform, NotePrefab);
-        }
+        var obj = new NoteObject(notePrefab, noteData);
+        Notes.AddFirst(obj);
     }
 
     /// <summary>
     /// Returns percent accuracy.
     /// </summary>
-    /// <param name="time">Current playback time.</param>
-    /// <param name="forgiveness">Forgivness range in ms.</param>
+    /// <param name="time">Current playback time in ticks.</param>
+    /// <param name="forgiveness">Forgivness range in ticks.</param>
     /// <param name="NoteOnEvent">True if note on event, otherwise note off event.</param>
     /// <returns>Accuracy</returns>
-    public float NoteEventAccuracy(float time, float forgiveness, bool NoteOnEvent)
+    public float NoteEventAccuracy(long time, long forgiveness, bool NoteOnEvent)
     {
         //float eventTimeToCompareWith = 2f * GameData.Forgiveness;
-        float evtTime = -10f;
+        long evtTime = -10;
 
         print($"Current time: {time}");
 
         // Find next playable note time.
-        foreach (var note in _notePlayList.ActiveNotes)
+        foreach (var note in Notes)
         {
-            var noteTime = NoteOnEvent ? note.OnTime : note.OffTime;
+            var noteTime = NoteOnEvent ? note.Data.Time : note.Data.EndTime;
 
             if (InRange(time, noteTime - forgiveness, noteTime + forgiveness) && !note.Played)
             {
@@ -266,12 +224,6 @@ public class NoteLane : MonoBehaviour
             $"Played note time distance: {msDist}ms");
 
         return accuracy;
-    }
-
-    public void SetOffsets(float laneEnterOffset, float laneExitOffset)
-    {
-        _laneEnterOffset = laneEnterOffset;
-        _laneExitOffset = laneExitOffset;
     }
 
     public void SetPosition(float xPos, float zPos)

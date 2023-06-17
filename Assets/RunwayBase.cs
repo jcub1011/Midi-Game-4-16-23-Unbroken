@@ -1,3 +1,4 @@
+using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -153,16 +154,22 @@ internal class RunwayDisplayInfo
     #endregion
 }
 
+public class RunwayNoteManager
+{
+
+}
+
 public class RunwayBase
 {
     #region Properties
     IntRange _noteRange;
     RunwayDisplayInfo _displayInfo;
     NoteLane[] _lanes;
+    RunwayNoteManager _noteManager;
     #endregion
 
     #region Constructors
-    public RunwayBase(List<NoteEvtData> notes, float[] dimensions, float strikeBarHeight,
+    public RunwayBase(List<Note> notes, float[] dimensions, float strikeBarHeight,
         float msToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
         GameObject whiteNotePrefab, GameObject blackNotePrefab)
     {
