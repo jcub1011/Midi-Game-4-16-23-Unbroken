@@ -1,47 +1,27 @@
+using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NoteWrapper
+public class NoteObject
 {
     public GameObject Note { get; private set; }
-    public float Length { get; private set; }
-    public float OnTime { get; private set; }
-    public float OffTime { get; private set; }
-    public bool Played = false;
+    public Note Data { get; private set; }
 
-    public NoteWrapper(GameObject note, float length, float noteOnTime, float noteOffTime)
+    public NoteObject(GameObject note, Note data)
     {
         Note = note;
-        Length = length;
-        OnTime = noteOnTime;
-        OffTime = noteOffTime;
+        Data = data;
     }
-
-    public NoteWrapper(GameObject note, NoteEvtData data)
-    {
-        Note = note;
-        Length = data.Length;
-        OnTime = data.OnTime;
-        OffTime = data.OffTime;
-    }
-}
-
-public class NoteEvtData
-{
-    public short Number;
-    public float OnTime;
-    public float OffTime;
-    public float Length;
 }
 
 public class NoteListUnmanaged
 {
-    List<NoteEvtData> _notes = new();
-    public LinkedList<NoteWrapper> ActiveNotes = new();
-    public int NextYoungestIndex { get; private set; } = 0;
-    public int NextOldestIndex { get; private set; } = -1;
+    List<Note> _notes;
+    public LinkedList<NoteObject> ActiveNotes;
+    public int NextYoungestIndex { get; private set; }
+    public int NextOldestIndex { get; private set; }
     public int ActiveNoteCount
     {
         get { return ActiveNotes.Count; }
@@ -51,15 +31,24 @@ public class NoteListUnmanaged
         get { return _notes.Count; }
     }
 
-    public void AddNewNote(NoteEvtData noteEvtData, Transform parent, GameObject prefab)
+    public void AddNewNote(Note noteData, Transform parent, GameObject prefab)
     {
-        Debug.Log($"Adding note {noteEvtData.Number} @ time {noteEvtData.OnTime}");
-        var wrappedData = new NoteWrapper(UnityEngine.Object.Instantiate(prefab, parent), noteEvtData);
+        Debug.Log($"Adding note {noteData.NoteName} @ time {noteData.Time}");
+        var wrappedData = new NoteObject(UnityEngine.Object.Instantiate(prefab, parent), noteData);
         wrappedData.Note.GetComponent<SpriteRenderer>().enabled = true;
         ActiveNotes.AddLast(wrappedData);
     }
+
+    public NoteListUnmanaged()
+    {
+        _notes = new();
+        ActiveNotes = new();
+        NextYoungestIndex = 0;
+        NextOldestIndex = -1;
+    }
 }
 
+/*
 public class NoteListManager
 {
     List<NoteEvtData> _notes = new();
@@ -153,7 +142,7 @@ public class NoteListManager
         ActiveNotes.AddLast(wrapper);
         NextYoungestIndex++;
     }
-}
+}*/
 
 public class NoteLane : MonoBehaviour
 {
@@ -186,12 +175,12 @@ public class NoteLane : MonoBehaviour
     /// Checks if a note is visible on the runway.
     /// </summary>
     /// <param name="playbackTime">Current time of playback in ms.</param>
-    /// <param name="noteWrapper"></param>
+    /// <param name="noteObject"></param>
     /// <returns></returns>
-    bool NoteVisible(float playbackTime, NoteWrapper noteWrapper)
+    bool NoteVisible(float playbackTime, NoteObject noteObject)
     {
-        if (noteWrapper == null) return false;
-        return NoteVisible(playbackTime, noteWrapper.OnTime, noteWrapper.OffTime);
+        if (noteObject == null) return false;
+        return NoteVisible(playbackTime, noteObject.Data.Time, noteObject.Data.EndTime);
     }
 
     /// <summary>
