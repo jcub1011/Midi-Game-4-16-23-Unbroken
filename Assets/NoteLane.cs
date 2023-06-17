@@ -48,108 +48,12 @@ public class NoteListUnmanaged
     }
 }
 
-/*
-public class NoteListManager
-{
-    List<NoteEvtData> _notes = new();
-    public LinkedList<NoteWrapper> ActiveNotes = new();
-    public int NextYoungestIndex { get; private set; } = 0;
-    public int NextOldestIndex { get; private set; } = -1;
-    public int ActiveNoteCount
-    {
-        get { return ActiveNotes.Count; }
-    }
-    public int TotalNoteCount
-    {
-        get { return _notes.Count; }
-    }
-
-    public void ClearNoteList()
-    {
-        _notes.Clear();
-    }
-
-    public void AddNewNote(NoteEvtData noteEvtData)
-    {
-        Debug.Log($"Adding note {noteEvtData.Number} @ time {noteEvtData.OnTime}");
-        _notes.Add(noteEvtData);
-    }
-
-    public void OverwriteNoteList(List<NoteEvtData> notes)
-    {
-        _notes = notes;
-    }
-
-    public NoteWrapper PeekCurrentYoungestNote()
-    {
-        if (ActiveNoteCount == 0) return null;
-        return ActiveNotes.Last.Value;
-    }
-
-    public NoteEvtData PeekNextYoungestNote()
-    {
-        if (_notes.Count == NextYoungestIndex) return null;
-        return _notes[NextYoungestIndex];
-    }
-
-    public NoteWrapper PeekCurrentOldestNote()
-    {
-        if (ActiveNoteCount == 0) return null;
-        return ActiveNotes.First.Value;
-    }
-
-    public NoteEvtData PeekNextOldestNote()
-    {
-        if (NextOldestIndex < 0) return null;
-        return _notes[NextOldestIndex];
-    }
-
-    public void UnmanageOldestNote()
-    {
-        if (NextOldestIndex == _notes.Count) return;
-        var oldNote = ActiveNotes.First;
-        ActiveNotes.RemoveFirst();
-        UnityEngine.Object.Destroy(oldNote.Value.Note);
-        NextOldestIndex++;
-    }
-
-    public void ManageNextOldestNote(Transform parent, GameObject notePreFab)
-    {
-        if (NextOldestIndex < 0) return;
-        var nextOldNote = UnityEngine.Object.Instantiate(notePreFab, parent);
-        nextOldNote.GetComponent<SpriteRenderer>().enabled = true;
-        var wrapper = new NoteWrapper(nextOldNote, _notes[NextOldestIndex]);
-        ActiveNotes.AddFirst(wrapper);
-        NextOldestIndex--;
-        Debug.Log($"Managing note");
-    }
-
-    public void UnmanageYoungestNote()
-    {
-        if (NextYoungestIndex < 0) return;
-        var newestNote = ActiveNotes.Last;
-        ActiveNotes.RemoveLast();
-        UnityEngine.Object.Destroy(newestNote.Value.Note);
-        NextYoungestIndex--;
-    }
-
-    public void ManageNextYoungestNote(Transform parent, GameObject notePreFab)
-    {
-        if (NextYoungestIndex == _notes.Count) return;
-        var nextNewestNote = UnityEngine.Object.Instantiate(notePreFab, parent);
-        nextNewestNote.GetComponent<SpriteRenderer>().enabled = true;
-        var wrapper = new NoteWrapper(nextNewestNote, _notes[NextYoungestIndex]);
-        ActiveNotes.AddLast(wrapper);
-        NextYoungestIndex++;
-    }
-}*/
-
 public class NoteLane : MonoBehaviour
 {
     #region Properies
     GameObject NotePrefab;
-    float _laneEnterOffset;
-    float _laneExitOffset;
+    long _laneEnterOffset;
+    long _laneExitOffset;
     NoteListUnmanaged _notePlayList;
     float _zPos;
     float _xPos;
@@ -159,83 +63,65 @@ public class NoteLane : MonoBehaviour
     /// <summary>
     /// Checks if a note is visible on the runway.
     /// </summary>
-    /// <param name="playbackTime">Current time of playback in ms.</param>
-    /// <param name="noteOnTime"></param>
-    /// <param name="noteOffTime"></param>
+    /// <param name="playbackTick">Current time of playback in ticks.</param>
+    /// <param name="noteOnTick">Time of note on evt in ticks.</param>
+    /// <param name="noteOffTick">Time of note off in ticks.</param>
     /// <returns>True if visible.</returns>
-    bool NoteVisible(float playbackTime, float noteOnTime, float noteOffTime)
+    bool NoteVisible(long playbackTick, long noteOnTick, long noteOffTick)
     {
-        var enterTime = _laneEnterOffset - playbackTime;
-        var exitTime = _laneExitOffset + playbackTime;
+        var enterTick = _laneEnterOffset - playbackTick;
+        var exitTick = _laneExitOffset + playbackTick;
         // Check if either end is within the lane bounds.
-        return noteOnTime >= enterTime && noteOffTime <= exitTime;
+        return noteOnTick >= enterTick && noteOffTick <= exitTick;
     }
 
     /// <summary>
     /// Checks if a note is visible on the runway.
     /// </summary>
-    /// <param name="playbackTime">Current time of playback in ms.</param>
+    /// <param name="playbackTick">Current time of playback in ticks.</param>
     /// <param name="noteObject"></param>
     /// <returns></returns>
-    bool NoteVisible(float playbackTime, NoteObject noteObject)
+    bool NoteVisible(long playbackTick, NoteObject noteObject)
     {
         if (noteObject == null) return false;
-        return NoteVisible(playbackTime, noteObject.Data.Time, noteObject.Data.EndTime);
+        return NoteVisible(playbackTick, noteObject.Data.Time, noteObject.Data.EndTime);
     }
 
-    /// <summary>
-    /// Checks if a note is visible on the runway.
-    /// </summary>
-    /// <param name="playbackTime">Current time of playback in ms.</param>
-    /// <param name="noteEvtData"></param>
-    /// <returns></returns>
-    bool NoteVisible(float playbackTime, NoteEvtData noteEvtData)
+    bool NoteVisible(long playbackTick, Note noteData)
     {
-        if (noteEvtData == null) return false;
-        return NoteVisible(playbackTime, noteEvtData.OnTime, noteEvtData.OffTime);
+        if (noteData == null) return false;
+        return NoteVisible(playbackTick, noteData.Time, noteData.EndTime);
     }
 
     /// <summary>
     /// Updates the list of active notes.
     /// </summary>
-    /// <param name="playbackTime"></param>
-    void UpdateActiveNoteList(float playbackTime)
+    /// <param name="playbackTick">Current tick of playback.</param>
+    void UpdateActiveNoteList(long playbackTick)
     {
-        /*
-        // Add notes to the top.
-        while (NoteVisible(playbackTime, _notePlayList.PeekNextYoungestNote()))
-        {
-            _notePlayList.ManageNextYoungestNote(transform, NotePrefab);
-        }
-
-        // Add notes to the bottom.
-        while (NoteVisible(playbackTime, _notePlayList.PeekNextOldestNote()))
-        {
-            _notePlayList.ManageNextOldestNote(transform, NotePrefab);
-        }*/
     }
 
     /// <summary>
     /// Gets the accuracy of the note play.
     /// </summary>
-    /// <param name="differenceMs">Difference between the actual note time and the played note time.</param>
-    /// <param name="forgiveness">Range of forgiveness in ms.</param>
+    /// <param name="differenceTicks">Difference between the actual note tick and the played note tick.</param>
+    /// <param name="forgiveness">Range of forgiveness in ticks.</param>
     /// <returns></returns>
-    float CalculateAccuracy(float differenceMs, float forgiveness)
+    float CalculateAccuracy(long differenceTicks, long forgiveness)
     {
-        if (differenceMs < 0f) differenceMs *= -1f; // Make it positive.
+        if (differenceTicks < 0) differenceTicks *= -1; // Make it positive.
 
-        if (differenceMs == 0)
+        if (differenceTicks == 0)
         {
             return 100f;
         }
 
-        if (differenceMs > forgiveness)
+        if (differenceTicks > forgiveness)
         {
             return 0f;
         }
 
-        float accuracy = 100f - (differenceMs / forgiveness) * 100f;
+        float accuracy = 100f - (float)differenceTicks / forgiveness * 100f;
 
         return accuracy;
     }
@@ -255,58 +141,27 @@ public class NoteLane : MonoBehaviour
     /// <summary>
     /// Deletes the game objects for notes that aren't visible.
     /// </summary>
-    /// <param name="playbackTime"></param>
-    void UnmanageNotesNotVisible(float playbackTime)
+    /// <param name="playbackTick"></param>
+    void UnmanageNotesNotVisible(float playbackTick)
     {
-        /*
-        // Delete notes that are below floor.
-        while (_notePlayList.ActiveNoteCount > 0)
-        {
-            // Get top y pos of note.
-            var oldestNote = _notePlayList.PeekCurrentOldestNote();
-
-            if (!NoteVisible(playbackTime, oldestNote))
-            {
-                _notePlayList.UnmanageOldestNote();
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        // Delete notes that are above ceiling.
-        while (_notePlayList.ActiveNoteCount > 0)
-        {
-            // Get bottom y pos of note.
-            var lastNote = _notePlayList.PeekCurrentYoungestNote();
-
-            if (!NoteVisible(playbackTime, lastNote))
-            {
-                _notePlayList.UnmanageYoungestNote();
-            }
-            else
-            {
-                break;
-            }
-        }*/
     }
 
     /// <summary>
     /// Updates the note positions for all managed notes.
     /// </summary>
-    /// <param name="playbackTime"></param>
-    void UpdateNotePositions(float playbackTime, float unitsPerMs)
+    /// <param name="playbackTick">Time in ticks.</param>
+    void UpdateNotePositions(long playbackTick, float unitsPerTick)
     {
-        var halfRunwayHeight = (_laneEnterOffset + _laneExitOffset) * unitsPerMs / 2f;
+        var halfRunwayHeight = (_laneEnterOffset + _laneExitOffset) * unitsPerTick / 2f;
+
         // Update positions for all managed notes.
-        foreach (var wrapper in _notePlayList.ActiveNotes)
+        foreach (var noteObject in _notePlayList.ActiveNotes)
         {
             // Get new scale.
             var newScale = new Vector3
             {
                 x = 1,
-                y = wrapper.Length * unitsPerMs,
+                y = noteObject.Data.Length * unitsPerTick,
                 z = 1
             };
 
@@ -314,13 +169,13 @@ public class NoteLane : MonoBehaviour
             var newPosition = new Vector3
             {
                 x = 0,
-                y = halfRunwayHeight - (unitsPerMs * (playbackTime - wrapper.OnTime)) + newScale.y / 2,
+                y = halfRunwayHeight - (unitsPerTick * (playbackTick - noteObject.Data.Time)) + newScale.y / 2,
                 z = 0
             };
 
             // Update scale and position.
-            wrapper.Note.transform.localPosition = newPosition;
-            wrapper.Note.transform.localScale = newScale;
+            noteObject.Note.transform.localPosition = newPosition;
+            noteObject.Note.transform.localScale = newScale;
         }
     }
     #endregion
@@ -331,7 +186,7 @@ public class NoteLane : MonoBehaviour
         NotePrefab = notePrefab;
     }
 
-    public void UpdateLane(float playbackTime, float unitsPerMs)
+    public void UpdateLane(long playbackTick, float unitsPerMs)
     {
         if (_notePlayList == null)
         {
@@ -339,16 +194,16 @@ public class NoteLane : MonoBehaviour
             return;
         }
 
-        UpdateActiveNoteList(playbackTime);
-        UpdateNotePositions(playbackTime, unitsPerMs);
-        UnmanageNotesNotVisible(playbackTime);
+        UpdateActiveNoteList(playbackTick);
+        UpdateNotePositions(playbackTick, unitsPerMs);
+        UnmanageNotesNotVisible(playbackTick);
     }
 
     /// <summary>
     /// Adds a note to the note play list.
     /// </summary>
     /// <param name="newNote"></param>
-    public void AddNote(NoteEvtData newNote)
+    public void AddNote(Note newNote)
     {
         _notePlayList ??= new(); // Null coalescing operator.
         _notePlayList.AddNewNote(newNote, transform, NotePrefab);
@@ -358,9 +213,10 @@ public class NoteLane : MonoBehaviour
     /// Replaces the note play list with a new note play list.
     /// </summary>
     /// <param name="notes"></param>
-    public void AddNotesList(List<NoteEvtData> notes)
+    public void AddNotesList(List<Note> notes)
     {
         _notePlayList ??= new();
+
         //_notePlayList.OverwriteNoteList(notes);
         foreach (var note in notes)
         {
