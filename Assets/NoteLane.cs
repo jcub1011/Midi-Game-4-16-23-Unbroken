@@ -109,13 +109,23 @@ public class NoteLane : MonoBehaviour
     {
         return rangeMin <= number && number <= rangeMax;
     }
+    #endregion
 
+    #region Public Methods
     /// <summary>
-    /// Updates the note positions for all managed notes.
+    /// Updates the scale and position of all the notes in the lane.
     /// </summary>
-    /// <param name="playbackTick">Time in ticks.</param>
-    void UpdateNotePositions(long playbackTick, float unitsPerTick, float topYPos)
+    /// <param name="playbackTick"></param>
+    /// <param name="unitsPerTick"></param>
+    /// <param name="topYPos"></param>
+    public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
     {
+        if (Notes == null || Notes.Count == 0)
+        {
+            Debug.Log($"Lane has no notes.");
+            return;
+        }
+
         // Update positions for all managed notes.
         foreach (var noteObject in Notes)
         {
@@ -139,47 +149,6 @@ public class NoteLane : MonoBehaviour
             noteObject.Note.transform.localPosition = newPosition;
             noteObject.Note.transform.localScale = newScale;
         }
-    }
-    #endregion
-
-    #region Public Methods
-    /// <summary>
-    /// Updates the scale and position of all the notes in the lane.
-    /// </summary>
-    /// <param name="playbackTick"></param>
-    /// <param name="unitsPerTick"></param>
-    /// <param name="topYPos"></param>
-    public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
-    {
-        if (Notes == null || Notes.Count == 0)
-        {
-            Debug.Log($"Lane has no notes.");
-            return;
-        }
-
-        UpdateNotePositions(playbackTick, unitsPerTick, topYPos);
-    }
-
-    /// <summary>
-    /// Adds note to end of list.
-    /// </summary>
-    /// <param name="noteData">Data for note.</param>
-    /// <param name="notePrefab">Prefab to use for note.</param>
-    public void AddNoteLast(Note noteData, GameObject notePrefab)
-    {
-        var obj = new NoteObject(notePrefab, noteData);
-        Notes.AddLast(obj);
-    }
-
-    /// <summary>
-    /// Adds note to front of list.
-    /// </summary>
-    /// <param name="noteData">Data for note.</param>
-    /// <param name="notePrefab">Prefab to use for note.</param>
-    public void AddNoteFront(Note noteData, GameObject notePrefab)
-    {
-        var obj = new NoteObject(notePrefab, noteData);
-        Notes.AddFirst(obj);
     }
 
     /// <summary>
@@ -249,6 +218,68 @@ public class NoteLane : MonoBehaviour
             _width = value;
             transform.localScale = new Vector3(_width, 1f, 1f);
         }
+    }
+    #endregion
+
+    #region Notes Get Set Remove Functions
+    /// <summary>
+    /// Adds note to end of list.
+    /// </summary>
+    /// <param name="noteData">Data for note.</param>
+    /// <param name="notePrefab">Prefab to use for note.</param>
+    public void AddNoteLast(Note noteData, GameObject notePrefab)
+    {
+        var obj = new NoteObject(notePrefab, noteData);
+        Notes.AddLast(obj);
+    }
+
+    /// <summary>
+    /// Removes the last note.
+    /// </summary>
+    public void RemoveNoteLast()
+    {
+        var note = Notes.Last.Value;
+        Notes.RemoveLast();
+        Destroy(note.Note);
+    }
+
+    /// <summary>
+    /// Returns the last note.
+    /// </summary>
+    /// <returns></returns>
+    public NoteObject GetNoteLast()
+    {
+        return Notes.Last.Value;
+    }
+
+    /// <summary>
+    /// Adds note to front of list.
+    /// </summary>
+    /// <param name="noteData">Data for note.</param>
+    /// <param name="notePrefab">Prefab to use for note.</param>
+    public void AddNoteFront(Note noteData, GameObject notePrefab)
+    {
+        var obj = new NoteObject(notePrefab, noteData);
+        Notes.AddFirst(obj);
+    }
+
+    /// <summary>
+    /// Removes the first note.
+    /// </summary>
+    public void RemoveNoteFront()
+    {
+        var note = Notes.First.Value;
+        Notes.RemoveFirst();
+        Destroy(note.Note);
+    }
+
+    /// <summary>
+    /// Returns the first note.
+    /// </summary>
+    /// <returns></returns>
+    public NoteObject GetNoteFirst()
+    {
+        return Notes.First.Value;
     }
     #endregion
 }
