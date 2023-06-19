@@ -4,6 +4,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public delegate void NoteMissEvt(Note note);
+
 public class NoteObject
 {
     public GameObject Note { get; private set; }
@@ -36,6 +38,7 @@ public class NoteLane : MonoBehaviour
     public LinkedList<NoteObject> Notes { get; private set; }
     float _zPos;
     float _xPos;
+    public NoteMissEvt OnNoteMissed;
     #endregion
 
     #region Utility Methods
@@ -235,6 +238,7 @@ public class NoteLane : MonoBehaviour
     public void RemoveNoteFront()
     {
         var note = Notes.First.Value;
+        if (!note.Played) OnNoteMissed.Invoke(note.Data);
         Notes.RemoveFirst();
         Destroy(note.Note);
     }
@@ -246,6 +250,14 @@ public class NoteLane : MonoBehaviour
     public NoteObject GetNoteFirst()
     {
         return Notes.First.Value;
+    }
+
+    public void ResetNotesPlayed()
+    {
+        foreach (var obj in Notes)
+        {
+            obj.Played = false;
+        }
     }
     #endregion
 }
