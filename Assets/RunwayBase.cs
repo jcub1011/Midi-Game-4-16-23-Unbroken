@@ -1,6 +1,7 @@
 using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 internal class RunwayDisplayInfo
@@ -16,7 +17,7 @@ internal class RunwayDisplayInfo
     public static readonly IntRange MaxKeyKeyboard = new(0, 127);
 
     readonly IntRange _range; // Range of notes.
-    readonly float _msToReachRunway;
+    readonly long _ticksToReachStrikeBar;
     public readonly float _strikeBarHeightPercent; // Percent of screen from bottom.
     float[] _laneWidth;
     float _whiteNoteWidth; // In unity units.
@@ -24,7 +25,7 @@ internal class RunwayDisplayInfo
     #endregion
 
     #region Getter Setter Methods
-    public float UnitsPerMs { get; private set; } // How far the note moves per milisecond.
+    public float UnitsPerTick { get; private set; } // How far the note moves per tick.
     private float _runwayHeight;
     public float RunwayHeight
     {
@@ -33,7 +34,7 @@ internal class RunwayDisplayInfo
         {
             _runwayHeight = value;
             var distToStrikeBar = RunwayHeight - RunwayHeight * _strikeBarHeightPercent;
-            UnitsPerMs = distToStrikeBar / _msToReachRunway;
+            UnitsPerTick = distToStrikeBar / _ticksToReachStrikeBar;
         }
     }
     private float _runwayWidth;
@@ -46,6 +47,20 @@ internal class RunwayDisplayInfo
             _whiteNoteWidth = RunwayWidth / _numWhiteNoteLanes;
         }
     }
+
+    public long TicksVisibleAboveStrike
+    {
+        get { return _ticksToReachStrikeBar; }
+    }
+
+    public long TicksVisibleBelowStrike
+    {
+        get
+        {
+            var strikeHeight = _strikeBarHeightPercent * RunwayHeight;
+            return (long)(strikeHeight * UnitsPerTick);
+        }
+    }
     #endregion
 
     #region Constructors
@@ -55,9 +70,9 @@ internal class RunwayDisplayInfo
     /// <param name="runwayDimensions">Inital dimensions of the runway.</param>
     /// <param name="strikeBarHeight">Height of the strike bar as a percent of runway from the bottom
     /// where 1 = 100%.</param>
-    /// <param name="msLeadup">Time before the first note hits the strike bar.</param>
+    /// <param name="ticksLeadup">Ticks before the first note hits the strike bar.</param>
     /// <param name="range">Range of notes to display.</param>
-    public RunwayDisplayInfo(float[] runwayDimensions, float strikeBarHeight, float msLeadup, IntRange range)
+    public RunwayDisplayInfo(float[] runwayDimensions, float strikeBarHeight, long ticksLeadup, IntRange range)
     {
         // Readonly properties.
         if (strikeBarHeight < 0f || strikeBarHeight > 1f)
@@ -65,7 +80,7 @@ internal class RunwayDisplayInfo
             throw new ArgumentOutOfRangeException("Height should be a decimal between 0 and 1 inclusively.");
         }
         _strikeBarHeightPercent = strikeBarHeight;
-        _msToReachRunway = msLeadup;
+        _ticksToReachStrikeBar = ticksLeadup;
         _range = range;
 
         InitLaneWidthArray();
@@ -77,7 +92,7 @@ internal class RunwayDisplayInfo
     #region Methods
     bool IsWhiteNote(int noteNum)
     {
-        // Note pattern repeats every 12 notes.
+        // Middle c is note number 60. 12 is number of notes in an octave.
         return (noteNum % 12) switch
         {
             0 => true,
@@ -92,7 +107,7 @@ internal class RunwayDisplayInfo
             9 => true,
             10 => false,
             11 => true,
-            _ => false,
+            _ => false
         };
     }
 
@@ -115,14 +130,12 @@ internal class RunwayDisplayInfo
         // Init multiplication factors for each lane.
         for (int i = 0; i < _laneWidth.Length; i++)
         {
-            // Middle c is note number 60. 12 is number of notes in an octave.
             var noteNum = i + _range.Min;
-            var normalizedNum = noteNum % 12;
 
-            _numWhiteNoteLanes += IsWhiteNote(normalizedNum) ? 1 : 0;
+            _numWhiteNoteLanes += IsWhiteNote(noteNum) ? 1 : 0;
             // Only full size notes will add to the count.
 
-            _laneWidth[i] = IsWhiteNote(normalizedNum) ? WHITE_NOTE_WIDTH_FACTOR : BLACK_NOTE_WIDTH_FACTOR;
+            _laneWidth[i] = IsWhiteNote(noteNum) ? WHITE_NOTE_WIDTH_FACTOR : BLACK_NOTE_WIDTH_FACTOR;
         }
 
         Debug.Log($"Width in white notes: {_numWhiteNoteLanes}");
@@ -154,9 +167,189 @@ internal class RunwayDisplayInfo
     #endregion
 }
 
-public class RunwayNoteManager
-{
+internal delegate void IndexChangeEvent(Note note);
 
+internal class NoteManager
+{
+    #region Properties
+    int CurrentLatestIndex { get; set; }
+    int NextLatestIndex
+    {
+        get { return CurrentLatestIndex + 1; }
+    }
+
+
+    int CurrentEarliestIndex { get; set; }
+    int NextEarliestIndex
+    {
+        get { return CurrentEarliestIndex + -1; }
+    }
+
+
+
+    readonly List<Note> _notes;
+
+    public IndexChangeEvent AddedNextLatestNote;
+    public IndexChangeEvent RemovedLatestNote;
+    public IndexChangeEvent AddedNextEarliestNote;
+    public IndexChangeEvent RemovedEarliestNote;
+    #endregion
+
+    #region Constructors
+    public NoteManager(List<Note> notes)
+    {
+        CurrentEarliestIndex = 0;
+        CurrentLatestIndex = -1;
+
+        _notes = notes;
+    }
+    #endregion
+
+    #region Methods
+    /// <summary>
+    /// Updates what notes are visible.
+    /// </summary>
+    /// <param name="playbackTick">Current tick of playback.</param>
+    /// <param name="ticksBeforeStrike">Ticks notes can be seen before hitting strike bar.</param>
+    /// <param name="ticksAfterStrike">Ticks notes can be seen after hitting stike bar.</param>
+    public void UpdateVisibleNotes(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
+    {
+        AddVisibleEarliestNotes(playbackTick, ticksAfterStrike);
+        AddVisibleLatestNotes(playbackTick, ticksBeforeStrike);
+        RemoveHiddenEarliestNotes(playbackTick, ticksAfterStrike);
+        RemoveHiddenLatestNotes(playbackTick, ticksBeforeStrike);
+    }
+
+    void AddVisibleLatestNotes(long playbackTick, long ticksBeforeStrike)
+    {
+        while(PeekNextLatest() != null)
+        {
+            // If note visible.
+            if (PeekNextLatest().Time - playbackTick <= ticksBeforeStrike) AddNextLatest();
+            else break;
+        }
+    }
+
+    void RemoveHiddenLatestNotes(long playbackTick, long ticksBeforeStrike)
+    {
+        while (PeekCurrentLatest() != null)
+        {
+            // Stop when notes are visible.
+            if (PeekCurrentLatest().Time - playbackTick <= ticksBeforeStrike) break;
+            else RemoveCurrentLatest();
+        }
+    }
+
+    void AddVisibleEarliestNotes(long playbackTick, long ticksAfterStrike)
+    {
+        while (PeekNextEarliest() != null)
+        {
+            // If note visible.
+            if (playbackTick - PeekNextEarliest().Time > ticksAfterStrike) AddNextEarliest();
+            else break;
+        }
+    }
+
+    void RemoveHiddenEarliestNotes(long playbackTick, long ticksAfterStrike)
+    {
+        while (PeekCurrentEarliest() != null)
+        {
+            // Stop when notes are visible.
+            if (playbackTick - PeekNextEarliest().Time > ticksAfterStrike) break;
+            else RemoveCurrentEarliest();
+        }
+    }
+    #endregion
+
+    #region Display Indicies Manager
+    /// <summary>
+    /// Gets the next latest note but doesn't add it to displayed notes.
+    /// </summary>
+    /// <returns>Null when none.</returns>
+    private Note PeekNextLatest()
+    {
+        return (NextLatestIndex < _notes.Count) ? _notes[NextLatestIndex] : null;
+    }
+
+    /// <summary>
+    /// Adds next latest to displayed notes.
+    /// </summary>
+    private void AddNextLatest()
+    {
+        var note = PeekNextLatest();
+        if (note != null)
+        {
+            CurrentLatestIndex++;
+            AddedNextLatestNote.Invoke(note);
+        }
+    }
+
+    /// <summary>
+    /// Gets the current latest note but doens't remove it from displayed notes.
+    /// </summary>
+    /// <returns>Null when none.</returns>
+    private Note PeekCurrentLatest()
+    {
+        return (CurrentLatestIndex >= 0) ? _notes[CurrentLatestIndex] : null;
+    }
+
+    /// <summary>
+    /// Removes current latest from displayed notes.
+    /// </summary>
+    private void RemoveCurrentLatest()
+    {
+        var note = PeekCurrentLatest();
+        if (note != null)
+        {
+            CurrentLatestIndex--;
+            RemovedLatestNote.Invoke(note);
+        }
+    }
+
+    /// <summary>
+    /// Gets the next earliest note but doesn't add it to displayed notes.
+    /// </summary>
+    /// <returns>Null when none.</returns>
+    private Note PeekNextEarliest()
+    {
+        return (NextEarliestIndex > -1) ? _notes[NextEarliestIndex] : null;
+    }
+
+    /// <summary>
+    /// Gets the next earliest note and adds it to displayed notes.
+    /// </summary>
+    private void AddNextEarliest()
+    {
+        var note = PeekNextEarliest();
+        if (note != null)
+        {
+            CurrentEarliestIndex--;
+            AddedNextEarliestNote.Invoke(note);
+        }
+    }
+
+    /// <summary>
+    /// Gets the current earliest note without removing it from displayed notes.
+    /// </summary>
+    /// <returns>Null when none.</returns>
+    private Note PeekCurrentEarliest()
+    {
+        return (CurrentEarliestIndex < _notes.Count) ? _notes[CurrentEarliestIndex] : null;
+    }
+
+    /// <summary>
+    /// Gets the current earliest note and removes it from displayed notes.
+    /// </summary>
+    private void RemoveCurrentEarliest()
+    {
+        var note = PeekCurrentEarliest();
+        if (note != null)
+        {
+            CurrentEarliestIndex++;
+            RemovedEarliestNote.Invoke(note);
+        }
+    }
+    #endregion
 }
 
 public class RunwayBase
@@ -165,55 +358,88 @@ public class RunwayBase
     IntRange _noteRange;
     RunwayDisplayInfo _displayInfo;
     NoteLane[] _lanes;
-    RunwayNoteManager _noteManager;
+    readonly NoteManager _noteManager;
+    readonly GameObject _wNotePrefab;
+    readonly GameObject _bNotePrefab;
     #endregion
 
     #region Constructors
     public RunwayBase(List<Note> notes, float[] dimensions, float strikeBarHeight,
-        float msToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
+        long ticksToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
         GameObject whiteNotePrefab, GameObject blackNotePrefab)
     {
         _noteRange = GetNoteRange(notes);
-        _displayInfo = new(dimensions, strikeBarHeight, msToReachStrikeBar, _noteRange);
+        _displayInfo = new(dimensions, strikeBarHeight, ticksToReachStrikeBar, _noteRange);
         _lanes = new NoteLane[_noteRange.Len];
+        _noteManager = new(notes)
+        {
+            // Subscribe to events.
+            AddedNextLatestNote = NewLatestNote,
+            AddedNextEarliestNote = NewEarliestNote,
+            RemovedLatestNote = RemovedLatestNote,
+            RemovedEarliestNote = RemovedEarliestNote
+        };
 
         Debug.Log($"Range of notes {_noteRange.Len}.");
 
-        // Calculate time offsets.
-        float runwayEnterOffset = msToReachStrikeBar;
-        float runwayExitOffset = _displayInfo.RunwayHeight * strikeBarHeight / _displayInfo.UnitsPerMs;
+        // Init note prefabs.
+        _wNotePrefab = whiteNotePrefab;
+        _bNotePrefab = blackNotePrefab;
 
         // Initalize lanes.
         for (int i = 0; i < _lanes.Length; i++)
         {
             var newLane = UnityEngine.Object.Instantiate(lanePrefab, lanesParent);
             _lanes[i] = newLane.GetComponent<NoteLane>();
-            _lanes[i].SetOffsets(runwayEnterOffset, runwayExitOffset);
-            _lanes[i].SetNotePrefab(_displayInfo.IsWhiteNoteLane(i) ? whiteNotePrefab : blackNotePrefab);
             _lanes[i].SetPosition(_displayInfo.GetLaneXPos(i), _displayInfo.IsWhiteNoteLane(i) ? 1 : 0);
-        }
-
-        // Distribute notes.
-        foreach (var note in notes)
-        {
-            _lanes[note.Number - _noteRange.Min].AddNote(note);
         }
 
         UpdateLaneDimensions();
     }
     #endregion
 
-    #region Methods
+    #region Event Handlers
+    void NewEarliestNote(Note note)
+    {
+        Debug.Log("Adding new earliest note.");
+        var laneIndex = note.NoteNumber - _noteRange.Min;
+        _lanes[laneIndex].AddNoteFront(note, 
+            _displayInfo.IsWhiteNoteLane(laneIndex) ? _wNotePrefab : _bNotePrefab);
+    }
 
-    IntRange GetNoteRange(List<NoteEvtData> notes)
+    void RemovedEarliestNote(Note note)
+    {
+        Debug.Log("Removing earliest note.");
+        var laneIndex = note.NoteNumber - _noteRange.Min;
+        _lanes[laneIndex].RemoveNoteFront();
+    }
+
+    void NewLatestNote(Note note)
+    {
+        Debug.Log("Adding new latest note.");
+        var laneIndex = note.NoteNumber - _noteRange.Min;
+        _lanes[laneIndex].AddNoteLast(note,
+            _displayInfo.IsWhiteNoteLane(laneIndex) ? _wNotePrefab : _bNotePrefab);
+    }
+
+    void RemovedLatestNote(Note note)
+    {
+        Debug.Log("Removing latest note.");
+        var laneIndex = note.NoteNumber - _noteRange.Min;
+        _lanes[laneIndex].RemoveNoteLast();
+    }
+    #endregion
+
+    #region Methods
+    IntRange GetNoteRange(List<Note> notes)
     {
         short min = short.MaxValue;
         short max = short.MinValue;
 
         foreach (var note in notes)
         {
-            if (note.Number < min) min = note.Number;
-            if (note.Number > max) max = note.Number;
+            if (note.NoteNumber < min) min = note.NoteNumber;
+            if (note.NoteNumber > max) max = note.NoteNumber;
         }
 
         Debug.Log($"Note range: {min} - {max}");
@@ -247,8 +473,6 @@ public class RunwayBase
             UnityEngine.GameObject.Find("128KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
         }
 
-
-
         return rangeToReturn;
     }
 
@@ -261,12 +485,14 @@ public class RunwayBase
         }
     }
 
-    public void UpdateRunway(float playbackTime)
+    public void UpdateRunway(long playbackTick)
     {
+        _noteManager.UpdateVisibleNotes(playbackTick, _displayInfo.TicksVisibleAboveStrike, _displayInfo.TicksVisibleBelowStrike);
+
         if (_lanes == null) return;
         foreach (var lane in _lanes)
         {
-            lane.UpdateLane(playbackTime, _displayInfo.UnitsPerMs);
+            lane.UpdateLane(playbackTick, _displayInfo.UnitsPerTick, _displayInfo.RunwayHeight / 2f);
         }
     }
 
@@ -291,6 +517,6 @@ public class RunwayBase
         _lanes = null;
         _displayInfo = null;
         _noteRange = null;
-    } 
+    }
     #endregion
 }

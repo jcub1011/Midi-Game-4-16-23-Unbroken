@@ -39,40 +39,6 @@ public class NoteLane : MonoBehaviour
     #endregion
 
     #region Utility Methods
-    /*
-    /// <summary>
-    /// Checks if a note is visible on the runway.
-    /// </summary>
-    /// <param name="playbackTick">Current time of playback in ticks.</param>
-    /// <param name="noteOnTick">Time of note on evt in ticks.</param>
-    /// <param name="noteOffTick">Time of note off in ticks.</param>
-    /// <returns>True if visible.</returns>
-    bool NoteVisible(long playbackTick, long noteOnTick, long noteOffTick)
-    {
-        var enterTick = _laneEnterOffset - playbackTick;
-        var exitTick = _laneExitOffset + playbackTick;
-        // Check if either end is within the lane bounds.
-        return noteOnTick >= enterTick && noteOffTick <= exitTick;
-    }
-
-    /// <summary>
-    /// Checks if a note is visible on the runway.
-    /// </summary>
-    /// <param name="playbackTick">Current time of playback in ticks.</param>
-    /// <param name="noteObject"></param>
-    /// <returns></returns>
-    bool NoteVisible(long playbackTick, NoteObject noteObject)
-    {
-        if (noteObject == null) return false;
-        return NoteVisible(playbackTick, noteObject.Data.Time, noteObject.Data.EndTime);
-    }
-
-    bool NoteVisible(long playbackTick, Note noteData)
-    {
-        if (noteData == null) return false;
-        return NoteVisible(playbackTick, noteData.Time, noteData.EndTime);
-    }*/
-
     /// <summary>
     /// Gets the accuracy of the note play.
     /// </summary>
