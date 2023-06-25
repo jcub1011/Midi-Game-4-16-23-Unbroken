@@ -216,9 +216,9 @@ internal class NoteManager
     public void UpdateVisibleNotes(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
     {
         AddVisibleEarliestNotes(playbackTick, ticksAfterStrike);
+        RemoveHiddenLatestNotes(playbackTick, ticksBeforeStrike);
         AddVisibleLatestNotes(playbackTick, ticksBeforeStrike);
         RemoveHiddenEarliestNotes(playbackTick, ticksAfterStrike);
-        RemoveHiddenLatestNotes(playbackTick, ticksBeforeStrike);
     }
 
     void AddVisibleLatestNotes(long playbackTick, long ticksBeforeStrike)
@@ -256,7 +256,7 @@ internal class NoteManager
         while (PeekCurrentEarliest() != null)
         {
             // Stop when notes are visible.
-            if (playbackTick - PeekNextEarliest().Time > ticksAfterStrike) break;
+            if (playbackTick - PeekCurrentEarliest().Time > ticksAfterStrike) break;
             else RemoveCurrentEarliest();
         }
     }

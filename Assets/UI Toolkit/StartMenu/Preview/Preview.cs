@@ -68,7 +68,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
     #region Methods
     void UpdatePlaybackTime(ChangeEvent<float> evt)
     {
-        Debug.Log($"New Time: {evt.newValue}");
+        //Debug.Log($"New Time: {evt.newValue}");
         var ticks = TimeConverter.ConvertFrom(new MetricTimeSpan( 0, 0, 0, (int)evt.newValue), _tempoMap);
         _runway.UpdateTime(ticks);
     }

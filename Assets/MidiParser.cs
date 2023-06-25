@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class TrackInstrumentWrapper
 {
-    public List<Note> notes = new List<Note>();
+    public List<Note> notes = new();
     public string Instrument = "";
 }
 

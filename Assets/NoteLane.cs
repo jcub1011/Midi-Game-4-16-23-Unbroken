@@ -191,6 +191,13 @@ public class NoteLane : MonoBehaviour
     #endregion
 
     #region Notes Get Set Remove Functions
+    NoteObject MakeNoteObject(Note noteData, GameObject prefab)
+    {
+        var obj = new NoteObject(prefab, noteData);
+        obj.Note.GetComponent<SpriteRenderer>().enabled = true;
+        return obj;
+    }
+
     /// <summary>
     /// Adds note to end of list.
     /// </summary>
@@ -199,8 +206,7 @@ public class NoteLane : MonoBehaviour
     public void AddNoteLast(Note noteData, GameObject notePrefab)
     {
         Notes ??= new();
-        var obj = new NoteObject(notePrefab, noteData);
-        Notes.AddLast(obj);
+        Notes.AddLast(MakeNoteObject(noteData, notePrefab));
     }
 
     /// <summary>
@@ -232,8 +238,7 @@ public class NoteLane : MonoBehaviour
     public void AddNoteFront(Note noteData, GameObject notePrefab)
     {
         Notes ??= new();
-        var obj = new NoteObject(notePrefab, noteData);
-        Notes.AddFirst(obj);
+        Notes.AddFirst(MakeNoteObject(noteData, notePrefab));
     }
 
     /// <summary>
@@ -243,9 +248,9 @@ public class NoteLane : MonoBehaviour
     {
         Notes ??= new();
         var note = Notes.First.Value;
-        if (!note.Played) OnNoteMissed.Invoke(note.Data);
         Notes.RemoveFirst();
         Destroy(note.Note);
+        if (!note.Played && OnNoteMissed != null) OnNoteMissed.Invoke(note.Data);
     }
 
     /// <summary>
