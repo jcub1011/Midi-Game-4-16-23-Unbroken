@@ -198,6 +198,7 @@ public class NoteLane : MonoBehaviour
     /// <param name="notePrefab">Prefab to use for note.</param>
     public void AddNoteLast(Note noteData, GameObject notePrefab)
     {
+        Notes ??= new();
         var obj = new NoteObject(notePrefab, noteData);
         Notes.AddLast(obj);
     }
@@ -207,6 +208,7 @@ public class NoteLane : MonoBehaviour
     /// </summary>
     public void RemoveNoteLast()
     {
+        Notes ??= new();
         var note = Notes.Last.Value;
         Notes.RemoveLast();
         Destroy(note.Note);
@@ -218,6 +220,7 @@ public class NoteLane : MonoBehaviour
     /// <returns></returns>
     public NoteObject GetNoteLast()
     {
+        Notes ??= new();
         return Notes.Last.Value;
     }
 
@@ -228,6 +231,7 @@ public class NoteLane : MonoBehaviour
     /// <param name="notePrefab">Prefab to use for note.</param>
     public void AddNoteFront(Note noteData, GameObject notePrefab)
     {
+        Notes ??= new();
         var obj = new NoteObject(notePrefab, noteData);
         Notes.AddFirst(obj);
     }
@@ -237,6 +241,7 @@ public class NoteLane : MonoBehaviour
     /// </summary>
     public void RemoveNoteFront()
     {
+        Notes ??= new();
         var note = Notes.First.Value;
         if (!note.Played) OnNoteMissed.Invoke(note.Data);
         Notes.RemoveFirst();
@@ -249,11 +254,13 @@ public class NoteLane : MonoBehaviour
     /// <returns></returns>
     public NoteObject GetNoteFirst()
     {
+        Notes ??= new();
         return Notes.First.Value;
     }
 
     public void ResetNotesPlayed()
     {
+        Notes ??= new();
         foreach (var obj in Notes)
         {
             obj.Played = false;

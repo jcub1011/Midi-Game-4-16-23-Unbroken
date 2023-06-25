@@ -11,7 +11,7 @@ using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
-
+/*
 abstract public class GameUIPanel
 {
     #region Properties
@@ -497,4 +497,4 @@ public class PreviewUI : GameUIPanel
         _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
     }
     #endregion
-}
+}*/

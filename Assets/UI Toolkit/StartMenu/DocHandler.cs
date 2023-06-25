@@ -1,4 +1,5 @@
 using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 using UnityEngine.UIElements;
@@ -40,12 +41,12 @@ namespace MainStartMenu
         /// Called when document is made visible.
         /// </summary>
         /// <param name="notes">List of notes to display.</param>
-        /// <param name="endTime">Time of the end of the last note.</param>
+        /// <param name="lastTick">Tick of the end of the last note.</param>
         /// <param name="strikeBarHeight">Height of strike bar from bottom as a percent. (1.0 = 100%)</param>
-        /// <param name="msLeadup">Miliseconds before first note hits the strike bar.</param>
-        /// <param name="time">Time to begin playback at.</param>
-        public void OnShow(List<NoteEvtData> notes, float endTime,
-            float strikeBarHeight = 0.2f, float msLeadup = 4000f, float time = 0f);
+        /// <param name="tickLeadup">Ticks before first note hits the strike bar.</param>
+        /// <param name="tempoMap">Tempo map for notes.</param>
+        public void OnShow(List<Note> notes, long lastTick, long tickLeadup, 
+            TempoMap tempoMap, float strikeBarHeight = 0.2f);
     }
 
     public static class Documents
@@ -195,17 +196,16 @@ namespace MainStartMenu
         /// </summary>
         /// <param name="name">Name of document to display.</param>
         /// <param name="notes">Notes to show in preview.</param>
-        /// <param name="endTime">End time of last note.</param>
+        /// <param name="lastTick">End tick of last note.</param>
         /// <param name="strikeBarHeight">Height of strike bar from bottom of runway as percent of runway. (1.0 = 100%)</param>
-        /// <param name="msLeadup">Ms before first note touches strike bar.</param>
-        /// <param name="time">Time to begin preview at.</param>
+        /// <param name="tickLeadup">Ticks before first note touches strike bar.</param>
         /// <exception cref="System.MethodAccessException"></exception>
-        static public void DisplayDoc(string name, List<Note> notes, float endTime, float strikeBarHeight = 0.2f,
-        float msLeadup = 4000f, float time = 0f)
+        static public void DisplayDoc(string name, List<Note> notes, long lastTick, long tickLeadup,
+            TempoMap tempoMap, float strikeBarHeight = 0.2f)
         {
             DisplayDoc(name);
             var script = _documents[name].Script as IRunwayParamsInput ?? throw new System.MethodAccessException($"'{name}' cannot take runway arguments.");
-            script.OnShow(notes, endTime, strikeBarHeight, msLeadup, time);
+            script.OnShow(notes, lastTick, tickLeadup, tempoMap, strikeBarHeight);
         }
 
         /// <summary>

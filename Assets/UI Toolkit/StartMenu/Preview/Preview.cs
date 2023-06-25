@@ -16,6 +16,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
 
     #region Properties
     PreviewRunway _runway;
+    TempoMap _tempoMap;
     #endregion
 
     #region Interface
@@ -24,15 +25,16 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         Debug.Log("Displaying preview.");
     }
 
-    public void OnShow(List<Note> notes, long lastTick, long tickLeadup, long tick = 0, float strikeBarHeight = 0.2f)
+    public void OnShow(List<Note> notes, long lastTick, long tickLeadup, TempoMap tempoMap, float strikeBarHeight = 0.2f)
     {
         // Init interactive elements.
         var root = DocHandler.GetRoot(Documents.Preview);
 
         var slider = root.Q(SLIDER) as Slider;
-        slider.value = tick;
+        slider.value = 0;
         slider.lowValue = 0;
         slider.highValue = lastTick + tickLeadup;
+        _tempoMap = tempoMap;
 
         slider.RegisterValueChangedCallback(UpdatePlaybackTime);
 
@@ -40,7 +42,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
 
 
-        _runway.Initalize(notes, strikeBarHeight, tickLeadup, tick);
+        _runway.Initalize(notes, strikeBarHeight, tickLeadup, 0);
     }
 
     public void OnHide()
@@ -67,7 +69,8 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
     void UpdatePlaybackTime(ChangeEvent<float> evt)
     {
         Debug.Log($"New Time: {evt.newValue}");
-        _runway.UpdateTime(evt.newValue);
+        var ticks = TimeConverter.ConvertFrom(new MetricTimeSpan( 0, 0, 0, (int)evt.newValue), _tempoMap);
+        _runway.UpdateTime(ticks);
     }
     #endregion
 }

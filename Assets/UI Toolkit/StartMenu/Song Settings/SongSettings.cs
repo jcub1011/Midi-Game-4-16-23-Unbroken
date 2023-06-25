@@ -98,8 +98,8 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
 
         // Get notes to display.
         var tracks = new List<TrackChunk>();
-        var notes = new List<NoteEvtData>();
-        float endTime = 0f;
+        var notes = new List<Note>();
+        long endTime = 0;
         MidiFile tempMidi;
 
         foreach (var track in _tracksToPlay)
@@ -112,21 +112,14 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
 
         foreach (var note in tempMidi.GetNotes())
         {
-            var temp = new NoteEvtData
-            {
-                Number = note.NoteNumber,
-                OnTime = (float)note.TimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds,
-                OffTime = (float)note.EndTimeAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds,
-                Length = (float)note.LengthAs<MetricTimeSpan>(_tempoMap).TotalMilliseconds
-            };
+            // Update last event tick.
+            if (note.EndTime > endTime) endTime = note.EndTime;
 
-            if (temp.OffTime > endTime) endTime = temp.OffTime;
-
-            notes.Add(temp);
+            notes.Add(note);
         }
 
 
-        DocHandler.DisplayDoc(Documents.Preview, notes, endTime);
+        DocHandler.DisplayDoc(Documents.Preview, notes, endTime, 1000, _tempoMap);
     }
 
     void OnPlayButtonClick()
