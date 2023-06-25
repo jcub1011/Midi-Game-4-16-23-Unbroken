@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Melanchall.DryWetMidi.Interaction;
 
 public class PreviewRunway : MonoBehaviour
 {
@@ -12,12 +13,12 @@ public class PreviewRunway : MonoBehaviour
     #endregion
 
     #region Methods
-    public void Initalize(List<NoteEvtData> notes, float strikeBarHeight, float msToReachStrikeBar,
-        float startTime)
+    public void Initalize(List<Note> notes, float strikeBarHeight, long tickToReachStrikeBar,
+        long startTick)
     {
         if (notes.Count == 0) throw new System.Exception("There are no notes to display.");
         Debug.Log($"Preview has {notes.Count} notes.");
-        UpdateTime(startTime);
+        UpdateTime(startTick);
 
         _runway?.Clear();
         float height = Camera.main.orthographicSize * 2f;
@@ -25,7 +26,7 @@ public class PreviewRunway : MonoBehaviour
         float[] dimensions = new float[2] { width, height };
 
         _runway = new(notes, dimensions, strikeBarHeight, 
-            msToReachStrikeBar, transform, LanePrefab, WhiteNotePrefab, BlackNotePrefab);
+            tickToReachStrikeBar, transform, LanePrefab, WhiteNotePrefab, BlackNotePrefab);
     }
 
     public void Unload()
@@ -33,9 +34,9 @@ public class PreviewRunway : MonoBehaviour
         _runway?.Clear();
     }
 
-    public void UpdateTime(float playbackTime)
+    public void UpdateTime(long playbackTick)
     {
-        _runway?.UpdateRunway(playbackTime);
+        _runway?.UpdateRunway(playbackTick);
     }
     #endregion
 }

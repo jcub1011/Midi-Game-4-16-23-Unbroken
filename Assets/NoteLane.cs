@@ -149,10 +149,10 @@ public class NoteLane : MonoBehaviour
         }
 
         // Only when there is no note within forgiveness range.
-        if (evtTime < 0f)
+        if (evtTime < 0)
         {
             print("Total miss.");
-            return 0f;
+            return 0;
         }
 
         var msDist = evtTime - time;

@@ -200,7 +200,7 @@ namespace MainStartMenu
         /// <param name="msLeadup">Ms before first note touches strike bar.</param>
         /// <param name="time">Time to begin preview at.</param>
         /// <exception cref="System.MethodAccessException"></exception>
-        static public void DisplayDoc(string name, List<NoteEvtData> notes, float endTime, float strikeBarHeight = 0.2f,
+        static public void DisplayDoc(string name, List<Note> notes, float endTime, float strikeBarHeight = 0.2f,
         float msLeadup = 4000f, float time = 0f)
         {
             DisplayDoc(name);

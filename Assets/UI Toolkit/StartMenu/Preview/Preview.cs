@@ -1,5 +1,6 @@
 using MainStartMenu;
 using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,16 +24,15 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         Debug.Log("Displaying preview.");
     }
 
-    public void OnShow(List<NoteEvtData> notes, float endTime, float strikeBarHeight = 0.2f,
-        float msLeadup = 4000f, float time = 0f)
+    public void OnShow(List<Note> notes, long lastTick, long tickLeadup, long tick = 0, float strikeBarHeight = 0.2f)
     {
         // Init interactive elements.
         var root = DocHandler.GetRoot(Documents.Preview);
 
         var slider = root.Q(SLIDER) as Slider;
-        slider.value = time;
+        slider.value = tick;
         slider.lowValue = 0;
-        slider.highValue = endTime + msLeadup;
+        slider.highValue = lastTick + tickLeadup;
 
         slider.RegisterValueChangedCallback(UpdatePlaybackTime);
 
@@ -40,7 +40,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
 
 
-        _runway.Initalize(notes, strikeBarHeight, msLeadup, time);
+        _runway.Initalize(notes, strikeBarHeight, tickLeadup, tick);
     }
 
     public void OnHide()
