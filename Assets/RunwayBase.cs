@@ -359,9 +359,11 @@ public class RunwayBase
     IntRange _noteRange;
     RunwayDisplayInfo _displayInfo;
     NoteLane[] _lanes;
-    readonly NoteManager _noteManager;
-    readonly GameObject _wNotePrefab;
-    readonly GameObject _bNotePrefab;
+    NoteManager _noteManager;
+    GameObject _wNotePrefab;
+    GameObject _bNotePrefab;
+    Transform _laneParent;
+    GameObject _lanePrefab;
     #endregion
 
     #region Constructors
@@ -369,9 +371,15 @@ public class RunwayBase
         long ticksToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
         GameObject whiteNotePrefab, GameObject blackNotePrefab)
     {
-        _noteRange = GetNoteRange(notes);
-        _displayInfo = new(dimensions, strikeBarHeight, ticksToReachStrikeBar, _noteRange);
-        _lanes = new NoteLane[_noteRange.Len];
+        InitNoteManger(notes);
+        InitLanes(notes, dimensions, strikeBarHeight, ticksToReachStrikeBar, 
+            whiteNotePrefab, blackNotePrefab, lanesParent, lanePrefab);
+
+        UpdateLaneDimensions();
+    }
+
+    void InitNoteManger(List<Note> notes)
+    {
         _noteManager = new(notes)
         {
             // Subscribe to events.
@@ -380,8 +388,15 @@ public class RunwayBase
             RemovedLatestNote = RemovedLatestNote,
             RemovedEarliestNote = RemovedEarliestNote
         };
+    }
 
+    void InitLanes(List<Note> notes, float[] dimensions, float strikeBarHeight, long ticksToReachStrikeBar,
+        GameObject whiteNotePrefab, GameObject blackNotePrefab, Transform lanesParent, GameObject lanePrefab)
+    {
+        _noteRange = GetNoteRange(notes);
         Debug.Log($"Range of notes {_noteRange.Len}.");
+        _displayInfo = new(dimensions, strikeBarHeight, ticksToReachStrikeBar, _noteRange);
+        _lanes = new NoteLane[_noteRange.Len];
 
         // Init note prefabs.
         _wNotePrefab = whiteNotePrefab;
@@ -394,8 +409,6 @@ public class RunwayBase
             _lanes[i] = newLane.GetComponent<NoteLane>();
             _lanes[i].SetPosition(_displayInfo.GetLaneXPos(i), _displayInfo.IsWhiteNoteLane(i) ? 1 : 0);
         }
-
-        UpdateLaneDimensions();
     }
     #endregion
 
@@ -504,6 +517,13 @@ public class RunwayBase
 
         UpdateLaneDimensions();
     }
+    public void ChangeNoteList(List<Note> notes)
+    {
+        Clear();
+        float[] dimensions = new float[2] { _displayInfo.RunwayWidth, _displayInfo.RunwayHeight };
+        InitLanes(notes, dimensions, _displayInfo._strikeBarHeightPercent, _displayInfo.TicksVisibleAboveStrike,
+            _wNotePrefab, _bNotePrefab, _laneParent, _lanePrefab);
+    }
 
     public void Clear()
     {
@@ -516,7 +536,6 @@ public class RunwayBase
         }
 
         _lanes = null;
-        _displayInfo = null;
         _noteRange = null;
     }
     #endregion

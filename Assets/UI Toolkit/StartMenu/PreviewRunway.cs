@@ -20,7 +20,6 @@ public class PreviewRunway : MonoBehaviour
         Debug.Log($"Preview has {notes.Count} notes.");
         UpdateTime(startTick);
 
-        _runway?.Clear();
         float height = Camera.main.orthographicSize * 2f;
         float width = height * Camera.main.aspect;
         float[] dimensions = new float[2] { width, height };

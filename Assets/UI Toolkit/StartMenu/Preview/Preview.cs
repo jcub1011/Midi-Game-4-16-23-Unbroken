@@ -39,8 +39,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         slider.RegisterValueChangedCallback(UpdatePlaybackTime);
 
         // Init Preview Runway.
-        _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
-
+        if (_runway == null) _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
 
         _runway.Initalize(notes, strikeBarHeight, tickLeadup, 0);
     }

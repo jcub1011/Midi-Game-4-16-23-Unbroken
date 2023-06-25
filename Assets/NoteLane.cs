@@ -12,6 +12,11 @@ public class NoteObject
     public Note Data { get; private set; }
     public bool Played;
 
+    /// <summary>
+    /// Bundles the supplied data and game object.
+    /// </summary>
+    /// <param name="notePrefab">The game object to attach the data to.</param>
+    /// <param name="data">The data to attach the game object to.</param>
     public NoteObject(GameObject notePrefab, Note data)
     {
         Note = notePrefab;
@@ -193,7 +198,7 @@ public class NoteLane : MonoBehaviour
     #region Notes Get Set Remove Functions
     NoteObject MakeNoteObject(Note noteData, GameObject prefab)
     {
-        var obj = new NoteObject(prefab, noteData);
+        var obj = new NoteObject(UnityEngine.Object.Instantiate(prefab, transform), noteData);
         obj.Note.GetComponent<SpriteRenderer>().enabled = true;
         return obj;
     }
@@ -215,6 +220,7 @@ public class NoteLane : MonoBehaviour
     public void RemoveNoteLast()
     {
         Notes ??= new();
+        if (Notes.Count == 0) return;
         var note = Notes.Last.Value;
         Notes.RemoveLast();
         Destroy(note.Note);
@@ -223,10 +229,11 @@ public class NoteLane : MonoBehaviour
     /// <summary>
     /// Returns the last note.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>Null if doens't exist.</returns>
     public NoteObject GetNoteLast()
     {
         Notes ??= new();
+        if (Notes.Count == 0) return null;
         return Notes.Last.Value;
     }
 
@@ -247,6 +254,7 @@ public class NoteLane : MonoBehaviour
     public void RemoveNoteFront()
     {
         Notes ??= new();
+        if (Notes.Count == 0) return;
         var note = Notes.First.Value;
         Notes.RemoveFirst();
         Destroy(note.Note);
@@ -260,6 +268,7 @@ public class NoteLane : MonoBehaviour
     public NoteObject GetNoteFirst()
     {
         Notes ??= new();
+        if (Notes.Count == 0) return null;
         return Notes.First.Value;
     }
 
