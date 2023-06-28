@@ -266,6 +266,124 @@ internal class IndexManager
     #endregion
 }
 
+internal class NoteListManager
+{
+    #region Properties
+    readonly List<Note> _notes;
+
+    Dictionary<int, Note> _activeNotes;
+    int _lowestIndex;
+    int _highestIndex;
+
+    public NoteChangeEvent NoteAdded;
+    public NoteChangeEvent NoteRemoved;
+    #endregion
+
+    #region Constructors
+    public NoteListManager(List<Note> notes)
+    {
+        _notes = notes;
+        _activeNotes = new();
+        _lowestIndex = -1;
+        _highestIndex = -1;
+    }
+    #endregion
+
+    #region Methods
+    void RemoveNote(Note note, int noteIndex)
+    {
+        if (!_activeNotes.ContainsKey(noteIndex)) return;
+
+        _activeNotes.Remove(noteIndex);
+
+        // Find next index.
+        // Base case.
+        if (_activeNotes.Count == 0)
+        {
+            _lowestIndex = int.MaxValue;
+            _highestIndex = int.MinValue;
+            return;
+        }
+        else if (noteIndex <= _lowestIndex)
+        {
+            // Find next lowest index.
+            while(!_activeNotes.ContainsKey(noteIndex))
+            {
+                noteIndex++;
+            }
+            _lowestIndex = noteIndex;
+        }
+        else if (noteIndex >= _highestIndex)
+        {
+            // Find next highest index.
+            while(!_activeNotes.ContainsKey(noteIndex))
+            {
+                noteIndex--;
+            }
+            _highestIndex = noteIndex;
+        }
+
+        NoteRemoved?.Invoke(note, noteIndex);
+    }
+
+    void AddNote(Note note, int noteIndex)
+    {
+        if (_activeNotes.ContainsKey(noteIndex)) return;
+
+        _activeNotes.Add(noteIndex, note);
+
+        // Update min and max.
+        if (noteIndex < _lowestIndex) _lowestIndex = noteIndex;
+        if (noteIndex > _highestIndex) _highestIndex = noteIndex;
+
+        NoteAdded?.Invoke(note, noteIndex);
+    }
+
+    bool NoteVisible(Note note, long lowerTickBound, long upperTickBound)
+    {
+        return lowerTickBound <= note.EndTime && note.Time <= upperTickBound;
+    }
+
+    void RemoveHiddenNotes(long lowerTickBound, long upperTickBound)
+    {
+        foreach(var kvp in _activeNotes)
+        {
+            if (!NoteVisible(kvp.Value, lowerTickBound, upperTickBound))
+            {
+                RemoveNote(kvp.Value, kvp.Key);
+            }
+        }
+    }
+
+    void AddVisibleNotes(long playbackTick, long lowerTickBound, long upperTickBound)
+    {
+        // Find visible notes based on existing notes.
+        if (_activeNotes.Count > 0)
+        {
+            // Find notes lower than minimum.
+            for (int i = _lowestIndex - 1; i >= 0; i--)
+            {
+                if (NoteVisible(_notes[i], lowerTickBound, upperTickBound)) AddNote(_notes[i], i);
+                else break;
+            }
+
+            // Find notes higher than max.
+            for (int i = _highestIndex + 1; i < _activeNotes.Count; i++)
+            {
+                if (NoteVisible(_notes[i], lowerTickBound, upperTickBound)) AddNote(_notes[i], i);
+                else break;
+            }
+        }
+    }
+
+    public void UpdateNotesVisible(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
+    {
+        RemoveHiddenNotes(playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
+        AddVisibleNotes(playbackTick, playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
+    }
+    #endregion
+}
+
 internal class NoteManager
 {
     #region Properties
