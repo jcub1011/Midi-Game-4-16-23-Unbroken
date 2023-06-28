@@ -280,5 +280,14 @@ public class NoteLane : MonoBehaviour
             obj.Played = false;
         }
     }
+
+    public void ClearNotes()
+    {
+        if (Notes == null) return;
+        while(Notes.Count > 0)
+        {
+            RemoveNoteLast();
+        }
+    }
     #endregion
 }

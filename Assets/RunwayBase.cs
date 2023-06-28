@@ -171,6 +171,7 @@ internal class RunwayDisplayInfo
 
 internal delegate void IndexChangeEvent(Note note);
 internal delegate void ClearRunwayEvent();
+internal delegate void NoteChangeEvent(Note note, int noteIndex);
 
 internal class IndexManager
 {
@@ -214,22 +215,37 @@ internal class IndexManager
     #endregion
 
     #region Methods
+    /// <summary>
+    /// Indicies cannot be lower than -1.
+    /// </summary>
+    /// <param name="lowerIndex"></param>
+    /// <param name="upperIndex"></param>
+    public void OverwriteIndicies(int lowerIndex, int upperIndex)
+    {
+        _lowerIndex = lowerIndex > -1 ? lowerIndex : -1;
+        _upperIndex = upperIndex > -1 ? upperIndex : -1;
+    }
+
     public void IncrementUpperIndex()
     {
         _upperIndex++;
     }
+
     public void DecrementUpperIndex()
     {
         if (_upperIndex >= 0) _upperIndex--;
     }
+
     public void IncrementLowerIndex()
     {
         _lowerIndex++;
     }
+
     public void DecrementLowerIndex()
     {
         if (_lowerIndex >= 0) _lowerIndex--;
     }
+
     bool InvalidRange()
     {
         if (_lowerIndex < 0 || _upperIndex < 0) return false;
@@ -245,8 +261,7 @@ internal class IndexManager
     /// <param name="upperIndex"></param>
     public IndexManager(int lowerIndex, int upperIndex)
     {
-        _lowerIndex = lowerIndex > -1 ? lowerIndex : -1;
-        _upperIndex = upperIndex > -1 ? upperIndex : -1;
+        OverwriteIndicies(lowerIndex, upperIndex);
     }
     #endregion
 }
@@ -257,12 +272,15 @@ internal class NoteManager
     IndexManager _indexManager;
 
     readonly List<Note> _notes;
+    List<int> _activeIndicies;
+    long[] _previousBounds;
 
     public IndexChangeEvent AddedNextLatestNote;
     public IndexChangeEvent RemovedLatestNote;
     public IndexChangeEvent AddedNextEarliestNote;
     public IndexChangeEvent RemovedEarliestNote;
-    public ClearRunwayEvent OnRunwayClear;
+    public NoteChangeEvent NoteAdded;
+    public NoteChangeEvent NoteRemoved;
     #endregion
 
     #region Constructors
@@ -275,6 +293,20 @@ internal class NoteManager
     #endregion
 
     #region Methods
+    private bool InRange(long value, long lowerBound, long upperBound)
+    {
+        return lowerBound <= value && value <= upperBound;
+    }
+
+    private bool RangesOverlap(long[] firstRange, long[] secondRange)
+    {
+        if (InRange(firstRange[0], secondRange[0], secondRange[1])) return true;
+        if (InRange(firstRange[1], secondRange[0], secondRange[1])) return true;
+        if (InRange(secondRange[0], firstRange[0], firstRange[1])) return true;
+        if (InRange(secondRange[1], firstRange[0], firstRange[1])) return true;
+        return false;
+    }
+
     /// <summary>
     /// Updates what notes are visible.
     /// </summary>
@@ -283,10 +315,19 @@ internal class NoteManager
     /// <param name="ticksAfterStrike">Ticks notes can be seen after hitting stike bar.</param>
     public void UpdateVisibleNotes(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
     {
+        // Check if any of the notes from the past frame will be in this frame and seeks the playback if not.
+        long[] newBounds = new long[2] { playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike };
+        if (_previousBounds == null || !RangesOverlap(_previousBounds, newBounds))
+        {
+            SeekTo(playbackTick);
+        }
+
         AddVisibleEarliestNotes(playbackTick, ticksAfterStrike);
-        RemoveHiddenLatestNotes(playbackTick, ticksBeforeStrike);
         AddVisibleLatestNotes(playbackTick, ticksBeforeStrike);
+        RemoveHiddenLatestNotes(playbackTick, ticksBeforeStrike);
         RemoveHiddenEarliestNotes(playbackTick, ticksAfterStrike);
+
+        _previousBounds = newBounds;
     }
 
     void AddVisibleLatestNotes(long playbackTick, long ticksBeforeStrike)
@@ -294,7 +335,8 @@ internal class NoteManager
         while(PeekNextLatest() != null)
         {
             // If note visible.
-            if (PeekNextLatest().Time - playbackTick <= ticksBeforeStrike) AddNextLatest();
+            long normalizedNoteTime = PeekNextLatest().Time - playbackTick;
+            if (normalizedNoteTime <= ticksBeforeStrike) AddNextLatest();
             else break;
         }
     }
@@ -304,7 +346,8 @@ internal class NoteManager
         while (PeekCurrentLatest() != null)
         {
             // Stop when notes are visible.
-            if (PeekCurrentLatest().Time - playbackTick <= ticksBeforeStrike) break;
+            long normalizedNoteTime = PeekCurrentLatest().Time - playbackTick;
+            if (normalizedNoteTime <= ticksBeforeStrike) break;
             else RemoveCurrentLatest();
         }
     }
@@ -314,7 +357,8 @@ internal class NoteManager
         while (PeekNextEarliest() != null)
         {
             // If note visible.
-            if (playbackTick - PeekNextEarliest().Time > ticksAfterStrike) AddNextEarliest();
+            long normalizedNoteTime =  playbackTick - PeekNextEarliest().EndTime;
+            if (normalizedNoteTime <= ticksAfterStrike) AddNextEarliest();
             else break;
         }
     }
@@ -324,7 +368,8 @@ internal class NoteManager
         while (PeekCurrentEarliest() != null)
         {
             // Stop when notes are visible.
-            if (playbackTick - PeekCurrentEarliest().Time > ticksAfterStrike) break;
+            long normalizedNoteTime = playbackTick - PeekCurrentEarliest().EndTime;
+            if (normalizedNoteTime <= ticksAfterStrike) break;
             else RemoveCurrentEarliest();
         }
     }
@@ -428,25 +473,25 @@ internal class NoteManager
         return FindIndexClosestToTick(tick, 0, _notes.Count - 1);
     }
 
-    private int FindIndexClosestToTick(long tick, int lowerBound, int upperBound)
+    private int FindIndexClosestToTick(long tickToFind, int lowerBound, int upperBound)
     {
         // Binary search.
-        if (lowerBound == upperBound) return lowerBound;
+        if (lowerBound > upperBound) return lowerBound;
 
-        int middle = (lowerBound + upperBound) / 2;
-        long noteTick = _notes[middle].Time;
+        int middleIndex = (lowerBound + upperBound) / 2;
+        long foundNoteTick = _notes[middleIndex].Time;
 
-        if (noteTick == tick)
+        if (foundNoteTick == tickToFind)
         {
-            return middle;
+            return middleIndex;
         }
-        else if (noteTick < tick)
+        else if (foundNoteTick > tickToFind)
         {
-            return FindIndexClosestToTick(tick, lowerBound, middle);
+            return FindIndexClosestToTick(tickToFind, lowerBound, middleIndex - 1);
         }
         else
         {
-            return FindIndexClosestToTick(tick, middle, upperBound);
+            return FindIndexClosestToTick(tickToFind, middleIndex + 1, upperBound);
         }
     }
 
@@ -457,15 +502,86 @@ internal class NoteManager
         return true;
     }
 
+    private void RemoveNote(Note note, int index)
+    {
+        NoteRemoved?.Invoke(note, index);
+    }
+
+    private void AddNote(Note note, int index)
+    {
+        NoteAdded?.Invoke(note, index);
+    }
+
+    private void UpdateNoteListPastStrikeBar(int index, long tickBound)
+    {
+        for (; index >= 0; index--)
+        {
+            if (_notes[index].Time < tickBound) break;
+            AddNote(_notes[index], index);
+        }
+    }
+
+    private void RemoveHiddenNotesLeftOfIndex(int index, long tickBound)
+    {
+        for (; index >= 0; index --)
+        {
+            
+        }
+    }
+
+    private void AddVisibleNotesRightOfIndex(int index, long tickBound)
+    {
+        for (;  index <= _notes.Count; index++)
+        {
+            if (_notes[index].Time > tickBound) break;
+            AddNote(_notes[index], index);
+        }
+    }
+
     private void SeekTo(long tick)
     {
-        OnRunwayClear?.Invoke();
+        Debug.Log($"Playback seeked to {tick}.");
 
         int indexNoteClosestToTick = FindIndexClosestToTick(tick);
 
+        // Update indicies. The lower bound is increased by 1 so that when the new notes are added the
+        // the note that was found also gets added. I know it doens't make any sense.
+        _indexManager.OverwriteIndicies(indexNoteClosestToTick, indexNoteClosestToTick);
+        Debug.Log($"Selected index: {indexNoteClosestToTick}");
     }
     #endregion
 }
+
+/*
+internal class LaneManager
+{
+    #region Properties
+    IntRange _noteRange;
+    NoteLane[] _lanes;
+    GameObject _wNotePrefab;
+    GameObject _bNotePrefab;
+    GameObject _lanePrefab;
+    Transform _parent;
+    #endregion
+
+    #region Constructors
+    public LaneManager(List<Note> notes, IntRange noteRange, Transform lanesParent, GameObject lanePrefab,
+        GameObject whiteNotePrefab, GameObject blackNotePrefab)
+    {
+        _lanes = new NoteLane[noteRange.Len];
+
+        for(int i = 0; i < _lanes.Length; i++)
+        {
+            _lanes[i] = UnityEngine.Object.Instantiate(lanePrefab).GetComponent<NoteLane>();
+            _lanes[i].SetPosition(_displayInfo.GetLaneXPos(i), _displayInfo.IsWhiteNoteLane(i) ? 1 : 0);
+        }
+    }
+    #endregion
+
+    #region Methods
+
+    #endregion
+}*/
 
 public class RunwayBase
 {
@@ -515,7 +631,6 @@ public class RunwayBase
         // Init note prefabs.
         _wNotePrefab = whiteNotePrefab;
         _bNotePrefab = blackNotePrefab;
-
         // Initalize lanes.
         for (int i = 0; i < _lanes.Length; i++)
         {
@@ -555,6 +670,14 @@ public class RunwayBase
         Debug.Log("Removing latest note.");
         var laneIndex = note.NoteNumber - _noteRange.Min;
         _lanes[laneIndex].RemoveNoteLast();
+    }
+
+    void ClearLanes()
+    {
+        foreach(var lane in _lanes)
+        {
+            lane.ClearNotes();
+        }
     }
     #endregion
 
