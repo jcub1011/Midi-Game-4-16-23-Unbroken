@@ -41,6 +41,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
         // Init Preview Runway.
         if (_runway == null) _runway = UnityEngine.GameObject.Find(PREVIEW_RUNWAY_NAME).GetComponent<PreviewRunway>();
 
+        _runway.Unload();
         _runway.Initalize(notes, strikeBarHeight, tickLeadup, 0);
     }
 

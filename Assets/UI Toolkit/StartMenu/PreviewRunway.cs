@@ -24,13 +24,16 @@ public class PreviewRunway : MonoBehaviour
         float width = height * Camera.main.aspect;
         float[] dimensions = new float[2] { width, height };
 
+        Unload();
         _runway = new(notes, dimensions, strikeBarHeight, 
             tickToReachStrikeBar, transform, LanePrefab, WhiteNotePrefab, BlackNotePrefab);
     }
 
     public void Unload()
     {
+        print("Unloading preview runway.");
         _runway?.Clear();
+        _runway = null;
     }
 
     public void UpdateTime(long playbackTick)

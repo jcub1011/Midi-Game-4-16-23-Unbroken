@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using UnityEditor.ShaderKeywordFilter;
 using UnityEngine;
 
 internal class RunwayDisplayInfo
@@ -169,24 +170,91 @@ internal class RunwayDisplayInfo
 }
 
 internal delegate void IndexChangeEvent(Note note);
+internal delegate void ClearRunwayEvent();
+
+internal class IndexManager
+{
+    #region Properties
+    int _lowerIndex;
+    int _upperIndex;
+
+    public int LowerIndex
+    {
+        get
+        {
+            if (InvalidRange()) return -1;
+            return _lowerIndex;
+        }
+    }
+
+    public int NextLowerIndex
+    {
+        get
+        {
+            return _lowerIndex - 1;
+        }
+    }
+
+    public int UpperIndex
+    {
+        get
+        {
+            if (InvalidRange()) return -1;
+            return _upperIndex; 
+        }
+    }
+
+    public int NextUpperIndex
+    {
+        get
+        {
+            return _upperIndex + 1;
+        }
+    }
+    #endregion
+
+    #region Methods
+    public void IncrementUpperIndex()
+    {
+        _upperIndex++;
+    }
+    public void DecrementUpperIndex()
+    {
+        if (_upperIndex >= 0) _upperIndex--;
+    }
+    public void IncrementLowerIndex()
+    {
+        _lowerIndex++;
+    }
+    public void DecrementLowerIndex()
+    {
+        if (_lowerIndex >= 0) _lowerIndex--;
+    }
+    bool InvalidRange()
+    {
+        if (_lowerIndex < 0 || _upperIndex < 0) return false;
+        return _lowerIndex > _upperIndex;
+    }
+    #endregion
+
+    #region Constructors
+    /// <summary>
+    /// Indicies cannot be lower than -1.
+    /// </summary>
+    /// <param name="lowerIndex"></param>
+    /// <param name="upperIndex"></param>
+    public IndexManager(int lowerIndex, int upperIndex)
+    {
+        _lowerIndex = lowerIndex > -1 ? lowerIndex : -1;
+        _upperIndex = upperIndex > -1 ? upperIndex : -1;
+    }
+    #endregion
+}
 
 internal class NoteManager
 {
     #region Properties
-    int CurrentLatestIndex { get; set; }
-    int NextLatestIndex
-    {
-        get { return CurrentLatestIndex + 1; }
-    }
-
-
-    int CurrentEarliestIndex { get; set; }
-    int NextEarliestIndex
-    {
-        get { return CurrentEarliestIndex + -1; }
-    }
-
-
+    IndexManager _indexManager;
 
     readonly List<Note> _notes;
 
@@ -194,13 +262,13 @@ internal class NoteManager
     public IndexChangeEvent RemovedLatestNote;
     public IndexChangeEvent AddedNextEarliestNote;
     public IndexChangeEvent RemovedEarliestNote;
+    public ClearRunwayEvent OnRunwayClear;
     #endregion
 
     #region Constructors
     public NoteManager(List<Note> notes)
     {
-        CurrentEarliestIndex = 0;
-        CurrentLatestIndex = -1;
+        _indexManager = new(0, -1);
 
         _notes = notes;
     }
@@ -269,7 +337,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekNextLatest()
     {
-        return (NextLatestIndex < _notes.Count) ? _notes[NextLatestIndex] : null;
+        return (_indexManager.NextUpperIndex < _notes.Count) ? _notes[_indexManager.NextUpperIndex] : null;
     }
 
     /// <summary>
@@ -280,9 +348,10 @@ internal class NoteManager
         var note = PeekNextLatest();
         if (note != null)
         {
-            CurrentLatestIndex++;
+            _indexManager.IncrementUpperIndex();
             AddedNextLatestNote.Invoke(note);
         }
+        else Debug.Log("Attempted to add non existent latest note.");
     }
 
     /// <summary>
@@ -291,7 +360,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekCurrentLatest()
     {
-        return (CurrentLatestIndex >= 0) ? _notes[CurrentLatestIndex] : null;
+        return (_indexManager.UpperIndex >= 0) ? _notes[_indexManager.UpperIndex] : null;
     }
 
     /// <summary>
@@ -302,9 +371,10 @@ internal class NoteManager
         var note = PeekCurrentLatest();
         if (note != null)
         {
-            CurrentLatestIndex--;
+            _indexManager.DecrementUpperIndex();
             RemovedLatestNote.Invoke(note);
         }
+        else Debug.Log("Attempted to remove non existent latest note.");
     }
 
     /// <summary>
@@ -313,7 +383,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekNextEarliest()
     {
-        return (NextEarliestIndex > -1) ? _notes[NextEarliestIndex] : null;
+        return (_indexManager.NextLowerIndex > -1) ? _notes[_indexManager.NextLowerIndex] : null;
     }
 
     /// <summary>
@@ -324,9 +394,10 @@ internal class NoteManager
         var note = PeekNextEarliest();
         if (note != null)
         {
-            CurrentEarliestIndex--;
+            _indexManager.DecrementLowerIndex();
             AddedNextEarliestNote.Invoke(note);
         }
+        else Debug.Log("Attempted to add non existent earliest note.");
     }
 
     /// <summary>
@@ -335,7 +406,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekCurrentEarliest()
     {
-        return (CurrentEarliestIndex < _notes.Count) ? _notes[CurrentEarliestIndex] : null;
+        return (_indexManager.LowerIndex < _notes.Count) ? _notes[_indexManager.LowerIndex] : null;
     }
 
     /// <summary>
@@ -346,9 +417,45 @@ internal class NoteManager
         var note = PeekCurrentEarliest();
         if (note != null)
         {
-            CurrentEarliestIndex++;
+            _indexManager.IncrementLowerIndex();
             RemovedEarliestNote.Invoke(note);
         }
+        else Debug.Log("Attempted to remove non existent earliest note.");
+    }
+
+    private int FindIndexClosestToTick(long tick)
+    {
+        return FindIndexClosestToTick(tick, 0, _notes.Count - 1);
+    }
+
+    private int FindIndexClosestToTick(long tick, int lowerBound, int upperBound)
+    {
+        // Binary search.
+        if (lowerBound == upperBound) return lowerBound;
+
+        int middle = (lowerBound + upperBound) / 2;
+        long noteTick = _notes[middle].Time;
+
+        if (noteTick == tick)
+        {
+            return middle;
+        }
+        else if (noteTick < tick)
+        {
+            return FindIndexClosestToTick(tick, lowerBound, middle);
+        }
+        else
+        {
+            return FindIndexClosestToTick(tick, middle, upperBound);
+        }
+    }
+
+    private void SeekTo(long tick)
+    {
+        OnRunwayClear?.Invoke();
+
+        int indexNoteClosestToTick = FindIndexClosestToTick(tick);
+
     }
     #endregion
 }
