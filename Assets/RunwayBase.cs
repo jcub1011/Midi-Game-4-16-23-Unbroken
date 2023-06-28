@@ -337,7 +337,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekNextLatest()
     {
-        return (_indexManager.NextUpperIndex < _notes.Count) ? _notes[_indexManager.NextUpperIndex] : null;
+        return ValidIndex(_indexManager.NextUpperIndex) ? _notes[_indexManager.NextUpperIndex] : null;
     }
 
     /// <summary>
@@ -360,7 +360,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekCurrentLatest()
     {
-        return (_indexManager.UpperIndex >= 0) ? _notes[_indexManager.UpperIndex] : null;
+        return ValidIndex(_indexManager.UpperIndex) ? _notes[_indexManager.UpperIndex] : null;
     }
 
     /// <summary>
@@ -383,7 +383,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekNextEarliest()
     {
-        return (_indexManager.NextLowerIndex > -1) ? _notes[_indexManager.NextLowerIndex] : null;
+        return ValidIndex(_indexManager.NextLowerIndex) ? _notes[_indexManager.NextLowerIndex] : null;
     }
 
     /// <summary>
@@ -406,7 +406,7 @@ internal class NoteManager
     /// <returns>Null when none.</returns>
     private Note PeekCurrentEarliest()
     {
-        return (_indexManager.LowerIndex < _notes.Count) ? _notes[_indexManager.LowerIndex] : null;
+        return ValidIndex(_indexManager.LowerIndex) ? _notes[_indexManager.LowerIndex] : null;
     }
 
     /// <summary>
@@ -448,6 +448,13 @@ internal class NoteManager
         {
             return FindIndexClosestToTick(tick, middle, upperBound);
         }
+    }
+
+    private bool ValidIndex(int index)
+    {
+        if (index < 0) return false;
+        if (index >= _notes.Count) return false;
+        return true;
     }
 
     private void SeekTo(long tick)
