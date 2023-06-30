@@ -236,22 +236,24 @@ namespace MIDIGame.Lane
         }
 
         /// <summary>
-        /// Adds note to end of list.
+        /// Adds the note with the given id.
         /// </summary>
         /// <param name="noteData">Data for note.</param>
         /// <param name="notePrefab">Prefab to use for note.</param>
         public void AddNote(Note noteData, int noteIndex, GameObject notePrefab)
         {
             _notes ??= new();
+            if (_notes.ContainsKey(noteIndex)) return;
             _notes.Add(noteIndex, MakeNoteObject(noteData, notePrefab));
         }
 
         /// <summary>
-        /// Removes the last note.
+        /// Removes the note with the given id.
         /// </summary>
         public void RemoveNote(int noteIndex)
         {
             _notes ??= new();
+            if (!_notes.ContainsKey(noteIndex)) return;
             if (_notes.Count == 0) return;
             var note = _notes[noteIndex];
             _notes.Remove(noteIndex);

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using MIDIGame.Ranges;
+using System.Linq;
 
 namespace MIDIGame.Runway
 {
@@ -198,11 +199,13 @@ namespace MIDIGame.Runway
         #endregion
 
         #region Methods
-        void RemoveNote(Note note, int noteIndex)
+        void RemoveNote(int noteIndex)
         {
             if (!_activeNotes.ContainsKey(noteIndex)) return;
 
+            var note = _activeNotes[noteIndex];
             _activeNotes.Remove(noteIndex);
+            NoteRemoved?.Invoke(note, noteIndex);
 
             // Find next index.
             // Base case.
@@ -231,21 +234,20 @@ namespace MIDIGame.Runway
                 _highestIndex = noteIndex;
             }
 
-            NoteRemoved?.Invoke(note, noteIndex);
             Debug.Log("Hiding note.");
         }
 
-        void AddNote(Note note, int noteIndex)
+        void AddNote(int noteIndex)
         {
             if (_activeNotes.ContainsKey(noteIndex)) return;
 
-            _activeNotes.Add(noteIndex, note);
+            _activeNotes.Add(noteIndex, _notes[noteIndex]);
+            NoteAdded?.Invoke(_notes[noteIndex], noteIndex);
 
             // Update min and max.
             if (noteIndex < _lowestIndex) _lowestIndex = noteIndex;
             if (noteIndex > _highestIndex) _highestIndex = noteIndex;
 
-            NoteAdded?.Invoke(note, noteIndex);
             Debug.Log("Showing note.");
         }
 
@@ -256,11 +258,12 @@ namespace MIDIGame.Runway
 
         void RemoveHiddenNotes(long lowerTickBound, long upperTickBound)
         {
-            foreach (var kvp in _activeNotes)
+            var keys = _activeNotes.Keys.ToArray();
+            foreach (var key in keys)
             {
-                if (!NoteVisible(kvp.Value, lowerTickBound, upperTickBound))
+                if (!NoteVisible(_activeNotes[key], lowerTickBound, upperTickBound))
                 {
-                    RemoveNote(kvp.Value, kvp.Key);
+                    RemoveNote(key);
                 }
             }
         }
@@ -295,7 +298,7 @@ namespace MIDIGame.Runway
             // Find notes lower than minimum.
             for (; index >= 0; index--)
             {
-                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(_notes[index], index);
+                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(index);
                 else break;
             }
         }
@@ -305,7 +308,7 @@ namespace MIDIGame.Runway
             // Find notes lower than minimum.
             for (; index < _notes.Count; index++)
             {
-                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(_notes[index], index);
+                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(index);
                 else break;
             }
         }
@@ -331,7 +334,7 @@ namespace MIDIGame.Runway
 
                 if (NoteVisible(_notes[index], lowerTickBound, upperTickBound))
                 {
-                    AddNote(_notes[index], index);
+                    AddNote(index);
                     AddVisibleNotes(lowerTickBound, upperTickBound);
                     return;
                 }
@@ -343,7 +346,7 @@ namespace MIDIGame.Runway
                         if (_notes[seekIndex].Time < lowerTickBound) break;
                         if (NoteVisible(_notes[seekIndex], lowerTickBound, upperTickBound))
                         {
-                            AddNote(_notes[seekIndex], seekIndex);
+                            AddNote(seekIndex);
                             AddVisibleNotes(lowerTickBound, upperTickBound);
                             return;
                         }
@@ -353,7 +356,7 @@ namespace MIDIGame.Runway
                         if (_notes[seekIndex].Time < lowerTickBound) break;
                         if (NoteVisible(_notes[seekIndex], lowerTickBound, upperTickBound))
                         {
-                            AddNote(_notes[seekIndex], seekIndex);
+                            AddNote(seekIndex);
                             AddVisibleNotes(lowerTickBound, upperTickBound);
                             return;
                         }
