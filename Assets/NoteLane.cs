@@ -53,9 +53,9 @@ namespace MIDIGame.Lane
         /// <summary>
         /// Gets the accuracy of the note play.
         /// </summary>
-        /// <param name="differenceTicks">Difference between the actual note tick and the played note tick.</param>
+        /// <param name="differenceTicks">Difference between the current tick and the note event tick.</param>
         /// <param name="forgiveness">Range of forgiveness in ticks.</param>
-        /// <returns></returns>
+        /// <returns>Accuracy where 100 is 100%.</returns>
         float CalculateAccuracy(long differenceTicks, long forgiveness)
         {
             if (differenceTicks < 0) differenceTicks *= -1; // Make it positive.
@@ -128,18 +128,55 @@ namespace MIDIGame.Lane
             }
         }
 
+        Note FindNextUnplayedOnEvent(long rangeMin, long rangeMax)
+        {
+            Note soonestNote = null;
+
+            foreach (NoteObject note in _notes.Values)
+            {
+                // Check if sooner than current soonest note.
+                if (soonestNote == null || note.Data.Time < soonestNote.Time)
+                {
+                    // Only keep track of unplayed notes within forgiveness threshold.
+                    if (!note.Played && InRange(note.Data.Time, rangeMin, rangeMax))
+                    {
+                        soonestNote = note.Data;
+                    }
+                }
+            }
+
+            return soonestNote;
+        }
+
+        Note FindNextUnplayedOffEvent(long rangeMin, long rangeMax)
+        {
+            Note soonestNote = null;
+
+            foreach (NoteObject note in _notes.Values)
+            {
+                // Check if sooner than current soonest note.
+                if (soonestNote == null || note.Data.EndTime < soonestNote.EndTime)
+                {
+                    // Only keep track of unplayed notes within forgiveness threshold.
+                    if (!note.Played && InRange(note.Data.EndTime, rangeMin, rangeMax))
+                    {
+                        soonestNote = note.Data;
+                    }
+                }
+            }
+
+            return soonestNote;
+        }
+
         /// <summary>
         /// Returns percent accuracy.
         /// </summary>
         /// <param name="time">Current playback time in ticks.</param>
         /// <param name="forgiveness">Forgivness range in ticks.</param>
-        /// <param name="NoteOnEvent">True if note on event, otherwise note off event.</param>
+        /// <param name="noteOnEvent">True if note on event, otherwise note off event.</param>
         /// <returns>Accuracy</returns>
-        public float NoteEventAccuracy(long time, long forgiveness, bool NoteOnEvent)
+        public float NoteEventAccuracy(long time, long forgiveness, bool noteOnEvent)
         {
-            //float eventTimeToCompareWith = 2f * GameData.Forgiveness;
-            long evtTime = -10;
-
             print($"Current time: {time}");
             if (_notes.Count == 0)
             {
@@ -147,43 +184,22 @@ namespace MIDIGame.Lane
                 return 0f;
             }
 
-            // Find minimum index.
-            int lowestIndex = int.MaxValue;
-            foreach (int index in _notes.Keys)
-            {
-                if (index < lowestIndex) lowestIndex = index;
-            }
+            // Find lowest tick unplayed note.
+            Note soonestNote = noteOnEvent ? 
+                FindNextUnplayedOnEvent(time - forgiveness, time + forgiveness) : 
+                FindNextUnplayedOffEvent(time - forgiveness, time + forgiveness);
 
-            // Find next playable note time.
-            for (int index = lowestIndex; ; index++)
-            {
-
-            }
-            foreach (var note in _notes)
-            {
-                var noteTime = NoteOnEvent ? note.Data.Time : note.Data.EndTime;
-
-                if (InRange(time, noteTime - forgiveness, noteTime + forgiveness) && !note.Played)
-                {
-                    note.Played = true;
-                    evtTime = noteTime;
-                    break;
-                }
-
-            }
-
-            // Only when there is no note within forgiveness range.
-            if (evtTime < 0)
+            if (soonestNote == null)
             {
                 print("Total miss.");
-                return 0;
+                return 0f;
             }
 
-            var msDist = evtTime - time;
-            var accuracy = CalculateAccuracy(msDist, forgiveness);
+            var evtTime = noteOnEvent ? soonestNote.Time : soonestNote.EndTime;
+            var accuracy = CalculateAccuracy(time - evtTime, forgiveness);
             print($"Note event accuracy: {accuracy}%\n" +
-                "Note time position: {eventTimeToCompareWith}ms\n" +
-                $"Played note time distance: {msDist}ms");
+                $"Note time position: {evtTime}ms\n" +
+                $"Played note time distance: {time - evtTime}ms");
 
             return accuracy;
         }

@@ -178,7 +178,7 @@ namespace MIDIGame.Runway
         #region Properties
         readonly List<Note> _notes;
 
-        Dictionary<int, Note> _activeNotes;
+        readonly Dictionary<int, Note> _activeNotes;
         int _lowestIndex;
         int _highestIndex;
 
@@ -262,7 +262,7 @@ namespace MIDIGame.Runway
             }
         }
 
-        void AddVisibleNotes(long playbackTick, long lowerTickBound, long upperTickBound)
+        void AddVisibleNotes(long lowerTickBound, long upperTickBound)
         {
             // Find visible notes based on existing notes.
             if (_activeNotes.Count > 0)
@@ -290,7 +290,7 @@ namespace MIDIGame.Runway
         public void UpdateNotesVisible(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
         {
             RemoveHiddenNotes(playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
-            AddVisibleNotes(playbackTick, playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
+            AddVisibleNotes(playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
         }
         #endregion
     }
@@ -304,8 +304,8 @@ namespace MIDIGame.Runway
         NoteLane[] _lanes;
         GameObject _wNotePrefab;
         GameObject _bNotePrefab;
-        Transform _laneParent;
-        GameObject _lanePrefab;
+        readonly Transform _laneParent;
+        readonly GameObject _lanePrefab;
         #endregion
 
         #region Constructors
