@@ -6,8 +6,6 @@ using UnityEngine.UIElements;
 using Directory = System.IO.Directory;
 using MIDIGame.UI.Documents;
 
-
-
 namespace MIDIGame.UI
 {
     public class SongSelector : MonoBehaviour, IDocHandler

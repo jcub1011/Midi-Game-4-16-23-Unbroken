@@ -1,18 +1,21 @@
 using UnityEngine;
 
-public static class SceneParameters
+namespace MIDIGame.Params
 {
-    private static string SongPath;
-
-    public static void SetSongPath(string path)
+    public static class SceneParameters
     {
-        Debug.Log("Setting song path.");
-        SongPath = path;
-    }
+        private static string SongPath;
 
-    public static string GetSongPath()
-    {
-        Debug.Log("Retrieving song path.");
-        return SongPath;
+        public static void SetSongPath(string path)
+        {
+            Debug.Log("Setting song path.");
+            SongPath = path;
+        }
+
+        public static string GetSongPath()
+        {
+            Debug.Log("Retrieving song path.");
+            return SongPath;
+        }
     }
 }

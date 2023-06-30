@@ -1,9 +1,6 @@
 using Melanchall.DryWetMidi.Interaction;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Utils;
 
 namespace MIDIGame.Lane
 {

@@ -64,14 +64,12 @@
     <Compile Include="Assets\UI Toolkit\StartMenu\Panels.cs" />
     <Compile Include="Assets\CustomTickGenerator.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\DocHandler.cs" />
-    <Compile Include="Assets\MidiParser.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Preview\Preview.cs" />
     <Compile Include="Assets\Range.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\PreviewRunway.cs" />
     <Compile Include="Assets\Scripts\SceneParameters.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Song Settings\SongSettings.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\Song Selector\SongSelector.cs" />
-    <Compile Include="Assets\NoteBlock.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\StartMenuInitalizer.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,5 @@
-using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using System.Collections.Generic;
-using System.Xml.Serialization;
 using UnityEngine.UIElements;
 
 namespace MIDIGame.UI.Documents
