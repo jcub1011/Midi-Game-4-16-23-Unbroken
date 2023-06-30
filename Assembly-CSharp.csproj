@@ -73,7 +73,6 @@
     <Compile Include="Assets\UI Toolkit\StartMenu\Song Selector\SongSelector.cs" />
     <Compile Include="Assets\NoteBlock.cs" />
     <Compile Include="Assets\UI Toolkit\StartMenu\StartMenuInitalizer.cs" />
-    <Compile Include="Assets\PlaybackManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

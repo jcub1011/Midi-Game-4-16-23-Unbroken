@@ -1,114 +1,119 @@
-using MainStartMenu;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Directory = System.IO.Directory;
+using MIDIGame.UI.Documents;
 
-public class SongSelector : MonoBehaviour, IDocHandler
+
+
+namespace MIDIGame.UI
 {
-    #region Constants
-    private const string SONG_SELECTOR_CLASS_NAME = "Song-Select-Button";
-    private const string SONG_LIST_CONTAINER_ID = "Song-List-Container";
-    private const string SONG_SELECTOR_UI_CONTAINER = "SongSelectorContainer";
-    private const string BACK_BUTTON_ID = "BackButton";
-    #endregion
-
-    #region Interface
-    public void OnShow()
+    public class SongSelector : MonoBehaviour, IDocHandler
     {
-        Debug.Log("Displaying song selector.");
-        RefreshSongsList(Directory.GetCurrentDirectory() + "/Assets/MidiFiles");
-    }
+        #region Constants
+        private const string SONG_SELECTOR_CLASS_NAME = "Song-Select-Button";
+        private const string SONG_LIST_CONTAINER_ID = "Song-List-Container";
+        private const string SONG_SELECTOR_UI_CONTAINER = "SongSelectorContainer";
+        private const string BACK_BUTTON_ID = "BackButton";
+        #endregion
 
-    public void OnHide()
-    {
-        Debug.Log("Hiding song selector.");
-    }
-
-    public void OnDocAdd()
-    {
-        Debug.Log("Song selector panel added.");
-        (DocHandler.GetRoot(Documents.SongSelect).Q(BACK_BUTTON_ID) as Button).clicked += BackButtonPressed;
-    }
-
-    public void OnDocRemove()
-    {
-        Debug.Log("Song selector panel removed.");
-    }
-    #endregion
-
-    #region Properties
-    #endregion
-
-    #region Methods
-    void BackButtonPressed()
-    {
-        Debug.Log("Back button pressed.");
-        DocHandler.ReturnToPrev();
-    }
-
-    void DisplaySongSettings(string song)
-    {
-        Debug.Log($"Displaying settings for {song}");
-        DocHandler.DisplayDoc(Documents.SongSetts, song);
-    }
-
-    void RefreshSongsList(string songsFolderPath)
-    {
-        var rootContainer = DocHandler.GetRoot(Documents.SongSelect).Q(SONG_SELECTOR_UI_CONTAINER);
-        Debug.Log("Getting songs list.");
-
-        List<string> songList = Directory.EnumerateFiles(songsFolderPath).ToList();
-        Debug.Log($"Files in midi directory: {songList.Count}");
-
-        // Remove existing list container.
-        var oldContainer = rootContainer.Q(SONG_LIST_CONTAINER_ID);
-        if (oldContainer != null) rootContainer.Remove(oldContainer);
-
-        // Create new list container.
-        var songListContainer = new ScrollView
+        #region Interface
+        public void OnShow()
         {
-            name = SONG_LIST_CONTAINER_ID
-        };
+            Debug.Log("Displaying song selector.");
+            RefreshSongsList(Directory.GetCurrentDirectory() + "/Assets/MidiFiles");
+        }
 
-        // Style
-        songListContainer.style.flexGrow = 1;
-        songListContainer.style.marginBottom = 10;
-        songListContainer.style.marginLeft = 10;
-        songListContainer.style.marginRight = 10;
-        DocHandler.SetScrollSpeed(songListContainer);
-
-        // Add songs to list container.
-        string songs = "";
-        foreach (var song in songList)
+        public void OnHide()
         {
-            // Skip if not a midi file.
-            if (Path.GetExtension(song).ToLower() != ".mid") continue;
+            Debug.Log("Hiding song selector.");
+        }
 
-            var songName = Path.GetFileNameWithoutExtension(song);
-            var newButton = new Button();
-            songs += $"{songName}\n";
+        public void OnDocAdd()
+        {
+            Debug.Log("Song selector panel added.");
+            (DocHandler.GetRoot(DocNames.SongSelect).Q(BACK_BUTTON_ID) as Button).clicked += BackButtonPressed;
+        }
 
+        public void OnDocRemove()
+        {
+            Debug.Log("Song selector panel removed.");
+        }
+        #endregion
 
-            // Modify button values.
-            newButton.text = songName;
-            newButton.AddToClassList(SONG_SELECTOR_CLASS_NAME);
+        #region Properties
+        #endregion
 
-            // Register event.
-            newButton.clicked += () =>
+        #region Methods
+        void BackButtonPressed()
+        {
+            Debug.Log("Back button pressed.");
+            DocHandler.ReturnToPrev();
+        }
+
+        void DisplaySongSettings(string song)
+        {
+            Debug.Log($"Displaying settings for {song}");
+            DocHandler.DisplayDoc(DocNames.SongSetts, song);
+        }
+
+        void RefreshSongsList(string songsFolderPath)
+        {
+            var rootContainer = DocHandler.GetRoot(DocNames.SongSelect).Q(SONG_SELECTOR_UI_CONTAINER);
+            Debug.Log("Getting songs list.");
+
+            List<string> songList = Directory.EnumerateFiles(songsFolderPath).ToList();
+            Debug.Log($"Files in midi directory: {songList.Count}");
+
+            // Remove existing list container.
+            var oldContainer = rootContainer.Q(SONG_LIST_CONTAINER_ID);
+            if (oldContainer != null) rootContainer.Remove(oldContainer);
+
+            // Create new list container.
+            var songListContainer = new ScrollView
             {
-                Debug.Log($"Song '{songName}' selected.");
-                DisplaySongSettings(song);
+                name = SONG_LIST_CONTAINER_ID
             };
 
-            // Add to container.
-            songListContainer.Add(newButton);
-        }
-        Debug.Log($"Midi files found:\n{songs}");
+            // Style
+            songListContainer.style.flexGrow = 1;
+            songListContainer.style.marginBottom = 10;
+            songListContainer.style.marginLeft = 10;
+            songListContainer.style.marginRight = 10;
+            DocHandler.SetScrollSpeed(songListContainer);
 
-        rootContainer.Add(songListContainer);
+            // Add songs to list container.
+            string songs = "";
+            foreach (var song in songList)
+            {
+                // Skip if not a midi file.
+                if (Path.GetExtension(song).ToLower() != ".mid") continue;
+
+                var songName = Path.GetFileNameWithoutExtension(song);
+                var newButton = new Button();
+                songs += $"{songName}\n";
+
+
+                // Modify button values.
+                newButton.text = songName;
+                newButton.AddToClassList(SONG_SELECTOR_CLASS_NAME);
+
+                // Register event.
+                newButton.clicked += () =>
+                {
+                    Debug.Log($"Song '{songName}' selected.");
+                    DisplaySongSettings(song);
+                };
+
+                // Add to container.
+                songListContainer.Add(newButton);
+            }
+            Debug.Log($"Midi files found:\n{songs}");
+
+            rootContainer.Add(songListContainer);
+        }
+        #endregion
     }
-    #endregion
 }

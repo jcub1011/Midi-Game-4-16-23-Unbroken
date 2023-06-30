@@ -1,7 +1,6 @@
-using MainStartMenu;
-using Melanchall.DryWetMidi.Core;
+using MIDIGame.UI.Documents;
+using MIDIGame.Runway;
 using Melanchall.DryWetMidi.Interaction;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -28,7 +27,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
     public void OnShow(List<Note> notes, long lastTick, long tickLeadup, TempoMap tempoMap, float strikeBarHeight = 0.2f)
     {
         // Init interactive elements.
-        var root = DocHandler.GetRoot(Documents.Preview);
+        var root = DocHandler.GetRoot(DocNames.Preview);
 
         var slider = root.Q(SLIDER) as Slider;
         slider.value = 0;
@@ -55,7 +54,7 @@ public class Preview : MonoBehaviour, IDocHandler, IRunwayParamsInput
     {
         Debug.Log("Preview panel added.");
 
-        var backButton = DocHandler.GetRoot(Documents.Preview).Q(BACK_BUTTON) as Button;
+        var backButton = DocHandler.GetRoot(DocNames.Preview).Q(BACK_BUTTON) as Button;
         backButton.clicked += DocHandler.ReturnToPrev;
     }
 

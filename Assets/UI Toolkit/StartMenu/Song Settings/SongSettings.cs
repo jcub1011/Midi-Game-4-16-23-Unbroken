@@ -1,13 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using MainStartMenu;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using UnityEngine.UIElements;
 using System.IO;
 using System.Linq;
-using Unity.VisualScripting;
+using MIDIGame.UI.Documents;
+using MIDIGame.UI;
 
 public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
 {
@@ -50,7 +49,7 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
     public void OnDocAdd()
     {
         Debug.Log("Song settings panel added.");
-        _root = DocHandler.GetRoot(Documents.SongSetts);
+        _root = DocHandler.GetRoot(DocNames.SongSetts);
         DocHandler.SetScrollSpeed(_root.Q<ScrollView>(SETTINGS_SCROLLER_ID));
 
         // Register buttons.
@@ -119,7 +118,7 @@ public class SongSettings : MonoBehaviour, IDocHandler, IFileInput
         }
 
 
-        DocHandler.DisplayDoc(Documents.Preview, notes, endTime, 1000, _tempoMap);
+        DocHandler.DisplayDoc(DocNames.Preview, notes, endTime, 1000, _tempoMap);
     }
 
     void OnPlayButtonClick()

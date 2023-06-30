@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Xml.Serialization;
 using UnityEngine.UIElements;
 
-namespace MainStartMenu
+namespace MIDIGame.UI.Documents
 {
     public interface IDocHandler
     {
@@ -49,7 +49,7 @@ namespace MainStartMenu
             TempoMap tempoMap, float strikeBarHeight = 0.2f);
     }
 
-    public static class Documents
+    public static class DocNames
     {
         public static string Main = "Main";
         public static string SongSelect = "Song Selector";
