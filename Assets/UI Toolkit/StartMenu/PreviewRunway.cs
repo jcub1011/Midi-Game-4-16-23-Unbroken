@@ -19,7 +19,6 @@ namespace MIDIGame.Runway
         {
             if (notes.Count == 0) throw new System.Exception("There are no notes to display.");
             Debug.Log($"Preview has {notes.Count} notes.");
-            UpdateTime(startTick);
 
             float height = Camera.main.orthographicSize * 2f;
             float width = height * Camera.main.aspect;

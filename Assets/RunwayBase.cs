@@ -232,6 +232,7 @@ namespace MIDIGame.Runway
             }
 
             NoteRemoved?.Invoke(note, noteIndex);
+            Debug.Log("Hiding note.");
         }
 
         void AddNote(Note note, int noteIndex)
@@ -245,6 +246,7 @@ namespace MIDIGame.Runway
             if (noteIndex > _highestIndex) _highestIndex = noteIndex;
 
             NoteAdded?.Invoke(note, noteIndex);
+            Debug.Log("Showing note.");
         }
 
         bool NoteVisible(Note note, long lowerTickBound, long upperTickBound)
@@ -263,29 +265,101 @@ namespace MIDIGame.Runway
             }
         }
 
+        int FindClosestNoteIndex(long tickToSearch)
+        {
+            if (_notes.Count == 0) return -1;
+
+            int lowerBound = 0;
+            int upperBound = _notes.Count - 1;
+            int middle = 0;
+
+            while (lowerBound < upperBound)
+            {
+                middle = (lowerBound + upperBound) / 2;
+                if (_notes[middle].Time == tickToSearch) return middle;
+
+                if (_notes[middle].Time < tickToSearch)
+                {
+                    lowerBound = middle + 1;
+                } else if (_notes[middle].Time > tickToSearch)
+                {
+                    upperBound = middle - 1;
+                }
+            }
+
+            return middle;
+        }
+
+        void AddNotesLeftOfIndex(int index, long lowerTickBound, long upperTickBound)
+        {
+            // Find notes lower than minimum.
+            for (; index >= 0; index--)
+            {
+                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(_notes[index], index);
+                else break;
+            }
+        }
+
+        void AddNotesRightOfIndex(int index, long lowerTickBound, long upperTickBound)
+        {
+            // Find notes lower than minimum.
+            for (; index < _notes.Count; index++)
+            {
+                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(_notes[index], index);
+                else break;
+            }
+        }
+
         void AddVisibleNotes(long lowerTickBound, long upperTickBound)
         {
             // Find visible notes based on existing notes.
             if (_activeNotes.Count > 0)
             {
                 // Find notes lower than minimum.
-                for (int i = _lowestIndex - 1; i >= 0; i--)
-                {
-                    if (NoteVisible(_notes[i], lowerTickBound, upperTickBound)) AddNote(_notes[i], i);
-                    else break;
-                }
-
+                AddNotesLeftOfIndex(_lowestIndex - 1, lowerTickBound, upperTickBound);
                 // Find notes higher than max.
-                for (int i = _highestIndex + 1; i < _activeNotes.Count; i++)
-                {
-                    if (NoteVisible(_notes[i], lowerTickBound, upperTickBound)) AddNote(_notes[i], i);
-                    else break;
-                }
-
+                AddNotesRightOfIndex(_highestIndex + 1, lowerTickBound, upperTickBound);
                 return;
             }
 
             // When there are no existing notes.
+            else
+            {
+                long boundRadius = (lowerTickBound + upperTickBound) / 2;
+                int index = FindClosestNoteIndex(lowerTickBound + boundRadius);
+                if (index < 0) return;
+
+                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound))
+                {
+                    AddNote(_notes[index], index);
+                    AddVisibleNotes(lowerTickBound, upperTickBound);
+                    return;
+                }
+                else
+                {
+                    // Seek in either direction to look for a valid note.
+                    for (int seekIndex = index - 1; seekIndex >= 0; seekIndex--)
+                    {
+                        if (_notes[seekIndex].Time < lowerTickBound) break;
+                        if (NoteVisible(_notes[seekIndex], lowerTickBound, upperTickBound))
+                        {
+                            AddNote(_notes[seekIndex], seekIndex);
+                            AddVisibleNotes(lowerTickBound, upperTickBound);
+                            return;
+                        }
+                    }
+                    for (int seekIndex = index + 1; seekIndex < _notes.Count; seekIndex++)
+                    {
+                        if (_notes[seekIndex].Time < lowerTickBound) break;
+                        if (NoteVisible(_notes[seekIndex], lowerTickBound, upperTickBound))
+                        {
+                            AddNote(_notes[seekIndex], seekIndex);
+                            AddVisibleNotes(lowerTickBound, upperTickBound);
+                            return;
+                        }
+                    }
+                }
+            }
         }
 
         public void UpdateNotesVisible(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
@@ -353,7 +427,7 @@ namespace MIDIGame.Runway
         #region Event Handlers
         void AddNote(Note note, int noteIndex)
         {
-            Debug.Log($"Removing note {note.NoteName} @ index {noteIndex}.");
+            Debug.Log($"Adding note {note.NoteName} @ index {noteIndex}.");
             var laneIndex = note.NoteNumber - _noteRange.Min;
             _lanes[laneIndex].AddNote(note, noteIndex,
                 _displayInfo.IsWhiteNoteLane(laneIndex) ? _wNotePrefab : _bNotePrefab);

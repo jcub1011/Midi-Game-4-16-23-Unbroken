@@ -85,8 +85,7 @@ namespace MIDIGame.UI
             // Edit all toggles.
             foreach (var child in trackSelectContainer.Children())
             {
-                var toggle = child as Toggle;
-                if (toggle == null) continue;
+                if (child is not Toggle toggle) continue;
 
                 toggle.value = value;
             }
