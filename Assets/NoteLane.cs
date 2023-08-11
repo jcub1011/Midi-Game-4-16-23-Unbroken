@@ -50,9 +50,11 @@ namespace MIDIGame.Lane
 
     public interface IPlaybackData
     {
-        public long PlaybackPosition { get; }
+        public long PlaybackStartPosition { get; }
+        public long PlaybackEndPosition { get; }
         public long LengthTicks { get; }
         public int ID { get; } // Values 0-127 denote midi note numbers. See the RenderableType enum for definition of values 130+
+        public int Index { get; set; }
     }
 
     public interface IRenderableObject : IDisposable, IPlaybackData
@@ -75,8 +77,6 @@ namespace MIDIGame.Lane
     {
         #region Properies
         List<IPlaybackData> _notes;
-        int _earliestIndex;
-        int _latestIndex;
         LinkedList<IRenderableObject> _renderableNotes;
         float _zPos;
         float _xPos;
@@ -88,6 +88,10 @@ namespace MIDIGame.Lane
         public void SetNoteList(ICollection<IPlaybackData> notes)
         {
             _notes = notes.ToList();
+            for (int i = 0; i < notes.Count; i++)
+            {
+                _notes[i].Index = i;
+            }
         }
 
         public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
@@ -99,7 +103,44 @@ namespace MIDIGame.Lane
         #region Utility Methods
         void CrawlBoundsInwards(long lowerTickBound, long upperTickBound)
         {
-            if (InRange())
+            // Remove notes past playback range.
+            for(var node = _renderableNotes.First; node != null; node = node.Next)
+            {
+                if (node.Value.PlaybackEndPosition < lowerTickBound)
+                {
+                    _renderableNotes.RemoveFirst();
+                }
+            }
+
+            // Remove notes before playback range.
+            for(var node = _renderableNotes.Last; node != null; node = node.Previous)
+            {
+                if (node.Value.PlaybackStartPosition > upperTickBound)
+                {
+                    _renderableNotes.RemoveLast();
+                }
+            }
+        }
+
+        void CrawlBoundsOutwards(long lowerTickBound, long upperTickBound)
+        {
+            if (_renderableNotes.Count == 0)
+            {
+                // Find new playback position.
+            }
+
+            for (var i = _renderableNotes.First.Value.Index; i >= 0; i--)
+            {
+                if (_notes[i].PlaybackEndPosition >= lowerTickBound)
+                {
+                    _renderableNotes.AddFirst(_notes[i]);
+                }
+            }
+        }
+
+        IRenderableObject CreateRenderableObject(IPlaybackData playbackData)
+        {
+            return new IRenderableObject();
         }
         #endregion
 
