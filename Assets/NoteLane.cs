@@ -1,10 +1,21 @@
 using Melanchall.DryWetMidi.Interaction;
+using Newtonsoft.Json.Bson;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
+using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace MIDIGame.Lane
 {
     public delegate void NoteMissEvt(Note note);
+
+    public enum RenderableType
+    {
+        Bar = 130
+    }
 
     public class NoteObject
     {
@@ -37,13 +48,85 @@ namespace MIDIGame.Lane
         }
     }
 
-    public class NoteLane : MonoBehaviour
+    public interface IPlaybackData
+    {
+        public long PlaybackPosition { get; }
+        public long LengthTicks { get; }
+        public int ID { get; } // Values 0-127 denote midi note numbers. See the RenderableType enum for definition of values 130+
+    }
+
+    public interface IRenderableObject : IDisposable, IPlaybackData
+    {
+        public GameObject GameObject { get; set; }
+        public bool Played { get; set; }
+
+        public void UpdateGameObject(long playbackTick, float unitsPerTick, float runwayTopY);
+        public void UpdateGameObject(float positionOffset);
+    }
+
+    public interface ILane : IDisposable
+    {
+        public void SetNoteList(ICollection<IPlaybackData> notes);
+        public void UpdateLane(long playbackTick, float unitsPerTick, float runwayTopY);
+        public void SetVisibleRange(long ticksBeforePlaybackTick, long ticksAfterPlaybackTick);
+    }
+
+    public class NoteLane : MonoBehaviour, ILane
     {
         #region Properies
-        Dictionary<int, NoteObject> _notes;
+        List<IPlaybackData> _notes;
+        int _earliestIndex;
+        int _latestIndex;
+        LinkedList<IRenderableObject> _renderableNotes;
         float _zPos;
         float _xPos;
         public NoteMissEvt OnNoteMissed;
+        bool _disposed;
+        #endregion
+
+        #region ILane Implementations
+        public void SetNoteList(ICollection<IPlaybackData> notes)
+        {
+            _notes = notes.ToList();
+        }
+
+        public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
+        {
+            
+        }
+        #endregion
+
+        #region Utility Methods
+        void CrawlBoundsInwards(long lowerTickBound, long upperTickBound)
+        {
+            if (InRange())
+        }
+        #endregion
+
+        #region IDisposable Implementation
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed) return;
+            
+            if (disposing)
+            {
+                foreach (var item in _renderableNotes)
+                {
+                    item.Dispose();
+                }
+                _renderableNotes = null;
+            }
+
+            _notes = null;
+            OnNoteMissed = null;
+            _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
         #endregion
 
         #region Utility Methods
@@ -94,14 +177,14 @@ namespace MIDIGame.Lane
         /// <param name="topYPos"></param>
         public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
         {
-            if (_notes == null || _notes.Count == 0)
+            if (_renderedNotes == null || _renderedNotes.Count == 0)
             {
                 Debug.Log($"Lane has no notes.");
                 return;
             }
 
             // Update positions for all managed notes.
-            foreach (var noteObject in _notes.Values)
+            foreach (var noteObject in _renderedNotes.Values)
             {
                 // Get new scale.
                 var newScale = new Vector3
@@ -129,7 +212,7 @@ namespace MIDIGame.Lane
         {
             Note soonestNote = null;
 
-            foreach (NoteObject note in _notes.Values)
+            foreach (NoteObject note in _renderedNotes.Values)
             {
                 // Check if sooner than current soonest note.
                 if (soonestNote == null || note.Data.Time < soonestNote.Time)
@@ -149,7 +232,7 @@ namespace MIDIGame.Lane
         {
             Note soonestNote = null;
 
-            foreach (NoteObject note in _notes.Values)
+            foreach (NoteObject note in _renderedNotes.Values)
             {
                 // Check if sooner than current soonest note.
                 if (soonestNote == null || note.Data.EndTime < soonestNote.EndTime)
@@ -175,7 +258,7 @@ namespace MIDIGame.Lane
         public float NoteEventAccuracy(long time, long forgiveness, bool noteOnEvent)
         {
             print($"Current time: {time}");
-            if (_notes.Count == 0)
+            if (_renderedNotes.Count == 0)
             {
                 Debug.Log($"No notes to check accuracy against.");
                 return 0f;
@@ -242,9 +325,9 @@ namespace MIDIGame.Lane
         /// <param name="notePrefab">Prefab to use for note.</param>
         public void AddNote(Note noteData, int noteIndex, GameObject notePrefab)
         {
-            _notes ??= new();
-            if (_notes.ContainsKey(noteIndex)) return;
-            _notes.Add(noteIndex, MakeNoteObject(noteData, notePrefab));
+            _renderedNotes ??= new();
+            if (_renderedNotes.ContainsKey(noteIndex)) return;
+            _renderedNotes.Add(noteIndex, MakeNoteObject(noteData, notePrefab));
         }
 
         /// <summary>
@@ -252,18 +335,18 @@ namespace MIDIGame.Lane
         /// </summary>
         public void RemoveNote(int noteIndex)
         {
-            _notes ??= new();
-            if (!_notes.ContainsKey(noteIndex)) return;
-            if (_notes.Count == 0) return;
-            var note = _notes[noteIndex];
-            _notes.Remove(noteIndex);
+            _renderedNotes ??= new();
+            if (!_renderedNotes.ContainsKey(noteIndex)) return;
+            if (_renderedNotes.Count == 0) return;
+            var note = _renderedNotes[noteIndex];
+            _renderedNotes.Remove(noteIndex);
             Destroy(note.Note);
         }
 
         public void ResetNotesPlayed()
         {
-            _notes ??= new();
-            foreach (var obj in _notes.Values)
+            _renderedNotes ??= new();
+            foreach (var obj in _renderedNotes.Values)
             {
                 obj.Played = false;
             }
