@@ -61,8 +61,7 @@ namespace MIDIGame.Runway
         {
             get
             {
-                var strikeHeight = _strikeBarHeightPercent * RunwayHeight;
-                return (long)(strikeHeight * UnitsPerTick);
+                return (long)(TicksVisibleAboveStrike * _strikeBarHeightPercent);
             }
         }
         #endregion
@@ -377,7 +376,6 @@ namespace MIDIGame.Runway
     {
         #region Properties
         IntRange _noteRange;
-        NoteManager _noteManager;
         RunwayDisplayInfo _displayInfo;
         NoteLane[] _lanes;
         GameObject _wNotePrefab;
@@ -391,18 +389,10 @@ namespace MIDIGame.Runway
             long ticksToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
             GameObject whiteNotePrefab, GameObject blackNotePrefab)
         {
-            InitNoteManger(notes);
             InitLanes(notes, dimensions, strikeBarHeight, ticksToReachStrikeBar,
                 whiteNotePrefab, blackNotePrefab, lanesParent, lanePrefab);
 
             UpdateLaneDimensions();
-        }
-
-        void InitNoteManger(List<Note> notes)
-        {
-            _noteManager = new(notes);
-            _noteManager.NoteAdded += AddNote;
-            _noteManager.NoteRemoved += RemoveNote;
         }
 
         void InitLanes(List<Note> notes, float[] dimensions, float strikeBarHeight, long ticksToReachStrikeBar,
@@ -417,30 +407,27 @@ namespace MIDIGame.Runway
             _wNotePrefab = whiteNotePrefab;
             _bNotePrefab = blackNotePrefab;
 
+            List<Note>[] notesByNoteNumber = new List<Note>[_noteRange.Len];
+            for (int i = 0; i < notesByNoteNumber.Length; ++i)
+            {
+                notesByNoteNumber[i] = new();
+            }
+
+            foreach (Note note in notes)
+            {
+                int i = note.NoteNumber - _noteRange.Min;
+                notesByNoteNumber[i].Add(note);
+            }
+
             // Initalize lanes.
             for (int i = 0; i < _lanes.Length; i++)
             {
                 var newLane = UnityEngine.Object.Instantiate(lanePrefab, lanesParent);
                 _lanes[i] = newLane.GetComponent<NoteLane>();
-                _lanes[i].SetPosition(_displayInfo.GetLaneXPos(i), _displayInfo.IsWhiteNoteLane(i) ? 1 : 0);
+                _lanes[i].Initalize(notesByNoteNumber[i], _displayInfo.TicksVisibleBelowStrike, 
+                    _displayInfo.TicksVisibleAboveStrike, _displayInfo.IsWhiteNoteLane(i) ? _wNotePrefab : _bNotePrefab, _displayInfo.GetLaneXPos(i), 
+                    _displayInfo.IsWhiteNoteLane(i) ? 1 : 0, _displayInfo.GetLaneWidth(i));
             }
-        }
-        #endregion
-
-        #region Event Handlers
-        void AddNote(Note note, int noteIndex)
-        {
-            Debug.Log($"Adding note {note.NoteName} @ index {noteIndex}.");
-            var laneIndex = note.NoteNumber - _noteRange.Min;
-            _lanes[laneIndex].AddNote(note, noteIndex,
-                _displayInfo.IsWhiteNoteLane(laneIndex) ? _wNotePrefab : _bNotePrefab);
-        }
-
-        void RemoveNote(Note note, int noteIndex)
-        {
-            Debug.Log($"Removing note {note.NoteName} @ index {noteIndex}.");
-            var laneIndex = note.NoteNumber - _noteRange.Min;
-            _lanes[laneIndex].RemoveNote(noteIndex);
         }
         #endregion
 
@@ -461,30 +448,31 @@ namespace MIDIGame.Runway
             var noteRange = new IntRange(min, max);
             IntRange rangeToReturn;
 
+
             if (RunwayDisplayInfo.FourtyNineKeyKeyboard.InRange(noteRange))
             {
                 rangeToReturn = RunwayDisplayInfo.FourtyNineKeyKeyboard;
-                UnityEngine.GameObject.Find("49KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+                //UnityEngine.GameObject.Find("49KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
             }
             else if (RunwayDisplayInfo.SixtyOneKeyKeyboard.InRange(noteRange))
             {
                 rangeToReturn = RunwayDisplayInfo.SixtyOneKeyKeyboard;
-                UnityEngine.GameObject.Find("61KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+                //UnityEngine.GameObject.Find("61KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
             }
             else if (RunwayDisplayInfo.SeventySixKeyKeyboard.InRange(noteRange))
             {
                 rangeToReturn = RunwayDisplayInfo.SeventySixKeyKeyboard;
-                UnityEngine.GameObject.Find("76KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+                //UnityEngine.GameObject.Find("76KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
             }
             else if (RunwayDisplayInfo.EightyEightKeyKeyboard.InRange(noteRange))
             {
                 rangeToReturn = RunwayDisplayInfo.EightyEightKeyKeyboard;
-                UnityEngine.GameObject.Find("88KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+                //UnityEngine.GameObject.Find("88KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
             }
             else
             {
                 rangeToReturn = RunwayDisplayInfo.MaxKeyKeyboard;
-                UnityEngine.GameObject.Find("128KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
+                //UnityEngine.GameObject.Find("128KeyKeyboard").GetComponent<SpriteRenderer>().enabled = true;
             }
 
             return rangeToReturn;
@@ -501,8 +489,6 @@ namespace MIDIGame.Runway
 
         public void UpdateRunway(long playbackTick)
         {
-            _noteManager.UpdateNotesVisible(playbackTick, _displayInfo.TicksVisibleAboveStrike, _displayInfo.TicksVisibleBelowStrike);
-
             if (_lanes == null) return;
             foreach (var lane in _lanes)
             {

@@ -2,6 +2,7 @@ using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace MIDIGame.Lane
 {
@@ -67,10 +68,9 @@ namespace MIDIGame.Lane
 
     public interface ILane : IDisposable
     {
-        public void Initalize(ICollection<Note> notes, long ticksVisibleInFuture, long ticksVisibleInPast);
+        public void Initalize(ICollection<Note> notes, long ticksVisibleInFuture, long ticksVisibleInPast, GameObject objectSkins, float xPos, float zPos, float width);
         public void UpdateLane(long playbackTick, float unitsPerTick, float runwayTopY);
         public void UpdateVisibleRange(long ticksVisibleInFuture, long ticksVisibleInPast);
-        public GameObject ObjectsSkin { get; set; }
     }
 
     internal class NoteData : IPlaybackData
@@ -150,12 +150,14 @@ namespace MIDIGame.Lane
             get { return _data; }
         }
 
-        public NoteBlock(GameObject skin, IPlaybackData data)
+        public NoteBlock(GameObject skin, IPlaybackData data, Transform parent)
         {
             _played = false;
             _data = data;
-            _gameObject = skin;
+            _gameObject = UnityEngine.Object.Instantiate(skin, parent);
             _disposedValue = false;
+
+            _gameObject.GetComponent<Renderer>().enabled = true;
         }
 
         /// <summary>
@@ -167,7 +169,10 @@ namespace MIDIGame.Lane
         /// <param name="zPos">Z position of object.</param>
         public void UpdateGameObject(long futureVisibleTick, float laneTopYPos, float unitsPerTick, float zPos)
         {
-            float newYPos = laneTopYPos + _gameObject.transform.localScale.y / 2 + (_data.PlaybackStartPosition - futureVisibleTick) * unitsPerTick;
+            float newHeight = _data.LengthTicks * unitsPerTick;
+            _gameObject.transform.localScale = new Vector3(1, newHeight, 1);
+
+            float newYPos = laneTopYPos + _gameObject.transform.localScale.y / 2 - (futureVisibleTick - _data.PlaybackStartPosition) * unitsPerTick;
             _gameObject.transform.localPosition = new Vector3(0, newYPos, zPos);
         }
 
@@ -218,13 +223,14 @@ namespace MIDIGame.Lane
         bool _disposed;
         long _ticksVisibleInPast;
         long _ticksVisibleInFuture;
+        GameObject _objectsSkin;
         public bool Initialized { get; private set; }
-        public GameObject ObjectsSkin { get; set; }
         #endregion
 
         #region ILane Implementations
-        public void Initalize(ICollection<Note> notes, long ticksVisibleInPast, long ticksVisibleInFuture)
+        public void Initalize(ICollection<Note> notes, long ticksVisibleInPast, long ticksVisibleInFuture, GameObject objectsSkin, float xPos, float zPos, float width)
         {
+            _objectsSkin = objectsSkin;
             _notes = new();
             int i = 0;
             foreach (Note note in notes)
@@ -233,6 +239,10 @@ namespace MIDIGame.Lane
             }
 
             UpdateVisibleRange(ticksVisibleInPast, ticksVisibleInFuture);
+            SetPosition(xPos, zPos);
+            Width = width;
+            _renderableNotes = new();
+
             Initialized = true;
         }
 
@@ -242,6 +252,11 @@ namespace MIDIGame.Lane
 
             CrawlBoundsInwards(playbackTick - _ticksVisibleInPast, playbackTick + _ticksVisibleInFuture);
             CrawlBoundsOutwards(playbackTick - _ticksVisibleInPast, playbackTick + _ticksVisibleInFuture);
+
+            foreach (var note in _renderableNotes)
+            {
+                note.UpdateGameObject(playbackTick + _ticksVisibleInFuture, topYPos, unitsPerTick, 0);
+            }
         }
 
         public void UpdateVisibleRange(long ticksVisibleInPast, long ticksVisibleInFuture)
@@ -254,22 +269,29 @@ namespace MIDIGame.Lane
         #region Utility Methods
         void CrawlBoundsInwards(long pastTickBound, long futureTickBound)
         {
+            Debug.Log($"Crawling bounds: {pastTickBound}, {futureTickBound}");
             // Remove notes past playback range.
-            for(var node = _renderableNotes.First; node != null; node = node.Next)
+            while (_renderableNotes.First != null)
             {
-                if (node.Value.PlaybackData.PlaybackEndPosition < pastTickBound)
+                if (_renderableNotes.First.Value.PlaybackData.PlaybackEndPosition < pastTickBound)
                 {
+                    Debug.Log("Deleting note.");
+                    _renderableNotes.First.Value.Dispose();
                     _renderableNotes.RemoveFirst();
                 }
+                else break;
             }
 
             // Remove notes before playback range.
-            for(var node = _renderableNotes.Last; node != null; node = node.Previous)
+            while (_renderableNotes.Last != null)
             {
-                if (node.Value.PlaybackData.PlaybackStartPosition > futureTickBound)
+                if (_renderableNotes.Last.Value.PlaybackData.PlaybackStartPosition > futureTickBound)
                 {
+                    Debug.Log("Deleting note.");
+                    _renderableNotes.Last.Value.Dispose();
                     _renderableNotes.RemoveLast();
                 }
+                else break;
             }
         }
 
@@ -286,6 +308,7 @@ namespace MIDIGame.Lane
         /// <returns>-1 if failed.</returns>
         int FindIndexWithinRange(long pastTickBound, long futureTickBound)
         {
+            Debug.Log("Finding index within range.");
             int lowerBound = 0;
             int upperBound = _notes.Count - 1;
 
@@ -303,28 +326,28 @@ namespace MIDIGame.Lane
 
         void CrawlBoundsOutwards(long pastTickBound, long futureTickBound)
         {
+            if (_notes.Count == 0) { return; }
             if (_renderableNotes.Count == 0)
             {
-                Debug.Log("Empty lane.");
-                
                 int result = FindIndexWithinRange(pastTickBound, futureTickBound);
                 if (result == -1) { return; }
 
                 _renderableNotes.AddFirst(CreateRenderableObject(_notes[result]));
             }
 
-            for (var i = _renderableNotes.First.Value.PlaybackData.Index - 1; i >= 0; i--)
+            for (var i = _renderableNotes.First.Value.PlaybackData.Index - 1; i >= 0; --i)
             {
-                if (_notes[i].PlaybackEndPosition >= pastTickBound)
+                
+                if (WithinVisibleRange(_notes[i], pastTickBound, futureTickBound))
                 {
                     _renderableNotes.AddFirst(CreateRenderableObject(_notes[i]));
                 }
                 else break;
             }
 
-            for (var i = _renderableNotes.Last.Value.PlaybackData.Index + 1; i < _notes.Count; i++)
+            for (var i = _renderableNotes.Last.Value.PlaybackData.Index + 1; i < _notes.Count; ++i)
             {
-                if (_notes[i].PlaybackStartPosition <= futureTickBound)
+                if (WithinVisibleRange(_notes[i], pastTickBound, futureTickBound))
                 {
                     _renderableNotes.AddLast(CreateRenderableObject(_notes[i]));
                 }
@@ -334,7 +357,7 @@ namespace MIDIGame.Lane
 
         IRenderableObject CreateRenderableObject(IPlaybackData playbackData)
         {
-            return new NoteBlock(ObjectsSkin, playbackData); 
+            return new NoteBlock(_objectsSkin, playbackData, gameObject.transform); 
         }
         #endregion
 
