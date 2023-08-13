@@ -1,11 +1,7 @@
 using Melanchall.DryWetMidi.Interaction;
-using Newtonsoft.Json.Bson;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
-using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 
 namespace MIDIGame.Lane
@@ -59,20 +55,23 @@ namespace MIDIGame.Lane
         public RenderableType ID { get; }
     }
 
-    public interface IRenderableObject : IDisposable, IPlaybackData
+    public interface IRenderableObject : IDisposable
     {
-        public GameObject GameObject { get; set; }
-        public bool Played { get; set; }
+        public GameObject GameObject { get; }
+        public bool Played { get; }
 
-        public void UpdateGameObject(long playbackTick, float unitsPerTick, float runwayTopY);
-        public void UpdateGameObject(float positionOffset);
+        public IPlaybackData PlaybackData { get; }
+
+        public void UpdateGameObject(long futureVisibleTick, float laneTopYPos, float unitsPerTick, float zPos);
+        public void UpdateGameObject(float yPositionOffset);
     }
 
     public interface ILane : IDisposable
     {
-        public void Initalize(ICollection<Note> notes, long ticksBeforePlaybackTick, long ticksAfterPlaybackTick);
+        public void Initalize(ICollection<Note> notes, long ticksVisibleInFuture, long ticksVisibleInPast);
         public void UpdateLane(long playbackTick, float unitsPerTick, float runwayTopY);
-        public void UpdateVisibleRange(long ticksBeforePlaybackTick, long ticksAfterPlaybackTick);
+        public void UpdateVisibleRange(long ticksVisibleInFuture, long ticksVisibleInPast);
+        public GameObject ObjectsSkin { get; set; }
     }
 
     internal class NoteData : IPlaybackData
@@ -130,6 +129,84 @@ namespace MIDIGame.Lane
         #endregion
     }
 
+    internal class NoteBlock : IRenderableObject
+    {
+        private bool _disposedValue;
+        private GameObject _gameObject;
+        private bool _played;
+        private IPlaybackData _data;
+
+        public GameObject GameObject
+        {
+            get { return _gameObject; }
+        }
+        public bool Played
+        {
+            get { return _played; }
+        }
+
+        public IPlaybackData PlaybackData
+        {
+            get { return _data; }
+        }
+
+        public NoteBlock(GameObject skin, IPlaybackData data)
+        {
+            _played = false;
+            _data = data;
+            _gameObject = skin;
+            _disposedValue = false;
+        }
+
+        /// <summary>
+        /// Updates the position of the game object.
+        /// </summary>
+        /// <param name="futureVisibleTick">Playback tick + ticks visible in future.</param>
+        /// <param name="laneTopYPos"></param>
+        /// <param name="unitsPerTick"></param>
+        /// <param name="zPos">Z position of object.</param>
+        public void UpdateGameObject(long futureVisibleTick, float laneTopYPos, float unitsPerTick, float zPos)
+        {
+            float newYPos = laneTopYPos + _gameObject.transform.localScale.y / 2 + (_data.PlaybackStartPosition - futureVisibleTick) * unitsPerTick;
+            _gameObject.transform.localPosition = new Vector3(0, newYPos, zPos);
+        }
+
+        public void UpdateGameObject(float yPositionOffset)
+        {
+            _gameObject.transform.localPosition += new Vector3(0f, yPositionOffset, 0f);
+        }
+
+        #region IDispose Implementation and Finalizer
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _played = false;
+                    _data = null;
+                }
+
+                if (_gameObject != null) UnityEngine.Object.Destroy(_gameObject);
+                _disposedValue = true;
+            }
+        }
+
+        ~NoteBlock()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+    }
+
     public class NoteLane : MonoBehaviour, ILane
     {
         #region Properies
@@ -142,20 +219,17 @@ namespace MIDIGame.Lane
         long _ticksBeforePlaybackTick;
         long _ticksAfterPlaybackTick;
         public bool Initialized { get; private set; }
+        public GameObject ObjectsSkin { get; set; }
         #endregion
 
         #region ILane Implementations
         public void Initalize(ICollection<Note> notes, long ticksBeforePlaybackTick, long ticksAfterPlaybackTick)
         {
             _notes = new();
+            int i = 0;
             foreach (Note note in notes)
             {
-                _notes.Add()
-            }
-
-            for (int i = 0; i < notes.Count; i++)
-            {
-                _notes[i].Index = i;
+                _notes.Add(new NoteData(note, i++));
             }
 
             UpdateVisibleRange(ticksBeforePlaybackTick, ticksAfterPlaybackTick);
@@ -175,12 +249,12 @@ namespace MIDIGame.Lane
         #endregion
 
         #region Utility Methods
-        void CrawlBoundsInwards(long lowerTickBound, long upperTickBound)
+        void CrawlBoundsInwards(long pastTickBound, long futureTickBound)
         {
             // Remove notes past playback range.
             for(var node = _renderableNotes.First; node != null; node = node.Next)
             {
-                if (node.Value.PlaybackEndPosition < lowerTickBound)
+                if (node.Value.PlaybackData.PlaybackEndPosition < pastTickBound)
                 {
                     _renderableNotes.RemoveFirst();
                 }
@@ -189,51 +263,95 @@ namespace MIDIGame.Lane
             // Remove notes before playback range.
             for(var node = _renderableNotes.Last; node != null; node = node.Previous)
             {
-                if (node.Value.PlaybackStartPosition > upperTickBound)
+                if (node.Value.PlaybackData.PlaybackStartPosition > futureTickBound)
                 {
                     _renderableNotes.RemoveLast();
                 }
             }
         }
 
-        void CrawlBoundsOutwards(long lowerTickBound, long upperTickBound)
+        bool WithinVisibleRange(NoteData value, long lowerTickBound, long upperTickBound)
+        {
+            return value.PlaybackEndPosition >= lowerTickBound && value.PlaybackStartPosition <= upperTickBound;
+        }
+
+        /// <summary>
+        /// Finds index of note within bounds.
+        /// </summary>
+        /// <param name="pastTickBound">Lower bound.</param>
+        /// <param name="futureTickBound">Upper bound.</param>
+        /// <returns>-1 if failed.</returns>
+        int FindIndexWithinRange(long pastTickBound, long futureTickBound)
+        {
+            int lowerBound = 0;
+            int upperBound = _notes.Count - 1;
+
+            while (lowerBound <= upperBound)
+            {
+                NoteData middle = _notes[(lowerBound + upperBound) / 2];
+
+                if (middle.PlaybackEndPosition < pastTickBound) lowerBound = middle.Index + 1;
+                else if (middle.PlaybackStartPosition > futureTickBound) upperBound = middle.Index - 1;
+                else return middle.Index;
+            }
+
+            return -1;
+        }
+
+        void CrawlBoundsOutwards(long pastTickBound, long futureTickBound)
         {
             if (_renderableNotes.Count == 0)
             {
-                // Find new playback position.
+                Debug.Log("Empty lane.");
+                
+                int result = FindIndexWithinRange(pastTickBound, futureTickBound);
+                if (result == -1) { return; }
+
+                _renderableNotes.AddFirst(CreateRenderableObject(_notes[result]));
             }
 
-            for (var i = _renderableNotes.First.Value.Index; i >= 0; i--)
+            for (var i = _renderableNotes.First.Value.PlaybackData.Index - 1; i >= 0; i--)
             {
-                if (_notes[i].PlaybackEndPosition >= lowerTickBound)
+                if (_notes[i].PlaybackEndPosition >= pastTickBound)
                 {
-                    _renderableNotes.AddFirst(_notes[i]);
+                    _renderableNotes.AddFirst(CreateRenderableObject(_notes[i]));
                 }
+                else break;
+            }
+
+            for (var i = _renderableNotes.Last.Value.PlaybackData.Index + 1; i < _notes.Count; i++)
+            {
+                if (_notes[i].PlaybackStartPosition <= futureTickBound)
+                {
+                    _renderableNotes.AddLast(CreateRenderableObject(_notes[i]));
+                }
+                else break;
             }
         }
 
         IRenderableObject CreateRenderableObject(IPlaybackData playbackData)
         {
-            return new IRenderableObject();
+            return new NoteBlock(ObjectsSkin, playbackData); 
         }
         #endregion
 
-        #region IDisposable Implementation
+        #region IDisposable Implementation and Finalizer
         protected virtual void Dispose(bool disposing)
         {
-            if (!_disposed) return;
+            if (_disposed) return;
             
             if (disposing)
             {
-                foreach (var item in _renderableNotes)
-                {
-                    item.Dispose();
-                }
-                _renderableNotes = null;
+                _notes = null;
+                OnNoteMissed = null;
             }
 
-            _notes = null;
-            OnNoteMissed = null;
+            foreach (var item in _renderableNotes)
+            {
+                item.Dispose();
+            }
+            _renderableNotes = null;
+
             _disposed = true;
         }
 
@@ -241,6 +359,11 @@ namespace MIDIGame.Lane
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        ~NoteLane() 
+        {
+            Dispose(disposing: false);
         }
         #endregion
 
@@ -284,85 +407,6 @@ namespace MIDIGame.Lane
         #endregion
 
         #region Public Methods
-        /// <summary>
-        /// Updates the scale and position of all the notes in the lane.
-        /// </summary>
-        /// <param name="playbackTick"></param>
-        /// <param name="unitsPerTick"></param>
-        /// <param name="topYPos"></param>
-        public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
-        {
-            if (_renderedNotes == null || _renderedNotes.Count == 0)
-            {
-                Debug.Log($"Lane has no notes.");
-                return;
-            }
-
-            // Update positions for all managed notes.
-            foreach (var noteObject in _renderedNotes.Values)
-            {
-                // Get new scale.
-                var newScale = new Vector3
-                {
-                    x = 1,
-                    y = noteObject.Data.Length * unitsPerTick,
-                    z = 1
-                };
-
-                // Get new position.
-                var newPosition = new Vector3
-                {
-                    x = 0,
-                    y = topYPos - (unitsPerTick * (playbackTick - noteObject.Data.Time)) + newScale.y / 2,
-                    z = 0
-                };
-
-                // Update scale and position.
-                noteObject.Note.transform.localPosition = newPosition;
-                noteObject.Note.transform.localScale = newScale;
-            }
-        }
-
-        Note FindNextUnplayedOnEvent(long rangeMin, long rangeMax)
-        {
-            Note soonestNote = null;
-
-            foreach (NoteObject note in _renderedNotes.Values)
-            {
-                // Check if sooner than current soonest note.
-                if (soonestNote == null || note.Data.Time < soonestNote.Time)
-                {
-                    // Only keep track of unplayed notes within forgiveness threshold.
-                    if (!note.Played && InRange(note.Data.Time, rangeMin, rangeMax))
-                    {
-                        soonestNote = note.Data;
-                    }
-                }
-            }
-
-            return soonestNote;
-        }
-
-        Note FindNextUnplayedOffEvent(long rangeMin, long rangeMax)
-        {
-            Note soonestNote = null;
-
-            foreach (NoteObject note in _renderedNotes.Values)
-            {
-                // Check if sooner than current soonest note.
-                if (soonestNote == null || note.Data.EndTime < soonestNote.EndTime)
-                {
-                    // Only keep track of unplayed notes within forgiveness threshold.
-                    if (!note.Played && InRange(note.Data.EndTime, rangeMin, rangeMax))
-                    {
-                        soonestNote = note.Data;
-                    }
-                }
-            }
-
-            return soonestNote;
-        }
-
         /// <summary>
         /// Returns percent accuracy.
         /// </summary>
