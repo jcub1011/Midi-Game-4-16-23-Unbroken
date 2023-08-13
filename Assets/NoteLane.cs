@@ -14,7 +14,8 @@ namespace MIDIGame.Lane
 
     public enum RenderableType
     {
-        Bar = 130
+        Note = 0,
+        Bar
     }
 
     public class NoteObject
@@ -53,8 +54,9 @@ namespace MIDIGame.Lane
         public long PlaybackStartPosition { get; }
         public long PlaybackEndPosition { get; }
         public long LengthTicks { get; }
-        public int ID { get; } // Values 0-127 denote midi note numbers. See the RenderableType enum for definition of values 130+
-        public int Index { get; set; }
+        public int Index { get; }
+        public int NoteNum { get; }
+        public RenderableType ID { get; }
     }
 
     public interface IRenderableObject : IDisposable, IPlaybackData
@@ -68,35 +70,107 @@ namespace MIDIGame.Lane
 
     public interface ILane : IDisposable
     {
-        public void SetNoteList(ICollection<IPlaybackData> notes);
+        public void Initalize(ICollection<Note> notes, long ticksBeforePlaybackTick, long ticksAfterPlaybackTick);
         public void UpdateLane(long playbackTick, float unitsPerTick, float runwayTopY);
-        public void SetVisibleRange(long ticksBeforePlaybackTick, long ticksAfterPlaybackTick);
+        public void UpdateVisibleRange(long ticksBeforePlaybackTick, long ticksAfterPlaybackTick);
+    }
+
+    internal class NoteData : IPlaybackData
+    {
+        private Note _data;
+        private int _index;
+        private RenderableType _id;
+
+        #region Getters
+        public long PlaybackStartPosition
+        {
+            get { return _data.Time; }
+        }
+
+        public long PlaybackEndPosition
+        {
+            get { return _data.EndTime; }
+        }
+
+        public long LengthTicks
+        {
+            get { return _data.Length; }
+        }
+
+        public int Index
+        {
+            get { return _index; }
+        }
+
+        public int NoteNum
+        {
+            get { return _data.NoteNumber; }
+        }
+
+        public RenderableType ID
+        {
+            get { return _id; }
+        }
+        #endregion
+
+        #region Constructors
+        public NoteData(Note data, int index)
+        {
+            _data = data;
+            _index = index;
+            _id = RenderableType.Note;
+        }
+
+        public NoteData(RenderableType type, int index)
+        {
+            _data = null;
+            _index = index;
+            _id = type;
+        }
+        #endregion
     }
 
     public class NoteLane : MonoBehaviour, ILane
     {
         #region Properies
-        List<IPlaybackData> _notes;
+        List<NoteData> _notes;
         LinkedList<IRenderableObject> _renderableNotes;
         float _zPos;
         float _xPos;
         public NoteMissEvt OnNoteMissed;
         bool _disposed;
+        long _ticksBeforePlaybackTick;
+        long _ticksAfterPlaybackTick;
+        public bool Initialized { get; private set; }
         #endregion
 
         #region ILane Implementations
-        public void SetNoteList(ICollection<IPlaybackData> notes)
+        public void Initalize(ICollection<Note> notes, long ticksBeforePlaybackTick, long ticksAfterPlaybackTick)
         {
-            _notes = notes.ToList();
+            _notes = new();
+            foreach (Note note in notes)
+            {
+                _notes.Add()
+            }
+
             for (int i = 0; i < notes.Count; i++)
             {
                 _notes[i].Index = i;
             }
+
+            UpdateVisibleRange(ticksBeforePlaybackTick, ticksAfterPlaybackTick);
+            Initialized = true;
         }
 
         public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
         {
-            
+            if (!Initialized) Debug.Log("Lane not initialized.");
+        }
+
+        public void UpdateVisibleRange(long ticksBeforePlaybackTick, long ticksAfterPlaybackTick)
+        {
+            _ticksBeforePlaybackTick = ticksBeforePlaybackTick;
+            _ticksAfterPlaybackTick = ticksAfterPlaybackTick;
         }
         #endregion
 
