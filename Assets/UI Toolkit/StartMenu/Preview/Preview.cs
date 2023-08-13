@@ -32,9 +32,9 @@ namespace MIDIGame.UI
             var root = DocHandler.GetRoot(DocNames.Preview);
 
             var slider = root.Q(SLIDER) as Slider;
-            slider.value = 0;
-            slider.lowValue = 0;
-            slider.highValue = lastTick + tickLeadup;
+            slider.lowValue = -tickLeadup;
+            slider.highValue = lastTick + tickLeadup * strikeBarHeight;
+            slider.value = -tickLeadup;
             _tempoMap = tempoMap;
 
             slider.RegisterValueChangedCallback(UpdatePlaybackTime);
@@ -69,8 +69,11 @@ namespace MIDIGame.UI
         #region Methods
         void UpdatePlaybackTime(ChangeEvent<float> evt)
         {
-            //Debug.Log($"New Time: {evt.newValue}");
-            var ticks = TimeConverter.ConvertFrom(new MetricTimeSpan(0, 0, 0, (int)evt.newValue), _tempoMap);
+            Debug.Log($"New Time: {evt.newValue}");
+            long ticks;
+            if ((int)evt.newValue < 0) ticks = -TimeConverter.ConvertFrom(new MetricTimeSpan(0, 0, 0, -(int)evt.newValue), _tempoMap);
+            else ticks = TimeConverter.ConvertFrom(new MetricTimeSpan(0, 0, 0, (int)evt.newValue), _tempoMap);
+
             _runway.UpdateTime(ticks);
         }
         #endregion
