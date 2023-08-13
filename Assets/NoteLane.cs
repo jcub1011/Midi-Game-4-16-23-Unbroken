@@ -1,7 +1,6 @@
 using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace MIDIGame.Lane
@@ -58,7 +57,7 @@ namespace MIDIGame.Lane
     public interface IRenderableObject : IDisposable
     {
         public GameObject GameObject { get; }
-        public bool Played { get; }
+        public bool Played { get; set; }
 
         public IPlaybackData PlaybackData { get; }
 
@@ -76,9 +75,9 @@ namespace MIDIGame.Lane
 
     internal class NoteData : IPlaybackData
     {
-        private Note _data;
-        private int _index;
-        private RenderableType _id;
+        private readonly Note _data;
+        private readonly int _index;
+        private readonly RenderableType _id;
 
         #region Getters
         public long PlaybackStartPosition
@@ -132,7 +131,7 @@ namespace MIDIGame.Lane
     internal class NoteBlock : IRenderableObject
     {
         private bool _disposedValue;
-        private GameObject _gameObject;
+        private readonly GameObject _gameObject;
         private bool _played;
         private IPlaybackData _data;
 
@@ -143,6 +142,7 @@ namespace MIDIGame.Lane
         public bool Played
         {
             get { return _played; }
+            set { _played = value; }
         }
 
         public IPlaybackData PlaybackData
@@ -216,14 +216,14 @@ namespace MIDIGame.Lane
         float _xPos;
         public NoteMissEvt OnNoteMissed;
         bool _disposed;
-        long _ticksBeforePlaybackTick;
-        long _ticksAfterPlaybackTick;
+        long _ticksVisibleInPast;
+        long _ticksVisibleInFuture;
         public bool Initialized { get; private set; }
         public GameObject ObjectsSkin { get; set; }
         #endregion
 
         #region ILane Implementations
-        public void Initalize(ICollection<Note> notes, long ticksBeforePlaybackTick, long ticksAfterPlaybackTick)
+        public void Initalize(ICollection<Note> notes, long ticksVisibleInPast, long ticksVisibleInFuture)
         {
             _notes = new();
             int i = 0;
@@ -232,19 +232,22 @@ namespace MIDIGame.Lane
                 _notes.Add(new NoteData(note, i++));
             }
 
-            UpdateVisibleRange(ticksBeforePlaybackTick, ticksAfterPlaybackTick);
+            UpdateVisibleRange(ticksVisibleInPast, ticksVisibleInFuture);
             Initialized = true;
         }
 
         public void UpdateLane(long playbackTick, float unitsPerTick, float topYPos)
         {
             if (!Initialized) Debug.Log("Lane not initialized.");
+
+            CrawlBoundsInwards(playbackTick - _ticksVisibleInPast, playbackTick + _ticksVisibleInFuture);
+            CrawlBoundsOutwards(playbackTick - _ticksVisibleInPast, playbackTick + _ticksVisibleInFuture);
         }
 
-        public void UpdateVisibleRange(long ticksBeforePlaybackTick, long ticksAfterPlaybackTick)
+        public void UpdateVisibleRange(long ticksVisibleInPast, long ticksVisibleInFuture)
         {
-            _ticksBeforePlaybackTick = ticksBeforePlaybackTick;
-            _ticksAfterPlaybackTick = ticksAfterPlaybackTick;
+            _ticksVisibleInPast = ticksVisibleInPast;
+            _ticksVisibleInFuture = ticksVisibleInFuture;
         }
         #endregion
 
@@ -407,6 +410,7 @@ namespace MIDIGame.Lane
         #endregion
 
         #region Public Methods
+        /*
         /// <summary>
         /// Returns percent accuracy.
         /// </summary>
@@ -417,7 +421,7 @@ namespace MIDIGame.Lane
         public float NoteEventAccuracy(long time, long forgiveness, bool noteOnEvent)
         {
             print($"Current time: {time}");
-            if (_renderedNotes.Count == 0)
+            if (_renderableNotes.Count == 0)
             {
                 Debug.Log($"No notes to check accuracy against.");
                 return 0f;
@@ -441,7 +445,7 @@ namespace MIDIGame.Lane
                 $"Played note time distance: {time - evtTime}ms");
 
             return accuracy;
-        }
+        }*/
 
         public void SetPosition(float xPos, float zPos)
         {
@@ -469,47 +473,13 @@ namespace MIDIGame.Lane
         }
         #endregion
 
-        #region Notes Get Set Remove Functions
-        NoteObject MakeNoteObject(Note noteData, GameObject prefab)
-        {
-            var obj = new NoteObject(UnityEngine.Object.Instantiate(prefab, transform), noteData);
-            obj.Note.GetComponent<SpriteRenderer>().enabled = true;
-            return obj;
-        }
-
-        /// <summary>
-        /// Adds the note with the given id.
-        /// </summary>
-        /// <param name="noteData">Data for note.</param>
-        /// <param name="notePrefab">Prefab to use for note.</param>
-        public void AddNote(Note noteData, int noteIndex, GameObject notePrefab)
-        {
-            _renderedNotes ??= new();
-            if (_renderedNotes.ContainsKey(noteIndex)) return;
-            _renderedNotes.Add(noteIndex, MakeNoteObject(noteData, notePrefab));
-        }
-
-        /// <summary>
-        /// Removes the note with the given id.
-        /// </summary>
-        public void RemoveNote(int noteIndex)
-        {
-            _renderedNotes ??= new();
-            if (!_renderedNotes.ContainsKey(noteIndex)) return;
-            if (_renderedNotes.Count == 0) return;
-            var note = _renderedNotes[noteIndex];
-            _renderedNotes.Remove(noteIndex);
-            Destroy(note.Note);
-        }
-
         public void ResetNotesPlayed()
         {
-            _renderedNotes ??= new();
-            foreach (var obj in _renderedNotes.Values)
+            _renderableNotes ??= new();
+            foreach (var obj in _renderableNotes)
             {
                 obj.Played = false;
             }
         }
-        #endregion
     }
 }
