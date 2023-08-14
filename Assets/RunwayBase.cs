@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MIDIGame.Ranges;
 using System.Linq;
+using Utils;
 
 namespace MIDIGame.Runway
 {
@@ -26,6 +27,8 @@ namespace MIDIGame.Runway
         Dictionary<RenderableType, GameObject> _objectSkins;
         private bool disposedValue;
         readonly Transform _laneParent;
+        long _futureVisibleTicks;
+        long _pastVisibleTicks;
         #endregion
 
         #region Runway Interface Implementation
@@ -41,6 +44,10 @@ namespace MIDIGame.Runway
             _lanes = null;
         }
 
+        /// <summary>
+        /// Assigns the list of notes for each lane.
+        /// </summary>
+        /// <param name="notes">Notes sorted by time they appear. (soonest to latest)</param>
         public void SetNoteList(ICollection<Note> notes)
         {
             ClearRunway();
@@ -49,34 +56,28 @@ namespace MIDIGame.Runway
             int minNote = int.MaxValue;
             int maxNote = int.MinValue;
 
-            List<Note>[] lanesNotes;
+            Dictionary<int, List<Note>> lanesNotes = new();
 
-            // Find note num min and max.
             foreach(var note in notes)
             {
+                // Find note num min and max.
                 if (note.NoteNumber < minNote) minNote = note.NoteNumber;
                 if (note.NoteNumber > maxNote) maxNote = note.NoteNumber;
+
+                if (!lanesNotes.ContainsKey(note.NoteNumber)) lanesNotes[note.NoteNumber] = new();
+
+                lanesNotes[note.NoteNumber].Add(note);
             }
 
-            lanesNotes = new List<Note>[maxNote - minNote + 1];
+            _lanes = new ILane[maxNote + 1 - minNote];
 
-            // Initialize each lane.
-            for (int i = 0; i < lanesNotes.Length; i++)
+            for (int i = minNote; i <= maxNote; i++)
             {
-                lanesNotes[i] = new List<Note>();
-            }
+                var newLane = UnityEngine.Object.Instantiate(_objectSkins[RenderableType.Lane], _laneParent);
+                _lanes[i - minNote] = newLane.GetComponent<NoteLane>();
 
-            // Separate notes into lanes.
-            foreach (var note in notes)
-            {
-                lanesNotes[note.NoteNumber - minNote].Add(note);
-            }
-
-            _lanes = new NoteLane[lanesNotes.Length];
-
-            foreach (var lane in _lanes)
-            {
-                lane = new();
+                _lanes[i - minNote].Initalize(lanesNotes[i], _futureVisibleTicks, _pastVisibleTicks, 
+                    null, null, null, null);
             }
         }
 

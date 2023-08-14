@@ -11,6 +11,7 @@ namespace MIDIGame.Lane
     {
         WNote = 0,
         BNote,
+        Lane,
         Bar
     }
 
