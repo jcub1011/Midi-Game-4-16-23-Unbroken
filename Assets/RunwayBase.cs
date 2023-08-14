@@ -8,6 +8,51 @@ using System.Linq;
 
 namespace MIDIGame.Runway
 {
+    public interface IRunwayInterface
+    {
+        public void UpdatePlaybackTick(long playbackTick);
+        public void SetRunwayDimensions(float width, float height);
+        public void SetNoteList(ICollection<Note> notes);
+        public void ClearRunway();
+        public void SetObjectSkin(GameObject skin, RenderableType type);
+
+    }
+
+    public class Runway : IRunwayInterface
+    {
+        #region Properties
+        ILane _lanes;
+        
+        #endregion
+
+        #region Runway Interface Implementations
+        public void ClearRunway()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetNoteList(ICollection<Note> notes)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetObjectSkin(GameObject skin, RenderableType type)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetRunwayDimensions(float width, float height)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void UpdatePlaybackTick(long playbackTick)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+    }
+
     internal class RunwayDisplayInfo
     {
         #region Properties

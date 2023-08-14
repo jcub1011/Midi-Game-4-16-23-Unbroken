@@ -2,7 +2,6 @@ using Melanchall.DryWetMidi.Interaction;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
 namespace MIDIGame.Lane
 {
@@ -10,7 +9,8 @@ namespace MIDIGame.Lane
 
     public enum RenderableType
     {
-        Note = 0,
+        WNote = 0,
+        BNote,
         Bar
     }
 
@@ -116,7 +116,7 @@ namespace MIDIGame.Lane
         {
             _data = data;
             _index = index;
-            _id = RenderableType.Note;
+            _id = RenderableType.WNote;
         }
 
         public NoteData(RenderableType type, int index)
