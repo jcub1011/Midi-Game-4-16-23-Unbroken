@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace MIDIGame.Runway
 {
-    public interface IRunwayInterface
+    public interface IRunwayInterface : IDisposable
     {
         public void UpdatePlaybackTick(long playbackTick);
         public void SetRunwayDimensions(float width, float height);
@@ -21,19 +21,63 @@ namespace MIDIGame.Runway
     public class Runway : IRunwayInterface
     {
         #region Properties
-        ILane _lanes;
-        
+        ILane[] _lanes;
+        IntRange _noteRange;
+        Dictionary<RenderableType, GameObject> _objectSkins;
+        private bool disposedValue;
+        readonly Transform _laneParent;
         #endregion
 
-        #region Runway Interface Implementations
+        #region Runway Interface Implementation
         public void ClearRunway()
         {
-            throw new NotImplementedException();
+            if (_lanes == null || _lanes.Count() == 0) return;
+
+            foreach (var lane in _lanes)
+            {
+                lane.Dispose();
+            }
+
+            _lanes = null;
         }
 
         public void SetNoteList(ICollection<Note> notes)
         {
-            throw new NotImplementedException();
+            ClearRunway();
+            if (notes.Count == 0) return;
+
+            int minNote = int.MaxValue;
+            int maxNote = int.MinValue;
+
+            List<Note>[] lanesNotes;
+
+            // Find note num min and max.
+            foreach(var note in notes)
+            {
+                if (note.NoteNumber < minNote) minNote = note.NoteNumber;
+                if (note.NoteNumber > maxNote) maxNote = note.NoteNumber;
+            }
+
+            lanesNotes = new List<Note>[maxNote - minNote + 1];
+
+            // Initialize each lane.
+            for (int i = 0; i < lanesNotes.Length; i++)
+            {
+                lanesNotes[i] = new List<Note>();
+            }
+
+            // Separate notes into lanes.
+            foreach (var note in notes)
+            {
+                lanesNotes[note.NoteNumber - minNote].Add(note);
+            }
+
+            _lanes = new NoteLane[lanesNotes.Length];
+
+            foreach (var lane in _lanes)
+            {
+                lane = new();
+            }
         }
 
         public void SetObjectSkin(GameObject skin, RenderableType type)
@@ -49,6 +93,42 @@ namespace MIDIGame.Runway
         public void UpdatePlaybackTick(long playbackTick)
         {
             throw new NotImplementedException();
+        }
+        #endregion
+
+        #region Dispose Interface
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                ClearRunway();
+                _lanes = null;
+
+                foreach (var skin in _objectSkins.Values)
+                {
+                    UnityEngine.Object.Destroy(skin);
+                }
+                _objectSkins = null;
+
+                disposedValue = true;
+            }
+        }
+
+        ~Runway()
+        {
+            Dispose(disposing: false);
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
         #endregion
     }
