@@ -269,13 +269,13 @@ namespace MIDIGame.Lane
         #region Utility Methods
         void CrawlBoundsInwards(long pastTickBound, long futureTickBound)
         {
-            Debug.Log($"Crawling bounds: {pastTickBound}, {futureTickBound}");
+            // Debug.Log($"Crawling bounds: {pastTickBound}, {futureTickBound}");
             // Remove notes past playback range.
             while (_renderableNotes.First != null)
             {
                 if (_renderableNotes.First.Value.PlaybackData.PlaybackEndPosition < pastTickBound)
                 {
-                    Debug.Log("Deleting note.");
+                    //Debug.Log("Deleting note.");
                     _renderableNotes.First.Value.Dispose();
                     _renderableNotes.RemoveFirst();
                 }
@@ -287,7 +287,7 @@ namespace MIDIGame.Lane
             {
                 if (_renderableNotes.Last.Value.PlaybackData.PlaybackStartPosition > futureTickBound)
                 {
-                    Debug.Log("Deleting note.");
+                    //Debug.Log("Deleting note.");
                     _renderableNotes.Last.Value.Dispose();
                     _renderableNotes.RemoveLast();
                 }
@@ -308,7 +308,7 @@ namespace MIDIGame.Lane
         /// <returns>-1 if failed.</returns>
         int FindIndexWithinRange(long pastTickBound, long futureTickBound)
         {
-            Debug.Log("Finding index within range.");
+            //Debug.Log("Finding index within range.");
             int lowerBound = 0;
             int upperBound = _notes.Count - 1;
 

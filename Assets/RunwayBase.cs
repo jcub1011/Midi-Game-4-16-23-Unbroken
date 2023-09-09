@@ -186,7 +186,7 @@ namespace MIDIGame.Runway
                 _laneWidth[i] = IsWhiteNote(noteNum) ? WHITE_NOTE_WIDTH_FACTOR : BLACK_NOTE_WIDTH_FACTOR;
             }
 
-            Debug.Log($"Width in white notes: {_numWhiteNoteLanes}");
+            // Debug.Log($"Width in white notes: {_numWhiteNoteLanes}");
         }
 
         public float GetNumWhiteLanesToLeft(int laneIndex)
@@ -278,7 +278,7 @@ namespace MIDIGame.Runway
                 _highestIndex = noteIndex;
             }
 
-            Debug.Log("Hiding note.");
+            // Debug.Log("Hiding note.");
         }
 
         void AddNote(int noteIndex)
@@ -292,7 +292,7 @@ namespace MIDIGame.Runway
             if (noteIndex < _lowestIndex) _lowestIndex = noteIndex;
             if (noteIndex > _highestIndex) _highestIndex = noteIndex;
 
-            Debug.Log("Showing note.");
+            // Debug.Log("Showing note.");
         }
 
         bool NoteVisible(Note note, long lowerTickBound, long upperTickBound)
@@ -444,7 +444,7 @@ namespace MIDIGame.Runway
             GameObject whiteNotePrefab, GameObject blackNotePrefab, Transform lanesParent, GameObject lanePrefab)
         {
             _noteRange = GetNoteRange(notes);
-            Debug.Log($"Range of notes {_noteRange.Len}.");
+            // Debug.Log($"Range of notes {_noteRange.Len}.");
             _displayInfo = new(dimensions, strikeBarHeight, ticksToReachStrikeBar, _noteRange);
             _lanes = new NoteLane[_noteRange.Len];
 
@@ -488,7 +488,7 @@ namespace MIDIGame.Runway
                 if (note.NoteNumber > max) max = note.NoteNumber;
             }
 
-            Debug.Log($"Note range: {min} - {max}");
+            // Debug.Log($"Note range: {min} - {max}");
 
             var noteRange = new IntRange(min, max);
             IntRange rangeToReturn;

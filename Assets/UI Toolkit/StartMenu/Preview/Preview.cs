@@ -69,7 +69,7 @@ namespace MIDIGame.UI
         #region Methods
         void UpdatePlaybackTime(ChangeEvent<float> evt)
         {
-            Debug.Log($"New Time: {evt.newValue}");
+            // Debug.Log($"New Time: {evt.newValue}");
             long ticks;
             if ((int)evt.newValue < 0) ticks = -TimeConverter.ConvertFrom(new MetricTimeSpan(0, 0, 0, -(int)evt.newValue), _tempoMap);
             else ticks = TimeConverter.ConvertFrom(new MetricTimeSpan(0, 0, 0, (int)evt.newValue), _tempoMap);
