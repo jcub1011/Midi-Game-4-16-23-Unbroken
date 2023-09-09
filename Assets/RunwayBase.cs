@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MIDIGame.Ranges;
 using System.Linq;
+using UnityEditor.ShaderGraph.Internal;
 
 namespace MIDIGame.Runway
 {
@@ -219,202 +220,71 @@ namespace MIDIGame.Runway
     internal delegate void ClearRunwayEvent();
     internal delegate void NoteChangeEvent(Note note, int noteIndex);
 
-    internal class NoteManager
+    public class NotePool : IDisposable
     {
-        #region Properties
-        readonly List<Note> _notes;
+        GameObject _notePrefab;
+        Stack<GameObject> _notes;
+        Transform _poolStorageParent;
+        private bool disposedValue;
+        readonly int _capacity;
 
-        readonly Dictionary<int, Note> _activeNotes;
-        int _lowestIndex;
-        int _highestIndex;
-
-        public NoteChangeEvent NoteAdded;
-        public NoteChangeEvent NoteRemoved;
-        #endregion
-
-        #region Constructors
-        public NoteManager(List<Note> notes)
+        public NotePool(GameObject notePrefab, Transform poolStorageParent, int capacity)
         {
-            _notes = notes;
-            _activeNotes = new();
-            _lowestIndex = -1;
-            _highestIndex = -1;
-        }
-        #endregion
+            _notePrefab = notePrefab;
+            _poolStorageParent = poolStorageParent;
+            _capacity = capacity;
 
-        #region Methods
-        void RemoveNote(int noteIndex)
-        {
-            if (!_activeNotes.ContainsKey(noteIndex)) return;
-
-            var note = _activeNotes[noteIndex];
-            _activeNotes.Remove(noteIndex);
-            NoteRemoved?.Invoke(note, noteIndex);
-
-            // Find next index.
-            // Base case.
-            if (_activeNotes.Count == 0)
+            while (_notes.Count < _capacity)
             {
-                _lowestIndex = int.MaxValue;
-                _highestIndex = int.MinValue;
-                return;
+                _notes.Push(UnityEngine.Object.Instantiate(_notePrefab, _poolStorageParent));
             }
-            else if (noteIndex <= _lowestIndex)
+        }
+
+        public GameObject GetNotePrefab()
+        {
+            if (_notes.Count > 0) return _notes.Pop();
+            return UnityEngine.Object.Instantiate( _notePrefab, _poolStorageParent);
+        }
+
+        public void ReturnNotePrefab(GameObject notePrefab)
+        {
+            if (_notes.Count < _capacity) _notes.Push(notePrefab);
+            else UnityEngine.Object.Destroy(notePrefab);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
             {
-                // Find next lowest index.
-                while (!_activeNotes.ContainsKey(noteIndex))
+                if (disposing)
                 {
-                    noteIndex++;
+                    _poolStorageParent = null;
+                    _notePrefab = null;
                 }
-                _lowestIndex = noteIndex;
-            }
-            else if (noteIndex >= _highestIndex)
-            {
-                // Find next highest index.
-                while (!_activeNotes.ContainsKey(noteIndex))
+
+                foreach (var prefab in _notes)
                 {
-                    noteIndex--;
+                    UnityEngine.Object.Destroy(prefab);
                 }
-                _highestIndex = noteIndex;
-            }
+                _notes.Clear();
+                _notes = null;
 
-            // Debug.Log("Hiding note.");
-        }
-
-        void AddNote(int noteIndex)
-        {
-            if (_activeNotes.ContainsKey(noteIndex)) return;
-
-            _activeNotes.Add(noteIndex, _notes[noteIndex]);
-            NoteAdded?.Invoke(_notes[noteIndex], noteIndex);
-
-            // Update min and max.
-            if (noteIndex < _lowestIndex) _lowestIndex = noteIndex;
-            if (noteIndex > _highestIndex) _highestIndex = noteIndex;
-
-            // Debug.Log("Showing note.");
-        }
-
-        bool NoteVisible(Note note, long lowerTickBound, long upperTickBound)
-        {
-            return lowerTickBound <= note.EndTime && note.Time <= upperTickBound;
-        }
-
-        void RemoveHiddenNotes(long lowerTickBound, long upperTickBound)
-        {
-            var keys = _activeNotes.Keys.ToArray();
-            foreach (var key in keys)
-            {
-                if (!NoteVisible(_activeNotes[key], lowerTickBound, upperTickBound))
-                {
-                    RemoveNote(key);
-                }
+                disposedValue = true;
             }
         }
 
-        int FindClosestNoteIndex(long tickToSearch)
+        ~NotePool()
         {
-            if (_notes.Count == 0) return -1;
-
-            int lowerBound = 0;
-            int upperBound = _notes.Count - 1;
-            int middle = 0;
-
-            while (lowerBound < upperBound)
-            {
-                middle = (lowerBound + upperBound) / 2;
-                if (_notes[middle].Time == tickToSearch) return middle;
-
-                if (_notes[middle].Time < tickToSearch)
-                {
-                    lowerBound = middle + 1;
-                } else if (_notes[middle].Time > tickToSearch)
-                {
-                    upperBound = middle - 1;
-                }
-            }
-
-            return middle;
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: false);
         }
 
-        void AddNotesLeftOfIndex(int index, long lowerTickBound, long upperTickBound)
+        public void Dispose()
         {
-            // Find notes lower than minimum.
-            for (; index >= 0; index--)
-            {
-                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(index);
-                else break;
-            }
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
-
-        void AddNotesRightOfIndex(int index, long lowerTickBound, long upperTickBound)
-        {
-            // Find notes lower than minimum.
-            for (; index < _notes.Count; index++)
-            {
-                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound)) AddNote(index);
-                else break;
-            }
-        }
-
-        void AddVisibleNotes(long lowerTickBound, long upperTickBound)
-        {
-            // Find visible notes based on existing notes.
-            if (_activeNotes.Count > 0)
-            {
-                // Find notes lower than minimum.
-                AddNotesLeftOfIndex(_lowestIndex - 1, lowerTickBound, upperTickBound);
-                // Find notes higher than max.
-                AddNotesRightOfIndex(_highestIndex + 1, lowerTickBound, upperTickBound);
-                return;
-            }
-
-            // When there are no existing notes.
-            else
-            {
-                long boundRadius = (lowerTickBound + upperTickBound) / 2;
-                int index = FindClosestNoteIndex(lowerTickBound + boundRadius);
-                if (index < 0) return;
-
-                if (NoteVisible(_notes[index], lowerTickBound, upperTickBound))
-                {
-                    AddNote(index);
-                    AddVisibleNotes(lowerTickBound, upperTickBound);
-                    return;
-                }
-                else
-                {
-                    // Seek in either direction to look for a valid note.
-                    for (int seekIndex = index - 1; seekIndex >= 0; seekIndex--)
-                    {
-                        if (_notes[seekIndex].Time < lowerTickBound) break;
-                        if (NoteVisible(_notes[seekIndex], lowerTickBound, upperTickBound))
-                        {
-                            AddNote(seekIndex);
-                            AddVisibleNotes(lowerTickBound, upperTickBound);
-                            return;
-                        }
-                    }
-                    for (int seekIndex = index + 1; seekIndex < _notes.Count; seekIndex++)
-                    {
-                        if (_notes[seekIndex].Time < lowerTickBound) break;
-                        if (NoteVisible(_notes[seekIndex], lowerTickBound, upperTickBound))
-                        {
-                            AddNote(seekIndex);
-                            AddVisibleNotes(lowerTickBound, upperTickBound);
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-
-        public void UpdateNotesVisible(long playbackTick, long ticksBeforeStrike, long ticksAfterStrike)
-        {
-            RemoveHiddenNotes(playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
-            AddVisibleNotes(playbackTick - ticksBeforeStrike, playbackTick + ticksAfterStrike);
-        }
-        #endregion
     }
 
     public class RunwayBase
@@ -423,34 +293,38 @@ namespace MIDIGame.Runway
         IntRange _noteRange;
         RunwayDisplayInfo _displayInfo;
         NoteLane[] _lanes;
-        GameObject _wNotePrefab;
-        GameObject _bNotePrefab;
+        NotePool _notePool;
         readonly Transform _laneParent;
         readonly GameObject _lanePrefab;
+        readonly Transform _poolStorage;
         #endregion
 
         #region Constructors
         public RunwayBase(List<Note> notes, float[] dimensions, float strikeBarHeight,
             long ticksToReachStrikeBar, Transform lanesParent, GameObject lanePrefab,
-            GameObject whiteNotePrefab, GameObject blackNotePrefab)
+            GameObject notePrefab, Transform poolStorage)
         {
+            _poolStorage = poolStorage;
+
             InitLanes(notes, dimensions, strikeBarHeight, ticksToReachStrikeBar,
-                whiteNotePrefab, blackNotePrefab, lanesParent, lanePrefab);
+                notePrefab, lanesParent, lanePrefab);
 
             UpdateLaneDimensions();
         }
 
         void InitLanes(List<Note> notes, float[] dimensions, float strikeBarHeight, long ticksToReachStrikeBar,
-            GameObject whiteNotePrefab, GameObject blackNotePrefab, Transform lanesParent, GameObject lanePrefab)
+            GameObject notePrefab, Transform lanesParent, GameObject lanePrefab)
         {
-            _noteRange = GetNoteRange(notes);
+            _noteRange = AnalyzeNotes(in notes, out int notePoolSize, strikeBarHeight, ticksToReachStrikeBar);
+            _notePool?.Dispose();
+            _notePool = null;
+
             // Debug.Log($"Range of notes {_noteRange.Len}.");
             _displayInfo = new(dimensions, strikeBarHeight, ticksToReachStrikeBar, _noteRange);
             _lanes = new NoteLane[_noteRange.Len];
 
             // Init note prefabs.
-            _wNotePrefab = whiteNotePrefab;
-            _bNotePrefab = blackNotePrefab;
+            _notePool = new(notePrefab, _poolStorage, notePoolSize);
 
             List<Note>[] notesByNoteNumber = new List<Note>[_noteRange.Len];
             for (int i = 0; i < notesByNoteNumber.Length; ++i)
@@ -469,27 +343,56 @@ namespace MIDIGame.Runway
             {
                 var newLane = UnityEngine.Object.Instantiate(lanePrefab, lanesParent);
                 _lanes[i] = newLane.GetComponent<NoteLane>();
-                _lanes[i].Initalize(notesByNoteNumber[i], _displayInfo.TicksVisibleBelowStrike, 
-                    _displayInfo.TicksVisibleAboveStrike, _displayInfo.IsWhiteNoteLane(i) ? _wNotePrefab : _bNotePrefab, _displayInfo.GetLaneXPos(i), 
-                    _displayInfo.IsWhiteNoteLane(i) ? 1 : 0, _displayInfo.GetLaneWidth(i));
+                _lanes[i].Initalize(notesByNoteNumber[i], in _displayInfo, ref _notePool, i);
             }
         }
         #endregion
 
         #region Methods
-        IntRange GetNoteRange(List<Note> notes)
+        IntRange AnalyzeNotes(in List<Note> notes, out int notePoolSize, float strikeBarHeight, long ticksToReachStrikeBar)
         {
             short min = short.MaxValue;
             short max = short.MinValue;
+            long visibleWindowBeforeBar = ticksToReachStrikeBar;
+            long visibleWindowAfterBar = (long)(ticksToReachStrikeBar * strikeBarHeight);
 
-            foreach (var note in notes)
+            /* Idea is to find standard deviation of the maximum notes visible within the sliding window
+             * and set the respective pool sizes accordingly.
+             * Welford's Online Algorithm: https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+             */
+
+            // Thanks to Joni from the mindful programmer for providing the pseudo code.
+            // https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/
+            double mean = 0;
+            double oldMean;
+            double sumSquares = 0;
+            double variance;
+
+            int startIndex = 0;
+            int endIndex = 0;
+            long currentNoteCount;
+
+            for (int i = 0; i < notes.Count; i++)
             {
-                if (note.NoteNumber < min) min = note.NoteNumber;
-                if (note.NoteNumber > max) max = note.NoteNumber;
+                // Analyze min and max.
+                if (notes[i].NoteNumber < min) min = notes[i].NoteNumber;
+                if (notes[i].NoteNumber > max) max = notes[i].NoteNumber;
+
+                // Slide start index up until it reaches visible range.
+                while (startIndex < i && notes[startIndex].EndTime < notes[i].Time - visibleWindowAfterBar) startIndex++;
+                // Slide end index up just before leaving visible range.
+                while (endIndex < (notes.Count - 1) && notes[endIndex + 1].Time < notes[i].Time + visibleWindowBeforeBar) endIndex++;
+                currentNoteCount = endIndex - startIndex + 1;
+
+
+                oldMean = mean;
+                mean += (currentNoteCount - mean) / (i + 1);
+                sumSquares += (currentNoteCount - mean) * (currentNoteCount - oldMean);
             }
 
             // Debug.Log($"Note range: {min} - {max}");
-
+            variance = sumSquares / (notes.Count - 1); // Sample variance.
+            notePoolSize = (int)Math.Ceiling(mean + Math.Pow(variance, 0.5) * 2.0);
             var noteRange = new IntRange(min, max);
             IntRange rangeToReturn;
 
@@ -523,6 +426,24 @@ namespace MIDIGame.Runway
             return rangeToReturn;
         }
 
+        private double CalculateVariance(in List<int> values)
+        {
+            // Thanks to Joni from the mindful programmer for providing the pseudo code.
+            // https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/
+            double mean = 0;
+            double oldMean;
+            double variance = 0;
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                oldMean = mean;
+                mean += (values[i] - mean) / (i + 1);
+                variance += (values[i] - mean) * (values[i] - oldMean);
+            }
+
+            return variance / (values.Count - 1);
+        }
+
         private void UpdateLaneDimensions()
         {
             for (int i = 0; i < _lanes.Length; ++i)
@@ -553,7 +474,7 @@ namespace MIDIGame.Runway
             Clear();
             float[] dimensions = new float[2] { _displayInfo.RunwayWidth, _displayInfo.RunwayHeight };
             InitLanes(notes, dimensions, _displayInfo._strikeBarHeightPercent, _displayInfo.TicksVisibleAboveStrike,
-                _wNotePrefab, _bNotePrefab, _laneParent, _lanePrefab);
+                _notePool.GetNotePrefab(), _laneParent, _lanePrefab);
         }
 
         public void Clear()

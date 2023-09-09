@@ -14,37 +14,6 @@ namespace MIDIGame.Lane
         Bar
     }
 
-    public class NoteObject
-    {
-        public GameObject Note { get; private set; }
-        public Note Data { get; private set; }
-        public bool Played;
-
-        /// <summary>
-        /// Bundles the supplied data and game object.
-        /// </summary>
-        /// <param name="notePrefab">The game object to attach the data to.</param>
-        /// <param name="data">The data to attach the game object to.</param>
-        public NoteObject(GameObject notePrefab, Note data)
-        {
-            Note = notePrefab;
-            Data = data;
-            Played = false;
-        }
-
-        /// <summary>
-        /// Updates the position and scale of the GameObject.
-        /// </summary>
-        /// <param name="playbackTick">Current tick of playback.</param>
-        /// <param name="unitsPerTick">Units per tick.</param>
-        /// <param name="runwayTopY">Y position of the top of the runway.</param>
-        public void UpdateGameObject(long playbackTick, float unitsPerTick, float runwayTopY)
-        {
-            Note.transform.localScale = new Vector3(1, Data.Length * unitsPerTick, 1);
-            Note.transform.localPosition = new Vector3(1, runwayTopY + Note.transform.localScale.y / 2f - playbackTick * unitsPerTick, 0);
-        }
-    }
-
     public interface IPlaybackData
     {
         public long PlaybackStartPosition { get; }

@@ -9,8 +9,8 @@ namespace MIDIGame.Runway
         #region Properties
         RunwayBase _runway;
         public GameObject LanePrefab;
-        public GameObject WhiteNotePrefab;
-        public GameObject BlackNotePrefab;
+        public GameObject NotePrefab;
+        public GameObject NotePoolStorage;
         #endregion
 
         #region Methods
@@ -26,7 +26,7 @@ namespace MIDIGame.Runway
 
             Unload();
             _runway = new(notes, dimensions, strikeBarHeight,
-                tickToReachStrikeBar, transform, LanePrefab, WhiteNotePrefab, BlackNotePrefab);
+                tickToReachStrikeBar, transform, LanePrefab, NotePrefab, NotePoolStorage.transform);
         }
 
         public void Unload()
