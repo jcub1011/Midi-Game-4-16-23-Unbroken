@@ -1041,7 +1041,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e0ccf61014510d4ea5e728b256d3a7a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  LanePrefab: {fileID: 0}
+  LanePrefab: {fileID: 4739613349429405683, guid: a73de9b93b014f34fbf618f0e42f2488, type: 3}
   WhiteNotePrefab: {fileID: 0}
   BlackNotePrefab: {fileID: 0}
 --- !u!1 &1715320198

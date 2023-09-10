@@ -1,4 +1,5 @@
 using Melanchall.DryWetMidi.Interaction;
+using MIDIGame.Runway;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,7 +38,7 @@ namespace MIDIGame.Lane
 
     public interface ILane : IDisposable
     {
-        public void Initalize(ICollection<Note> notes, long ticksVisibleInFuture, long ticksVisibleInPast, GameObject objectSkins, float xPos, float zPos, float width);
+        public void Initalize(ICollection<Note> notes, in RunwayDisplayInfo displayInfo, int laneIndex);
         public void UpdateLane(long playbackTick, float unitsPerTick, float runwayTopY);
         public void UpdateVisibleRange(long ticksVisibleInFuture, long ticksVisibleInPast);
     }
@@ -192,14 +193,12 @@ namespace MIDIGame.Lane
         bool _disposed;
         long _ticksVisibleInPast;
         long _ticksVisibleInFuture;
-        GameObject _objectsSkin;
         public bool Initialized { get; private set; }
         #endregion
 
         #region ILane Implementations
-        public void Initalize(ICollection<Note> notes, long ticksVisibleInPast, long ticksVisibleInFuture, GameObject objectsSkin, float xPos, float zPos, float width)
+        public void Initalize(ICollection<Note> notes, in RunwayDisplayInfo displayInfo, int laneIndex)
         {
-            _objectsSkin = objectsSkin;
             _notes = new();
             int i = 0;
             foreach (Note note in notes)
@@ -207,9 +206,9 @@ namespace MIDIGame.Lane
                 _notes.Add(new NoteData(note, i++));
             }
 
-            UpdateVisibleRange(ticksVisibleInPast, ticksVisibleInFuture);
-            SetPosition(xPos, zPos);
-            Width = width;
+            UpdateVisibleRange(displayInfo.TicksVisibleBelowStrike, displayInfo.TicksVisibleAboveStrike);
+            SetPosition(displayInfo.GetLaneXPos(laneIndex), displayInfo.IsWhiteNoteLane(laneIndex) ? 1 : 0);
+            Width = displayInfo.GetLaneWidth(laneIndex);
             _renderableNotes = new();
 
             Initialized = true;

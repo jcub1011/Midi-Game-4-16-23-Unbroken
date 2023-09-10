@@ -54,7 +54,7 @@ namespace MIDIGame.Runway
         #endregion
     }
 
-    internal class RunwayDisplayInfo
+    public class RunwayDisplayInfo
     {
         #region Properties
         const float WHITE_NOTE_WIDTH_FACTOR = 0.95f;
